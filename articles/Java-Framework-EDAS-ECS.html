@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Valar Morghulis" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    EDAS ECS 应用托管 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Java-Framework-EDAS-ECS"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  EDAS ECS 应用托管
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Java-Framework-EDAS-ECS.html" class="article-date">
+  <time datetime="2021-07-20T09:14:34.000Z" itemprop="datePublished">2021-07-20</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">7 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>您可以将 Java 应用托管到 EDAS 的 ECS 集群或混合云 ECS 集群。EDAS 为托管的应用提供了生命周期管理、CI/CD、监控、运维等一系列功能。</p>
+<span id="more"></span>
+
+<h1 id="应用托管概述"><a href="#应用托管概述" class="headerlink" title="应用托管概述"></a>应用托管概述</h1><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>![ECS应用托管功能总览](Java-Framework-EDAS-ECS/ECS 应用托管概览.png)</p>
+<h2 id="ECS-环境类型"><a href="#ECS-环境类型" class="headerlink" title="ECS 环境类型"></a>ECS 环境类型</h2><p>EDAS 支持阿里云 ECS 集群和混合云 ECS 集群。</p>
+<ul>
+<li>阿里云 ECS 集群：在专有网络 VPC 内创建的集群，由阿里云 ECS 实例组成。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/57453.htm#topic2215">使用控制台创建ECS集群</a>。</li>
+<li>混合云 ECS 集群：在专有网络 VPC 内创建的集群，包含阿里云 ECS 实例、IDC 或其它云服务提供商的服务器。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/90647.htm#task-1425878">创建混合云ECS集群</a>。</li>
+</ul>
+<h2 id="ECS-环境支持的应用类型"><a href="#ECS-环境支持的应用类型" class="headerlink" title="ECS 环境支持的应用类型"></a>ECS 环境支持的应用类型</h2><p>您可以使用 EDAS 的 ECS 环境托管 Spring Cloud 和 Dubbo 等主流 Java 微服务框架应用，也可以托管 HSF 框架应用。</p>
+<h2 id="ECS-环境提供的应用托管功能"><a href="#ECS-环境提供的应用托管功能" class="headerlink" title="ECS 环境提供的应用托管功能"></a>ECS 环境提供的应用托管功能</h2><p>ECS 环境为应用提供完整的生命周期管理、服务治理、监控、运维，以及托管应用所需的资源管理能力。</p>
+<table>
+<thead>
+<tr>
+<th align="left">使用场景</th>
+<th align="left">功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">资源管理</td>
+<td align="left">EDAS 是面向应用的 PaaS 平台，为应用提供 ECS 和 K8s 环境及相关资源。EDAS 的 ECS 环境中主要包含命名空间、VPC、集群和 ECS。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199263.htm#concept-v5i-i7a-36o">ECS资源管理概述</a>。</td>
+</tr>
+<tr>
+<td align="left">部署应用</td>
+<td align="left">创建和部署（首次部署）：在应用开发、测试完成后，可以在 ECS 集群中创建并部署。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199494.htm#concept-2025121">应用创建和部署概述（ECS）</a>。升级和回滚：应用在 EDAS 中创建并部署后，还会不断迭代，需要升级。如果升级的应用版本发现问题，需要将应用回滚到历史版本。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199496.htm#concept-2025835">升级和回滚应用概述（ECS）</a>。</td>
+</tr>
+<tr>
+<td align="left">CI/CD</td>
+<td align="left">应用在不断迭代过程中，需要持续集成（CI）和持续部署（CD）。EDAS 支持通过<a target="_blank" rel="noopener" href="https://www.jenkins.io/">Jenkins</a>和<a target="_blank" rel="noopener" href="https://www.aliyun.com/product/yunxiao">云效</a>对您部署的应用进行 CI/CD。具体操作，请参见：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/178330.htm#task-2369261">使用云效2020部署Java应用至ECS集群</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/55479.htm#topic4215">使用Jenkins创建持续集成</a></td>
+</tr>
+<tr>
+<td align="left">应用监控</td>
+<td align="left">EDAS 集成了应用实时监控服务 ARMS，为部署在 EDAS 中的应用提供关键指标的监控能力和报警能力。具体操作，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/148863.htm#concept-87109-zh">应用总览</a>。</td>
+</tr>
+<tr>
+<td align="left">应用运维</td>
+<td align="left">EDAS 为应用提供了一些列运维功能，包括：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/88169.htm#concept-113076-zh">ECS 集群中的应用生命周期管理</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/108135.htm#concept-2038440">负载均衡概述</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/52774.htm#topic2891">对ECS集群中的应用进行弹性伸缩</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/118764.htm#topic1278">限流降级</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99153.htm#topic705">查看应用变更</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/121171.htm#concept-2038346">日志简介</a></td>
+</tr>
+</tbody></table>
+<h1 id="资源管理"><a href="#资源管理" class="headerlink" title="资源管理"></a>资源管理</h1><h2 id="ECS-资源管理概述"><a href="#ECS-资源管理概述" class="headerlink" title="ECS 资源管理概述"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199263.html?spm=a2c4g.11186623.6.732.253f575amEYRr1">ECS 资源管理概述</a></h2><h2 id="管理微服务空间"><a href="#管理微服务空间" class="headerlink" title="管理微服务空间"></a>管理微服务空间</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/65495.html?spm=a2c4g.11186623.6.734.128b2177K6rYDh">使用控制台管理微服务空间</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213305.html?spm=a2c4g.11186623.6.735.4be39bbbL3i2XQ">使用 API 管理微服务空间</a></p>
+</li>
+</ul>
+<h2 id="ECS-集群管理"><a href="#ECS-集群管理" class="headerlink" title="ECS 集群管理"></a>ECS 集群管理</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/57453.html?spm=a2c4g.11186623.6.737.1fad1502LKcABb">使用控制台创建 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/173807.html?spm=a2c4g.11186623.6.738.12726abfA1V1yn">扩容 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213309.html?spm=a2c4g.11186623.6.739.422246a2r4EKd0">使用 API 创建 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213310.html?spm=a2c4g.11186623.6.740.6220c943EsLwG7">使用 API 扩容 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/57452.html?spm=a2c4g.11186623.6.741.1c65287fcM42aD">管理 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/48905.html?spm=a2c4g.11186623.6.742.734f420c6dPAMC">使用控制台管理 ECS 集群中的应用实例分组</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/214185.html?spm=a2c4g.11186623.6.743.7e3611d9eDmHNC">使用 API 管理 ECS 集群中的应用实例分组</a></p>
+</li>
+</ul>
+<h2 id="ECS-实例管理"><a href="#ECS-实例管理" class="headerlink" title="ECS 实例管理"></a>ECS 实例管理</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/69769.html?spm=a2c4g.11186623.6.745.730541ceG4VnMh">创建 ECS 实例</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/54052.html?spm=a2c4g.11186623.6.746.58ef68dcpqZA4B">为 ECS 实例安装 EDAS Agent</a></p>
+</li>
+</ul>
+<h2 id="创建混合云-ECS-集群"><a href="#创建混合云-ECS-集群" class="headerlink" title="创建混合云 ECS 集群"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/90647.html?spm=a2c4g.11186623.6.747.5f7d7e8bUoOnxF">创建混合云 ECS 集群</a></h2><h2 id="管理资源组"><a href="#管理资源组" class="headerlink" title="管理资源组"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/54182.html?spm=a2c4g.11186623.6.748.7b8737c9JMJILy">管理资源组</a></h2><h1 id="创建和部署应用"><a href="#创建和部署应用" class="headerlink" title="创建和部署应用"></a>创建和部署应用</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199494.html?spm=a2c4g.11186623.6.750.6aa52977MgCOHx">应用创建和部署概述</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/94515.html?spm=a2c4g.11186623.6.751.28c3312ekGg2EM">在 ECS 集群中创建并部署应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199495.html?spm=a2c4g.11186623.6.752.55ed2e4bSmq6aO">在混合云中部署应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/212642.html?spm=a2c4g.11186623.6.753.3f0514a5hFfxkx">使用 API 创建应用</a></p>
+</li>
+</ul>
+<h1 id="升级和回滚应用"><a href="#升级和回滚应用" class="headerlink" title="升级和回滚应用"></a>升级和回滚应用</h1><h2 id="升级和回滚应用概述"><a href="#升级和回滚应用概述" class="headerlink" title="升级和回滚应用概述"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199496.html?spm=a2c4g.11186623.6.755.45da6a24QiTMXb">升级和回滚应用概述</a></h2><h2 id="单批发布"><a href="#单批发布" class="headerlink" title="单批发布"></a>单批发布</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199247.html?spm=a2c4g.11186623.6.757.1c1c1c14ANg4K6">使用控制台升级应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/212641.html?spm=a2c4g.11186623.6.758.77f52bd5tuj94R">使用 API 在 ECS 集群中单批发布应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/98551.html?spm=a2c4g.11186623.6.759.15948ed8hJktBl">在 IntelliJ IDEA 中使用 Cloud Toolkit 部署应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/96007.html?spm=a2c4g.11186623.6.760.63354535QOPv0q">在 Eclipse 中使用 Cloud Toolkit 部署应用至 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/92242.html?spm=a2c4g.11186623.6.761.776351d8eaAmxZ">使用 toolkit-maven-plugin 插件升级应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/96025.html?spm=a2c4g.11186623.6.762.474532c9bH5UYQ">使用 CLI 快速部署应用至 ECS 集群</a></p>
+</li>
+</ul>
+<h2 id="分批发布"><a href="#分批发布" class="headerlink" title="分批发布"></a>分批发布</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/201454.html?spm=a2c4g.11186623.6.764.7e666fb7Q8MBj7">使用控制台分批发布应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213315.html?spm=a2c4g.11186623.6.765.61416fb757lMIL">使用 API 在 ECS 集群中分批发布应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/201496.html?spm=a2c4g.11186623.6.766.626d3bdc2YMXKk">使用 toolkit-maven-plugin 插件分批发布应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/201495.html?spm=a2c4g.11186623.6.767.48966b5a2Hs7cH">使用 Cloud Toolkit 分批发布应用</a></p>
+</li>
+</ul>
+<h2 id="金丝雀发布"><a href="#金丝雀发布" class="headerlink" title="金丝雀发布"></a>金丝雀发布</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/150110.html?spm=a2c4g.11186623.6.769.2dcc3c40rtjSi4">使用控制台金丝雀发布</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213316.html?spm=a2c4g.11186623.6.770.12f0442f4SWXKy">使用 API 金丝雀发布</a></p>
+</li>
+</ul>
+<h2 id="回滚应用"><a href="#回滚应用" class="headerlink" title="回滚应用"></a>回滚应用</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/202339.html?spm=a2c4g.11186623.6.772.645d34b45eNrp2">回滚应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213317.html?spm=a2c4g.11186623.6.773.3366141cf3L3U9">使用 API 在 ECS 集群中回滚应用到目标历史版本</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213319.html?spm=a2c4g.11186623.6.774.718d443dwf9nJT">使用 API 在 ECS 集群中终止应用升级变更流程</a></p>
+</li>
+</ul>
+<h1 id="CI-CD"><a href="#CI-CD" class="headerlink" title="CI/CD"></a>CI/CD</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/178330.html?spm=a2c4g.11186623.6.776.4887bfc7w3p95c">使用云效 2020 部署 Java 应用至 ECS 集群</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/55479.html?spm=a2c4g.11186623.6.777.563619c6cwebUx">使用 Jenkins 创建持续集成</a></p>
+</li>
+</ul>
+<h1 id="应用设置"><a href="#应用设置" class="headerlink" title="应用设置"></a>应用设置</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/54313.html?spm=a2c4g.11186623.6.779.eaa37de4TrDIOB">设置部署在 ECS 集群中的应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/172008.html?spm=a2c4g.11186623.6.780.46991b20n7g799">设置应用生命周期挂载脚本</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99340.html?spm=a2c4g.11186623.6.781.7bdc4ba1LOSpzL">健康检查</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/170028.html?spm=a2c4g.11186623.6.782.8bdf5692JmJcou">同可用区优化路由</a></p>
+</li>
+</ul>
+<h1 id="应用监控"><a href="#应用监控" class="headerlink" title="应用监控"></a>应用监控</h1><h2 id="应用监控概述"><a href="#应用监控概述" class="headerlink" title="应用监控概述"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/200400.html?spm=a2c4g.11186623.6.784.166e57d2A7roCd">应用监控概述</a></h2><h2 id="应用总览"><a href="#应用总览" class="headerlink" title="应用总览"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/148863.html?spm=a2c4g.11186623.6.785.57fd7ed74DgF0p">应用总览</a></h2><h2 id="应用详情"><a href="#应用详情" class="headerlink" title="应用详情"></a>应用详情</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203216.html?spm=a2c4g.11186623.6.787.7bbe224cCfAF2M">概览</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/148865.html?spm=a2c4g.11186623.6.788.a05c38f2Jh9Tq5">JVM 监控</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/148866.html?spm=a2c4g.11186623.6.789.2f9214222z5vf1">主机监控</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203217.html?spm=a2c4g.11186623.6.790.7049736eVTKTzY">SQL 调用分析</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203218.html?spm=a2c4g.11186623.6.791.349e47b2W014Nj">NoSQL 调用分析</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203219.html?spm=a2c4g.11186623.6.792.15c25285mFwPTP">错误分析</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203220.html?spm=a2c4g.11186623.6.793.53f06554tySq2q">上游应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203221.html?spm=a2c4g.11186623.6.794.68342b2fzhpsDl">下游应用</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/203222.html?spm=a2c4g.11186623.6.795.50725876lM1pgD">接口快照</a></p>
+</li>
+</ul>
+<h2 id="接口调用"><a href="#接口调用" class="headerlink" title="接口调用"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/148867.html?spm=a2c4g.11186623.6.796.297d393ehXw0lR">接口调用</a></h2><h2 id="高级监控"><a href="#高级监控" class="headerlink" title="高级监控"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/100587.html?spm=a2c4g.11186623.6.797.40667e35E1Jdqq">高级监控</a></h2><h2 id="报警管理"><a href="#报警管理" class="headerlink" title="报警管理"></a>报警管理</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/172459.html?spm=a2c4g.11186623.6.799.6fd32119wvG6hZ">创建联系人</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/172460.html?spm=a2c4g.11186623.6.800.1e6d63ebZoDDid">创建和管理联系人分组</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/172457.html?spm=a2c4g.11186623.6.801.13fc71cdJWmcLs">创建报警</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/172458.html?spm=a2c4g.11186623.6.802.7a37595aEdn1Ze">管理报警</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/172461.html?spm=a2c4g.11186623.6.803.360f776bcQq6H5">设置钉钉机器人报警</a></p>
+</li>
+</ul>
+<h1 id="应用运维"><a href="#应用运维" class="headerlink" title="应用运维"></a>应用运维</h1><h2 id="ECS-集群中的应用生命周期管理"><a href="#ECS-集群中的应用生命周期管理" class="headerlink" title="ECS 集群中的应用生命周期管理"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/88169.html?spm=a2c4g.11186623.6.805.36c738761IYFVD">ECS 集群中的应用生命周期管理</a></h2><h2 id="扩容部署在-ECS-集群中的应用"><a href="#扩容部署在-ECS-集群中的应用" class="headerlink" title="扩容部署在 ECS 集群中的应用"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/73039.html?spm=a2c4g.11186623.6.806.53d8dd989YV6F1">扩容部署在 ECS 集群中的应用</a></h2><h2 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/108135.html?spm=a2c4g.11186623.6.808.962e567aqkayJZ">负载均衡概述</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/107831.html?spm=a2c4g.11186623.6.809.63715dfcSduX1d">应用独享负载均衡实例</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/108589.html?spm=a2c4g.11186623.6.810.5b5e6e46Dw7e1q">使用端口实现流量分发（共享负载均衡实例）</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/108669.html?spm=a2c4g.11186623.6.811.7f1b67cbTqh2NA">使用域名或 URL 实现流量分发（共享负载均衡实例）</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/108878.html?spm=a2c4g.11186623.6.812.1c6328f6WiwLsZ">使用 URL 实现应用实例分组的流量分发</a></p>
+</li>
+</ul>
+<h2 id="对-ECS-集群中的应用进行弹性伸缩"><a href="#对-ECS-集群中的应用进行弹性伸缩" class="headerlink" title="对 ECS 集群中的应用进行弹性伸缩"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/52774.html?spm=a2c4g.11186623.6.813.36553c85DDdSWX">对 ECS 集群中的应用进行弹性伸缩</a></h2><h2 id="限流降级"><a href="#限流降级" class="headerlink" title="限流降级"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/118764.html?spm=a2c4g.11186623.6.814.33176dacYPr2NH">限流降级</a></h2><h2 id="运行环境升降级"><a href="#运行环境升降级" class="headerlink" title="运行环境升降级"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/43842.html?spm=a2c4g.11186623.6.815.33572bc7LtoRHl">运行环境升降级</a></h2><h2 id="变更记录"><a href="#变更记录" class="headerlink" title="变更记录"></a>变更记录</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99153.html?spm=a2c4g.11186623.6.817.5a975cfb5lw5SJ">查看应用变更</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/106573.html?spm=a2c4g.11186623.6.818.555e18cbb7SUft">变更流程错误码说明</a></li>
+</ul>
+<h2 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/121171.html?spm=a2c4g.11186623.6.820.3220c4bea2Jg3z">日志简介</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/43719.html?spm=a2c4g.11186623.6.821.4c655f157t6TAG">日志管理</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/113163.html?spm=a2c4g.11186623.6.822.1b8e1050j9s6XD">使用 EDAS CLI 下载日志</a></li>
+</ul>
+<h1 id="ECS-集群使用常见问题"><a href="#ECS-集群使用常见问题" class="headerlink" title="ECS 集群使用常见问题"></a>ECS 集群使用常见问题</h1><h2 id="资源管理-1"><a href="#资源管理-1" class="headerlink" title="资源管理"></a>资源管理</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43863.html?spm=a2c4g.11186623.6.825.62ba76ecTS0jIH">安装 EDAS Agent 后没有上报信息且未显示 EDAS Agent 的版本号</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/44536.html?spm=a2c4g.11186623.6.826.15572c1dJWVUSE">安装 EDAS Agent 后控制台状态为“未知”或“异常”</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/42948.html?spm=a2c4g.11186623.6.827.25037ed1CvxYbG">什么是 Docker 实例？和 ECS 独占实例有何区别？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/43862.html?spm=a2c4g.11186623.6.828.76d4729fxsvw9R">购买了 EDAS 之后，是否需要另行购买 ECS？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/43865.html?spm=a2c4g.11186623.6.829.44af7392EZA8h8">EDAS 的 Java 版本是哪个版本，我能够选择吗？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43866.html?spm=a2c4g.11186623.6.830.30ae64cfV6DY1c">Agent 进程停止运行后提示“AGENT 异常”</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43869.html?spm=a2c4g.11186623.6.831.225f1933A5eQKd">Ali-Tomcat 容器无响应</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43861.html?spm=a2c4g.11186623.6.832.cd6d56abl5vg0P">在 EDAS 控制台导入 ECS 实例时资源未及时同步</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/47524.html?spm=a2c4g.11186623.6.833.734e66c2k3ekpJ">应用实例说明</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/52634.html?spm=a2c4g.11186623.6.834.7f815fb2AuOPy3">安装 Agent 的过程中发现卸载 Java</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/55872.html?spm=a2c4g.11186623.6.835.35bbb249vnIvnM">日志采集器相关问题</a></li>
+</ul>
+<h2 id="应用管理"><a href="#应用管理" class="headerlink" title="应用管理"></a>应用管理</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44025.html?spm=a2c4g.11186623.6.837.2c49500fdy2s0M">重启服务后 EDAS Agent 是否能自动重启？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/44030.html?spm=a2c4g.11186623.6.838.53b15133Szrj2c">EDAS Agent 无法启动</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44032.html?spm=a2c4g.11186623.6.839.8ddc70f13dNhuk">EDAS 是否支持在同一个实例上安装多个应用？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44026.html?spm=a2c4g.11186623.6.840.fcf65d32elyNay">应用部署时提供的发布包 URL 是不是可以随意设置？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44028.html?spm=a2c4g.11186623.6.841.16152fc3Th5N94">启停和部署应用等管理操作失败了怎么办？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44033.html?spm=a2c4g.11186623.6.842.31591d6cvp8p0Z">已买的 ECS 实例没有出现在实例列表中怎么办？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44029.html?spm=a2c4g.11186623.6.843.3e49376dSTMHNS">为什么在 EDAS 控制台上实例的状态是“未知”？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43878.html?spm=a2c4g.11186623.6.844.28ab7fbdvT6xM7">服务可以正常调用，但是服务列表不显示</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43877.html?spm=a2c4g.11186623.6.845.6e6a7b5fCkbFyI">服务列表显示正常，但是调用失败怎么办？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44019.html?spm=a2c4g.11186623.6.846.1cca7f12Qjkhf2">删除应用后是否可以恢复？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/43875.html?spm=a2c4g.11186623.6.847.49334cb17BJsyK">如何进行分批发布或者分组发布？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/43871.html?spm=a2c4g.11186623.6.848.bc4d79d557JrVc">应用部署在多个实例后，集群中会话如何共享？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/43873.html?spm=a2c4g.11186623.6.849.37ea67b9LWqE1p">应用部署在多个实例后，如何实现负载均衡？</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/68940.html?spm=a2c4g.11186623.6.850.575b60557M4jHJ">创建应用时的安全组规则</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/96072.html?spm=a2c4g.11186623.6.851.56b2799dKPp3Np">如何分批升降级应用的运行环境</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/143824.html?spm=a2c4g.11186623.6.852.2fdf2b92qh3aWA">快速入门常见问题</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/147743.html?spm=a2c4g.11186623.6.853.3fde6ec6mUPqCE">应用部署时的默认启动命令参数</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/53066.html?spm=a2c4g.11186623.6.854.2bd31d06f4nUlc">在 EDAS 控制台中对应用进行操作无响应</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/64352.html?spm=a2c4g.11186623.6.855.66893469kEZ6MZ">EDAS 应用变更失败的问题排查</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/73757.html?spm=a2c4g.11186623.6.856.615aaf1fur4hrb">EDAS 应用无法访问页面</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/100850.html?spm=a2c4g.11186623.6.857.69312a9dJgaSql">EDAS 应用进程突然消失</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/131886.html?spm=a2c4g.11186623.6.858.1dfc166cSL3DW2">ECS 集群应用日志清理机制是什么？</a></li>
+</ul>
+<h2 id="端口占用"><a href="#端口占用" class="headerlink" title="端口占用"></a>端口占用</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/51179.html?spm=a2c4g.11186623.6.860.206c4f1fi3iAy6">ECS 安全组规则</a></li>
+</ul>
+<h2 id="监控报警"><a href="#监控报警" class="headerlink" title="监控报警"></a>监控报警</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/100768.html?spm=a2c4g.11186623.6.862.79482a93oZghdR">如何在本地使用 jconsole 或 jvisualvm 监控运行在 ECS 实例上的 JVM 进程</a></li>
+</ul>
+<h2 id="日志诊断常见问题"><a href="#日志诊断常见问题" class="headerlink" title="日志诊断常见问题"></a>日志诊断常见问题</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/108510.html?spm=a2c4g.11186623.6.864.7037519bhV10vG">Java 应用如何收集 CPU 使用率高的问题信息</a></li>
+</ul>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-Framework-EDAS-ECS.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Java-Framework-EDAS-Service-Governance.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            EDAS 服务治理
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Java-Framework-EDAS-K8s.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">EDAS K8s 应用托管</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

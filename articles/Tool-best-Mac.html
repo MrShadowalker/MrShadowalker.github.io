@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="描述" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    如何打造宇宙最强 Macbook |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Tool-best-Mac"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  如何打造宇宙最强 Macbook
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Tool-best-Mac.html" class="article-date">
+  <time datetime="2021-07-14T08:27:28.000Z" itemprop="datePublished">2021-07-14</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%BC%96%E7%A8%8B%E5%BC%80%E5%8F%91/">编程开发</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>作为开发者，如何打造宇宙最强 Mac 呢？</p>
+<span id="more"></span>
+
+<h1 id="Homebrew"><a href="#Homebrew" class="headerlink" title="Homebrew"></a>Homebrew</h1><p>homebrew 之于 Mac，相当于 apt-get 之于 Ubuntu，rpm 之于 Centos。Unix 对比 Windows 优势很大的一点就是软件安装管理比较方便，有一套系统的工具，自然 homebrew 也是 Mac 上必装的应用之一。</p>
+<p>使用以下语句安装：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/bin/ruby -e <span class="string">&quot;<span class="subst">$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>配置路径：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&#x27;export PATH=&quot;/usr/local/bin:$PATH&quot;&#x27;</span> &gt;&gt; ~/.bash_profile</span><br></pre></td></tr></table></figure>
+
+<p>之后可以下载安装 Mac 不自带而本身十分强大的各种工具，如 wget 等：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install wget</span><br></pre></td></tr></table></figure>
+
+<h2 id="Homebrew-Cask"><a href="#Homebrew-Cask" class="headerlink" title="Homebrew Cask"></a>Homebrew Cask</h2><h1 id="Terminal"><a href="#Terminal" class="headerlink" title="Terminal"></a>Terminal</h1><p>先普及一下什么叫 shell：<br>在 Unix 内核的操作系统中，当然现在衍生出好多分支，Linux，Mac OS X 都算。<br>shell 就算和上面这些系统内核指令打交道的一座桥梁，我们通过键盘输入一种自己容易记忆识别的符号标识(shell 命令)，然后 shell 解析这种命令再反馈给内核去执行一系列操作。</p>
+<p>其实 zsh 也是一种 shell ，但是并不是我们系统默认的 shell ，Unix 衍生系统的默认 shell 都是 bash。</p>
+<p>我们查看一下 Mac 里面内置了哪些shell：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/shells</span><br></pre></td></tr></table></figure>
+
+<p>Mac 自带的 Terminal 是 bash，现将其换成 zsh，采取 iTerm2 + Oh-My-Zsh + Solarized 配色方案，使其拥有语法高亮、命令行补全、自动提示符、显示 Git 仓库状态等功能。</p>
+<h2 id="iTerm2-zsh"><a href="#iTerm2-zsh" class="headerlink" title="iTerm2 + zsh"></a>iTerm2 + zsh</h2><ul>
+<li>首先安装 iTerm2，官网即可下载：<a target="_blank" rel="noopener" href="http://iterm2.com/">http://iterm2.com/</a>。</li>
+<li>将 iTem2 设置为默认终端：<br>iTerm2 -&gt; Make iTerm2 Default Term</li>
+<li>然后打开偏好设置 Preference，选中 Keys，勾选 Hotkey 下的 Show/hide iTerm2 with a system-wide hotkey，将热键设置为 Command+. ，这样你就可以通过 Command+. 全局热键来打开或关闭 iTerm2 窗口，非常方便。</li>
+<li>配色方案,我选用的是 <a target="_blank" rel="noopener" href="http://ethanschoonover.com/solarized">solarized</a>，效果还不错。点开官网，下载，解压，然后打开 iTerm2 下的偏好设置 Preference ，点开 Profiles 下的 colors 选项，点击右下角的 Color Presets 选项，选择 import ，导入解压的 solarized 文件下的 Solarized Dark.itermcolors。</li>
+<li>安装 oh-my-zsh。<br>Github 链接：<a target="_blank" rel="noopener" href="https://github.com/robbyrussell/oh-my-zsh">https://github.com/robbyrussell/oh-my-zsh</a></li>
+</ul>
+<p>使用 curl 安装：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sh -c <span class="string">&quot;<span class="subst">$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>或者使用 wget 安装：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sh -c <span class="string">&quot;<span class="subst">$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>主题。<br>安装成功后，用 vim 打开隐藏文件 .zshrc ，修改主题为 agnoster：</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ZSH_THEME=<span class="string">&quot;agnoster&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>应用这个主题需要特殊的字体支持，否则会出现乱码情况，这时我们来配置字体：</p>
+<ol>
+<li>使用 <a target="_blank" rel="noopener" href="https://github.com/powerline/fonts/blob/master/Meslo%20Slashed/Meslo%20LG%20M%20Regular%20for%20Powerline.ttf">Meslo</a> 字体，点开连接点击 view raw 下载字体。</li>
+<li>安装字体到系统字体册。</li>
+<li>应用字体到 iTerm2 下，我自己喜欢将字号设置为 14 px，看着舒服（iTerm -&gt; Preferences -&gt; Profiles -&gt; Text -&gt; Change Font）。</li>
+<li>重新打开 iTerm2 窗口，这时便可以看到效果了。</li>
+</ol>
+<p>到这步我们的终端看上去已经非常好看了，这时我们来安装其它插件，让终端看起来更加风骚。</p>
+<ul>
+<li>自动提示命令。当我们输入命令时，终端会自动提示你接下来可能要输入的命令，这时按 → 便可输出这些命令，非常方便。</li>
+</ul>
+<p>设置如下：</p>
+<ol>
+<li>克隆仓库到本地 ~/.oh-my-zsh/custom/plugins 路径下：</li>
+</ol>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> git://github.com/zsh-users/zsh-autosuggestions <span class="variable">$ZSH_CUSTOM</span>/plugins/zsh-autosuggestions</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>用 vim 打开 .zshrc 文件，找到插件设置命令，默认是 plugins=(git) ，我们把它修改为:</li>
+</ol>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">plugins=(zsh-autosuggestions git)</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>重新打开终端窗口。</li>
+</ol>
+<p>PS：当你重新打开终端的时候可能看不到变化，可能你的字体颜色太淡了，我们把其改亮一些：</p>
+<p>移动到 ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions 路径下:</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>用 vim 打开 zsh-autosuggestions.zsh 文件，修改:</li>
+</ol>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE=<span class="string">&#x27;fg=10&#x27;</span> </span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>语法高亮。</li>
+</ul>
+<ol>
+<li>使用 homebrew 安装 zsh-syntax-highlighting 插件。</li>
+</ol>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install zsh-syntax-highlighting</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>配置 .zshrc 文件，插入一行。</li>
+</ol>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> /usr/<span class="built_in">local</span>/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>输入命令。</li>
+</ol>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> ~/.zshrc</span><br></pre></td></tr></table></figure>
+
+<p>开始静静地装逼吧<br>(逃~</p>
+<h2 id="vim"><a href="#vim" class="headerlink" title="vim"></a>vim</h2><p>vim 是 Unix 平台上最常用的文本编辑器，因此对 vim 进行相应顺手的配置也非常重要。</p>
+<p>Mac 的用户目录下没有默认的 .vimrc 配置文件，我们可以先 touch 一个空的 .vimrc 文件，然后在 vimrc 文件里进行相关的配置。</p>
+<p>一般我使用的最简单的几个配置项如下：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">color desert <span class="string">&quot;颜色设置&quot;</span></span><br><span class="line">syntax on <span class="string">&quot;语法高亮&quot;</span></span><br><span class="line"><span class="built_in">set</span> number <span class="string">&quot;自动显示行号&quot;</span></span><br><span class="line"><span class="built_in">set</span> cursorline <span class="string">&quot;突出显示当前行&quot;</span></span><br><span class="line"><span class="built_in">set</span> ts=4 <span class="string">&quot;设置tab长度为4&quot;</span></span><br><span class="line"><span class="built_in">set</span> shiftwidth=4 <span class="string">&quot;设定 &lt;&lt; 和 &gt;&gt; 命令移动时的宽度为 4&quot;</span></span><br><span class="line"><span class="built_in">let</span> &amp;termencoding=&amp;encodingset fileencodings=utf-8,gbk <span class="string">&quot;解决中文编码乱码&quot;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Environment"><a href="#Environment" class="headerlink" title="Environment"></a>Environment</h1><h2 id="MySQL"><a href="#MySQL" class="headerlink" title="MySQL"></a>MySQL</h2><p>Mac 上的 MySQL 安装配置简直就是大坑。</p>
+<p>首先，最重要最重要的就是，一定不要用 homebrew 安装 MySQL，你会感受到无比的绝望~！！</p>
+<h3 id="MySQL-配置环境变量"><a href="#MySQL-配置环境变量" class="headerlink" title="MySQL 配置环境变量"></a>MySQL 配置环境变量</h3><ul>
+<li>首先要知道你使用的 Mac OS X 是什么样的 shell，使用命令</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="variable">$SHELL</span></span><br></pre></td></tr></table></figure>
+
+<p>如果输出的是：csh 或者是 tcsh，那么你用的就是 C Shell。</p>
+<p>如果输出的是：bash，sh，zsh，那么你的用的可能就是 Bourne Shell 的一个变种。</p>
+<p>Mac OS X 10.2 之前默认的是 C Shell。</p>
+<p>Mac OS X 10.3 之后默认的是 Bourne Shell。</p>
+<ul>
+<li>打开终端，输入： cd ~</li>
+</ul>
+<p>会进入~文件夹</p>
+<ul>
+<li>然后输入：</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vim .bash_profile</span><br></pre></td></tr></table></figure>
+
+<p>回车执行，需要输入 root 用户密码。sudo 是使用 root 用户修改环境变量文件。</p>
+<p>在文档的最下方输入：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$&#123;PATH&#125;</span>:/usr/<span class="built_in">local</span>/mysql/bin</span><br></pre></td></tr></table></figure>
+
+<p>然后 esc 退出 insert 状态，并在最下方输入 <code>:wq!</code> 保存退出。</p>
+<ul>
+<li>输入：</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> .bash_profile</span><br></pre></td></tr></table></figure>
+
+<p>回车执行，运行环境变量。</p>
+<ul>
+<li><p>再输入 <code>mysql</code>，即可使用。</p>
+</li>
+<li><p>本人测试以后发现，上面的做法每次关掉终端在打开都需要重新 source .bash_profile。<br>于是</p>
+</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.zshrc</span><br></pre></td></tr></table></figure>
+
+<p>在这里面添加了：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$&#123;PATH&#125;</span>:/usr/<span class="built_in">local</span>/mysql/bin</span><br></pre></td></tr></table></figure>
+
+<p>保存后</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> ~/.zshrc </span><br></pre></td></tr></table></figure>
+
+<p>这样的话就可以一劳永逸了。</p>
+<h3 id="重设-MySQL-的-root-初始密码"><a href="#重设-MySQL-的-root-初始密码" class="headerlink" title="重设 MySQL 的 root 初始密码"></a>重设 MySQL 的 root 初始密码</h3><ul>
+<li>停止 mysql server.  通常是在 <code>系统偏好设置</code> &gt; MySQL &gt; <code>Stop MySQL Server</code></li>
+</ul>
+<ul>
+<li>打开终端，输入：</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo /usr/<span class="built_in">local</span>/mysql/bin/mysqld_safe --skip-grant-tables</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>打开另一个新终端，输入:</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo /usr/<span class="built_in">local</span>/mysql/bin/mysql -u root</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UPDATE mysql.user SET authentication_string=PASSWORD(<span class="string">&#x27;新密码&#x27;</span>) WHERE User=<span class="string">&#x27;root&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FLUSH PRIVILEGES;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\q</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>重启 MySQL.</p>
+</li>
+<li><p>以上方法针对 MySQL V5.7.9，旧版的 MySQL 请使用：</p>
+</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UPDATE mysql.user SET Password=PASSWORD(<span class="string">&#x27;新密码&#x27;</span>) WHERE User=<span class="string">&#x27;root&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="Errors"><a href="#Errors" class="headerlink" title="Errors"></a>Errors</h3><ul>
+<li>不少 Mac 在第一次使用的时候，会出现这样的错误提示：</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">You must reset your password using ALTER USER statement before executing this statement.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>解决方案如下：</li>
+</ul>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SET PASSWORD = PASSWORD(<span class="string">&#x27;your new password&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER USER <span class="string">&#x27;root&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span> PASSWORD EXPIRE NEVER;</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">flush privileges;</span><br></pre></td></tr></table></figure>
+
+<p>完成以上三步退出再登，使用新设置的密码就行了，以上除了 <code>your new password</code> 自己修改成新密码外，其他原样输入即可。</p>
+<h2 id="Git"><a href="#Git" class="headerlink" title="Git"></a>Git</h2><p>Mac 自带 git，我的 Mac 自带 2.13.5 版本，所以就省了 git 的安装。</p>
+<h2 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h2><h3 id="JDK-的安装"><a href="#JDK-的安装" class="headerlink" title="JDK 的安装"></a>JDK 的安装</h3><p><a target="_blank" rel="noopener" href="http://www.oracle.com/technetwork/java/javase/downloads/jdk9-downloads-3848520.html">Oracle 官网</a>，找到对应的 JDK 版本，下载安装即可。</p>
+<p>安装完成以后，无须配置环境变量，直接可以运行相应的 java 命令。</p>
+<h3 id="Maven的安装"><a href="#Maven的安装" class="headerlink" title="Maven的安装"></a>Maven的安装</h3><p>Maven 是现在 Java 项目管理的在开发过程中必不可少的工具。</p>
+<p>利用前面我们安装好的 homebrew，很容易就可以安装上 Maven。</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install maven</span><br></pre></td></tr></table></figure>
+
+<p>检查版本:</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn -v</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Ruby"><a href="#Ruby" class="headerlink" title="Ruby"></a>Ruby</h2><p>Mac 自带 ruby，我的 Mac 自带 2.0.0p648 (2015-12-16 revision 53162) 版本，所以就省了 ruby 的安装。</p>
+<h2 id="PHP"><a href="#PHP" class="headerlink" title="PHP"></a>PHP</h2><p>Mac 自带 php，我的 Mac 自带 5.6.30 版本，所以就省了 php 的安装。</p>
+<h3 id="Xdebug"><a href="#Xdebug" class="headerlink" title="Xdebug"></a>Xdebug</h3><h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><p>Mac 自带 python，我的 Mac 自带 2.7.10 版本，所以就省了 python 的安装。</p>
+<p>1.Mac 系统已经默认安装好了python 2.7</p>
+<p>2.安装 python 的包管理器 pip </p>
+<p>先下载 get-pip.py <a target="_blank" rel="noopener" href="https://bootstrap.pypa.io/get-pip.py">https://bootstrap.pypa.io/get-pip.py</a> 执行命令安装</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo python get-pip.py</span><br></pre></td></tr></table></figure>
+
+<p>3.安装virtualenv 。virtualenv 为每个不同项目提供一份 Python 安装。它并没有真正安装多个 Python 副本，但是它确实提供了一种巧妙的方式来让各项目环境保持独立。</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install virtualenv</span><br></pre></td></tr></table></figure>
+
+<p>现在你只需要键入以下的命令来激活 virtualenv 中的 Flask:</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install Flask</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="更新"><a href="#更新" class="headerlink" title="更新"></a>更新</h4><p>目前 Python2.x 版本基本废弃，转向 Python3.x 版本。</p>
+<p>推荐使用 Anaconda 来管理环境和相关的包。</p>
+<p>这里挖个坑，以后另开 Python 版块详细介绍。</p>
+<h2 id="Node-JS"><a href="#Node-JS" class="headerlink" title="Node.JS"></a>Node.JS</h2><figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install nodejs</span><br></pre></td></tr></table></figure>
+
+<p>之后检查版本：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm -v</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node -v</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Scala"><a href="#Scala" class="headerlink" title="Scala"></a>Scala</h2><p>最近几年算法跟大数据方面最火的分布式框架非 Spark 莫属了。因为 Spark 的缘故，所以咱们得对 Scala 至少得混个脸熟。</p>
+<p>因为安装了 homebrew，安装 Scala 就变得很 easy 了。</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install scala</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="IDE"><a href="#IDE" class="headerlink" title="IDE"></a>IDE</h1><h2 id="Xcode"><a href="#Xcode" class="headerlink" title="Xcode"></a>Xcode</h2><h3 id="Xcode-addones"><a href="#Xcode-addones" class="headerlink" title="Xcode addones"></a>Xcode addones</h3><h2 id="JetBrains"><a href="#JetBrains" class="headerlink" title="JetBrains"></a>JetBrains</h2><p>Activation code</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">CD4C1E7Z6V</span>-eyJsaWNlbnNlSWQiOiJDRDRDMUU<span class="number">3</span>WjZWIiwibGljZW<span class="number">5</span>zZWVOYW<span class="number">1</span>lIjoiRGVtZXRyaXVzIENvbnRyZXJhcyIsImFzc<span class="number">2</span>lnbmVlTmFtZSI<span class="number">6</span>IiIsImFzc<span class="number">2</span>lnbmVlRW<span class="number">1</span>haWwiOiIiLCJsaWNlbnNlUmVzdHJpY<span class="number">3</span>Rpb<span class="number">24</span>iOiJGb<span class="number">3</span>IgZWR<span class="number">1</span>Y<span class="number">2</span>F<span class="number">0</span>aW<span class="number">9</span>uYWwgdXNlIG<span class="number">9</span>ubHkiLCJjaGVja<span class="number">0</span>NvbmN<span class="number">1</span>cnJlbnRVc<span class="number">2</span>UiOmZhbHNlLCJwcm<span class="number">9</span>kdWN<span class="number">0</span>cyI<span class="number">6</span>W<span class="number">3</span>siY<span class="number">29</span>kZSI<span class="number">6</span>IkFDIiwicGFpZFVwVG<span class="number">8</span>iOiIyMDE<span class="number">4</span>LTAzLTEyIn<span class="number">0</span>seyJjb<span class="number">2</span>RlIjoiRE<span class="number">0</span>iLCJwYWlkVXBUbyI<span class="number">6</span>IjIwMTgtMDMtMTIifSx<span class="number">7</span>ImNvZGUiOiJJSSIsInBhaWRVcFRvIjoiMjAxOC<span class="number">0</span>wMy<span class="number">0</span>xMiJ<span class="number">9</span>LHsiY<span class="number">29</span>kZSI<span class="number">6</span>IlJTMCIsInBhaWRVcFRvIjoiMjAxOC<span class="number">0</span>wMy<span class="number">0</span>xMiJ<span class="number">9</span>LHsiY<span class="number">29</span>kZSI<span class="number">6</span>IldTIiwicGFpZFVwVG<span class="number">8</span>iOiIyMDE<span class="number">4</span>LTAzLTEyIn<span class="number">0</span>seyJjb<span class="number">2</span>RlIjoiRFBOIiwicGFpZFVwVG<span class="number">8</span>iOiIyMDE<span class="number">4</span>LTAzLTEyIn<span class="number">0</span>seyJjb<span class="number">2</span>RlIjoiUkMiLCJwYWlkVXBUbyI<span class="number">6</span>IjIwMTgtMDMtMTIifSx<span class="number">7</span>ImNvZGUiOiJQUyIsInBhaWRVcFRvIjoiMjAxOC<span class="number">0</span>wMy<span class="number">0</span>xMiJ<span class="number">9</span>LHsiY<span class="number">29</span>kZSI<span class="number">6</span>IkRDIiwicGFpZFVwVG<span class="number">8</span>iOiIyMDE<span class="number">4</span>LTAzLTEyIn<span class="number">0</span>seyJjb<span class="number">2</span>RlIjoiREIiLCJwYWlkVXBUbyI<span class="number">6</span>IjIwMTgtMDMtMTIifSx<span class="number">7</span>ImNvZGUiOiJSTSIsInBhaWRVcFRvIjoiMjAxOC<span class="number">0</span>wMy<span class="number">0</span>xMiJ<span class="number">9</span>LHsiY<span class="number">29</span>kZSI<span class="number">6</span>IlBDIiwicGFpZFVwVG<span class="number">8</span>iOiIyMDE<span class="number">4</span>LTAzLTEyIn<span class="number">0</span>seyJjb<span class="number">2</span>RlIjoiQ<span class="number">0</span>wiLCJwYWlkVXBUbyI<span class="number">6</span>IjIwMTgtMDMtMTIifV<span class="number">0</span>sImhhc<span class="number">2</span>giOiI<span class="number">1</span>NDc<span class="number">2</span>MjU<span class="number">1</span>LzAiLCJncmFjZVBlcmlvZERheXMiOjAsImF<span class="number">1</span>dG<span class="number">9</span>Qcm<span class="number">9</span>sb<span class="number">25</span>nYXRlZCI<span class="number">6</span>ZmFsc<span class="number">2</span>UsImlzQXV<span class="number">0</span>b<span class="number">1</span>Byb<span class="number">2</span>xvbmdhdGVkIjpmYWxzZX<span class="number">0</span>=-gnfWktLzZjpomv<span class="number">7</span>IR<span class="number">5</span>yOFM<span class="number">70</span>UCC<span class="number">9</span>fk<span class="number">6</span>yskvEBVtKRSZLoC+Pys<span class="number">880</span>dERQOTe<span class="number">443</span>osbEJVLhpediv/tC<span class="number">9</span>mIwJLGLJlvPr<span class="number">1</span>Ps<span class="number">3</span>ruV<span class="number">5</span>ugk/l<span class="number">1</span>PPYJeLnfVfYWNeOlCkt+GJSlwRqvo<span class="number">24</span>rGwWnGXosiZ<span class="number">35</span>juVzQHXcIMU<span class="number">6</span>ekkyiMrHXWb<span class="number">9</span>xMlwlJ<span class="number">1</span>Bm<span class="number">0</span>KwIddOnxCGi<span class="number">5</span>q<span class="number">17</span>qFc<span class="number">4</span>ArDNqACUS<span class="number">9</span>FkeKEHjV<span class="number">5</span>+xAs<span class="number">7</span>uJBW/QMGDwHq/eu<span class="number">7</span>mm<span class="number">7</span>x<span class="number">5</span>QUUA<span class="number">3</span>VbQUqHn/rcECDuNoMpQ<span class="number">8</span>tzrpS<span class="number">1</span>vFGQkthfVPcHREVudCJ/<span class="number">9</span>bJaE<span class="number">9</span>lIoa<span class="number">55</span>rgxWUPiOQDicygCsRlAiZoeu/WNSvaA==-MIIEPjCCAiagAwIBAgIBBTANBgkqhkiG<span class="number">9</span>w<span class="number">0</span>BAQsFADAYMRYwFAYDVQQDDA<span class="number">1</span>KZXRQcm<span class="number">9</span>maWxlIENBMB<span class="number">4</span>XDTE<span class="number">1</span>MTEwMjA<span class="number">4</span>MjE<span class="number">0</span>OFoXDTE<span class="number">4</span>MTEwMTA<span class="number">4</span>MjE<span class="number">0</span>OFowETEPMA<span class="number">0</span>GA<span class="number">1</span>UEAwwGcHJvZDN<span class="number">5</span>MIIBIjANBgkqhkiG<span class="number">9</span>w<span class="number">0</span>BAQEFAAOCAQ<span class="number">8</span>AMIIBCgKCAQEAxcQkq+zdxlR<span class="number">2</span>mmRYBPzGbUNdMN<span class="number">6</span>OaXiXzxIWtMEkrJMO/<span class="number">5</span>oUfQJbLLuMSMK<span class="number">0</span>QHFmaI<span class="number">37</span>WShyxZcfRCidwXjot<span class="number">4</span>zmNBKnlyHodDij/<span class="number">78</span>TmVqFl<span class="number">8</span>nOeD<span class="number">5</span>+<span class="number">07</span>B<span class="number">8</span>VEaIu<span class="number">7</span>c<span class="number">3</span>E<span class="number">1</span>N+e<span class="number">1</span>doC<span class="number">6</span>wht<span class="number">4</span>I<span class="number">4</span>+IEmtsPAdoaj<span class="number">5</span>WCQVQbrI<span class="number">8</span>KeT<span class="number">8</span>M<span class="number">9</span>VcBIWX<span class="number">7</span>fD<span class="number">0</span>fhexfg<span class="number">3</span>ZRt<span class="number">0</span>xqwMcXGNp<span class="number">3</span>DdJHiO<span class="number">0</span>rCdU+Itv<span class="number">7</span>EmtnSVq<span class="number">9</span>jBG<span class="number">1</span>usMSFvMowR<span class="number">25</span>mju<span class="number">2</span>JcPFp<span class="number">1</span>+I<span class="number">4</span>ZI+FqgR<span class="number">8</span>gyG<span class="number">8</span>oiNDyNEoAbsR<span class="number">3</span>lOpI<span class="number">7</span>grUYSvkB/xVy/VoklPCK<span class="number">2</span>h<span class="number">0</span>f<span class="number">0</span>GJxFjnye<span class="number">8</span>NT<span class="number">1</span>PAywoyl<span class="number">7</span>RmiAVRE/EKwIDAQABo<span class="number">4</span>GZMIGWMAkGA<span class="number">1</span>UdEwQCMAAwHQYDVR<span class="number">0</span>OBBYEFGEpG<span class="number">9</span>oZGcfLMGNBkY<span class="number">7</span>SgHiMGgTcMEgGA<span class="number">1</span>UdIwRBMD+AFKOetkhnQhI<span class="number">2</span>Qb<span class="number">1</span>t<span class="number">4</span>Lm<span class="number">0</span>oFKLl/GzoRykGjAYMRYwFAYDVQQDDA<span class="number">1</span>KZXRQcm<span class="number">9</span>maWxlIENBggkA<span class="number">0</span>myxg<span class="number">7</span>KDeeEwEwYDVR<span class="number">0</span>lBAwwCgYIKwYBBQUHAwEwCwYDVR<span class="number">0</span>PBAQDAgWgMA<span class="number">0</span>GCSqGSIb<span class="number">3</span>DQEBCwUAA<span class="number">4</span>ICAQC<span class="number">9</span>WZuYgQedSuOc<span class="number">5</span>TOUSrRigMw<span class="number">4</span>/+wuC<span class="number">5</span>EtZBfvdl<span class="number">4</span>HT/<span class="number">8</span>vzMW/oUlIP<span class="number">4</span>YCvA<span class="number">0</span>XKyBaCJ<span class="number">2</span>iX+ZCDKoPfiYXiaSiH+HxAPV<span class="number">6</span>J<span class="number">79</span>vvouxKrWg<span class="number">2</span>XV<span class="number">6</span>ShFtPLP+<span class="number">0</span>gPdGq<span class="number">3</span>x<span class="number">9</span>R<span class="number">3</span>+kJbmAm<span class="number">8</span>w+FOdlWqAfJrLvpzMGNeDU<span class="number">14</span>YGXiZ<span class="number">9</span>bVzmIQbwrBA+c/F<span class="number">4</span>tlK/DV<span class="number">07</span>dsNExihqFoibnqDiVNTGombaU<span class="number">2</span>dDup<span class="number">2</span>gwKdL<span class="number">81</span>ua<span class="number">8</span>EIcGNExHe<span class="number">82</span>kjF<span class="number">4</span>zwfadHk<span class="number">3</span>bQVvbfdAwxcDy<span class="number">4</span>xBjs<span class="number">3</span>L<span class="number">4</span>raPLU<span class="number">3</span>yenSzr/OEur<span class="number">1</span>+jfOxnQSmEcMXKXgrAQ<span class="number">9</span>U<span class="number">55</span>gwjcOFKrgOxEdek/Sk<span class="number">1</span>VfOjvS+nuM<span class="number">4</span>eyEruFMfaZHzoQiuw<span class="number">4</span>IqgGc<span class="number">45</span>ohFH<span class="number">0</span>UUyjYcuFxxDSU<span class="number">9</span>lMCv<span class="number">8</span>qdHKm+wnPRb<span class="number">0</span>l<span class="number">9</span>l<span class="number">5</span>vXsCBDuhAGYD<span class="number">6</span>ss+Ga+aDY<span class="number">6</span>f/qXZuUCEUOH<span class="number">3</span>QUNbbCUlviSz<span class="number">6</span>+GiRnt<span class="number">1</span>kA<span class="number">9</span>N<span class="number">2</span>Qachl+<span class="number">2</span>yBfaqUqr<span class="number">8</span>h<span class="number">7</span>Z<span class="number">2</span>gsx<span class="number">5</span>LcIf<span class="number">5</span>kYNsqJ<span class="number">0</span>GavXTVyWh<span class="number">7</span>PYiKX<span class="number">4</span>bs<span class="number">354</span>ZQLUwwa/cG++<span class="number">2</span>+wNWP+HtBhVxMRNTdVhSm<span class="number">38</span>AknZlD+PTAsWGu<span class="number">9</span>GyLmhti<span class="number">2</span>EnVwGybSD<span class="number">2</span>Dxmhxk<span class="number">3</span>IPCkhKAK+pl<span class="number">0</span>eWYGZWG<span class="number">3</span>tJ<span class="number">9</span>mZ<span class="number">7</span>SowcXLWDFAk<span class="number">0</span>lRJnKGFMTggrWjV<span class="number">8</span>GYpw<span class="number">5</span>bq<span class="number">23</span>VmIqqDLgkNzuoog==</span><br></pre></td></tr></table></figure>
+
+<h4 id="更新-1"><a href="#更新-1" class="headerlink" title="更新"></a>更新</h4><p>现在很多激活码都失效了。</p>
+<p>教大家一个永久试用的方法：</p>
+<ul>
+<li><p>任何一个 JB 家的 IDE 中打开 Preference -&gt; Plugins -&gt; Setting（Installed 右边的小齿轮） -&gt; Manage Plugin Repositories</p>
+</li>
+<li><p>新增 <code>https://plugins.zhile.io</code></p>
+</li>
+<li><p>返回 Marketplace，搜索 <code>IDE Eval Reset</code>，安装并重启 IDE</p>
+</li>
+<li><p>打开后，菜单栏 Help 中，最下面就是 Eval Reset，可以设置每次重启自动刷新试用时间，即可无限期试用</p>
+</li>
+</ul>
+<h1 id="Editor"><a href="#Editor" class="headerlink" title="Editor"></a>Editor</h1><h2 id="Sublime"><a href="#Sublime" class="headerlink" title="Sublime"></a>Sublime</h2><p>对于 RD 同学来说，习惯、顺手的文本编辑器也是非常重要的一个工具。</p>
+<p>我一直用 Sublime，用的时间也比较长了，感觉还不错。</p>
+<p>Sublime 的官网地址：<a target="_blank" rel="noopener" href="https://www.sublimetext.com/">https://www.sublimetext.com/</a>。</p>
+<p>去官网下载，安装即可。</p>
+<h2 id="Visual-Studio-Code"><a href="#Visual-Studio-Code" class="headerlink" title="Visual Studio Code"></a>Visual Studio Code</h2><h1 id="VIrtual-Machine"><a href="#VIrtual-Machine" class="headerlink" title="VIrtual Machine"></a>VIrtual Machine</h1><h2 id="VMware-Fusion"><a href="#VMware-Fusion" class="headerlink" title="VMware Fusion"></a>VMware Fusion</h2><h2 id="Mac-Kali-Lnux-Win10"><a href="#Mac-Kali-Lnux-Win10" class="headerlink" title="Mac + Kali Lnux + Win10"></a>Mac + Kali Lnux + Win10</h2><h1 id="Browser"><a href="#Browser" class="headerlink" title="Browser"></a>Browser</h1><h2 id="FireFox"><a href="#FireFox" class="headerlink" title="FireFox"></a>FireFox</h2><h3 id="FireFox-addones"><a href="#FireFox-addones" class="headerlink" title="FireFox addones"></a>FireFox addones</h3><h2 id="Chrome"><a href="#Chrome" class="headerlink" title="Chrome"></a>Chrome</h2><h3 id="Chrome-addones"><a href="#Chrome-addones" class="headerlink" title="Chrome addones"></a>Chrome addones</h3><h2 id="Safari"><a href="#Safari" class="headerlink" title="Safari"></a>Safari</h2><h1 id="VPN"><a href="#VPN" class="headerlink" title="VPN"></a>VPN</h1><p>Shadowsocks</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/shadowsocks/shadowsocks-gui">https://github.com/shadowsocks/shadowsocks-gui</a></p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Tool-best-Mac.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Mac/" rel="tag">Mac</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%99%E7%A8%8B/" rel="tag">教程</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Blockchain-Distributed-issues.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            区块链系列——分布式核心问题
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Fabric-Architecture-and-Design.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Fabric 项目の架构&amp;设计</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

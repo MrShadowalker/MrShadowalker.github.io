@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Valar Morghulis" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    CTF 盘点系列——脑洞大开的编码和加密 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-CTF-Coding-and-Encryption"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  CTF 盘点系列——脑洞大开的编码和加密
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/CTF-Coding-and-Encryption.html" class="article-date">
+  <time datetime="2017-11-07T14:47:18.000Z" itemprop="datePublished">2017-11-07</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/">信息安全</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">14.7k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">61 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>玩过 CTF 的小伙伴会经常遇到类似这样的问题：dalao 这是啥编码方式啊？怎么解密啊？</p>
+<p>其实 CTF 中的脑洞密码题，通常是费现代加密方式，一般都是各种古典密码的变形，一般出题者会对密文进行一些处理，但都会留下不少线索，当然也需要参赛者对于各种编码方式有所了解，这样更有利于快速入手解密，结合一定的脑洞，拿到 Flag 就 so easy 了~</p>
+<span id="more"></span>
+
+<h1 id="编码方式汇总"><a href="#编码方式汇总" class="headerlink" title="编码方式汇总"></a>编码方式汇总</h1><h2 id="常见编码"><a href="#常见编码" class="headerlink" title="常见编码"></a>常见编码</h2><p>ASCii 编码</p>
+<p>Base64/32/16 编码</p>
+<p>shellcode 编码</p>
+<p>Quoted-printable 编码</p>
+<p>XXencode 编码</p>
+<p>UUencode 编码</p>
+<p>URL 编码</p>
+<p>Unicode 编码</p>
+<p>Escape/Unescape 编码</p>
+<p>HTML 实体编码</p>
+<p>Tap Code 敲击码</p>
+<p>Morse Code 摩尔斯电码</p>
+<h2 id="各种文本加密"><a href="#各种文本加密" class="headerlink" title="各种文本加密"></a>各种文本加密</h2><h3 id="换位加密"><a href="#换位加密" class="headerlink" title="换位加密"></a>换位加密</h3><p>Rail-fence Cipher 栅栏密码</p>
+<p>Curve Cipher 曲路密码</p>
+<p>Columnar Transposition Cipher 列位移加密</p>
+<h3 id="替换加密"><a href="#替换加密" class="headerlink" title="替换加密"></a>替换加密</h3><p>Atbash Cipher 埃特巴什码</p>
+<p>Caesar Cipher 凯撒密码</p>
+<p>ROT5/13/18/47</p>
+<p>Simple Substitution Cipher 简单换位密码</p>
+<p>Hill Cipher 希尔密码</p>
+<p>Pigpen Cipher 猪圈密码</p>
+<p>Polybius Square Cipher 波利比奥斯方阵密码</p>
+<p>夏多密码（曲折加密）</p>
+<p>Playfair Cipher 普莱费尔密码</p>
+<p>Vigenere Cipher 维吉尼亚密码</p>
+<p>Autokey Cipher 自动密钥密码</p>
+<p>Beaufort Cipher 波弗特密码</p>
+<p>Running Key Cipher 滚动密钥密码</p>
+<p>Porta Cipher</p>
+<p>Homophonic Substitution Cipher 同音替换密码</p>
+<p>Affine Cipher 仿射密码</p>
+<p>Baconian Cipher 培根密码</p>
+<p>ADFG/VX Cipher ADFG 和 ADFGVX 密码</p>
+<p>Bifid Cipher 双密码</p>
+<p>Trifid Cipher 三分密码</p>
+<p>Four-Square Cipher 四方密码</p>
+<p>Checkerboard Cipher 棋盘密码</p>
+<h3 id="其他有趣的机械密码"><a href="#其他有趣的机械密码" class="headerlink" title="其他有趣的机械密码"></a>其他有趣的机械密码</h3><p>恩尼格玛密码</p>
+<p>代码混淆加密</p>
+<p>asp 混淆加密</p>
+<p>php 混淆加密</p>
+<p>css/js 混淆加密</p>
+<p>VBScript.Encode 混淆加密</p>
+<p>ppencode</p>
+<p>rrencode</p>
+<p>jjencode/aaencode</p>
+<p>JSfuck</p>
+<p>jother</p>
+<p>brainfuck</p>
+<h2 id="常见编码-1"><a href="#常见编码-1" class="headerlink" title="常见编码"></a>常见编码</h2><h3 id="ASCII-编码"><a href="#ASCII-编码" class="headerlink" title="ASCII 编码"></a>ASCII 编码</h3><p>ASCII 编码大致可以分作三部分组成：</p>
+<p>第一部分是：ASCII 非打印控制字符（参详 ASCII 码表中 0-31）；</p>
+<p>第二部分是：ASCII 打印字符，也就是 CTF 中常用到的转换；</p>
+<p>第三部分是：扩展 ASCII 打印字符(第一第三部分详见 <a href="http://www.asciima.com/" rel="nofollow,noindex" target="_blank">ASCII码表</a> 解释)。</p>
+<p>编码转换示例</p>
+<p>源文本：</p>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">The quick <span class="keyword">brown </span>fox <span class="keyword">jumps </span>over the lazy dog</span><br></pre></td></tr></table></figure>
+
+<p>ASCII编码对应十进制：</p>
+<pre>#!shell
+84 104 101 32 113 117 105 99 107 32 98 114 111 119 110 32 102 111 120 32 106 117 109 112 115 32 111 118 101 114 32 116 104 101 32 108 97 122 121 32 100 111 103</pre>
+
+<p>对应可以转换成二进制，八进制，十六进制等。</p>
+<h3 id="Base64-32-16-编码"><a href="#Base64-32-16-编码" class="headerlink" title="Base64/32/16 编码"></a>Base64/32/16 编码</h3><p>base64、base32、base16 可以分别编码转化 8 位字节为 6 位、5 位、4 位。16，32，64 分别表示用多少个字符来编码，这里我注重介绍 base64。</p>
+<p>Base64 常用于在通常处理文本数据的场合，表示、传输、存储一些二进制数据。包括 MIME 的 email，email via MIME，在 XML 中存储复杂数据。</p>
+<p>编码原理：Base64编码要求把3个8位字节转化为4个6位的字节，之后在6位的前面补两个0，形成8位一个字节的形式，6位2进制能表示的最大数是2的6次方是64，这也是为什么是64个字符(A-Z,a-z，0-9，+，/这64个编码字符，=号不属于编码字符，而是填充字符)的原因，这样就需要一张映射表，如下：</p>
+<p>举个例子(base64)：</p>
+<p>源文本：T h e</p>
+<p>对应ascii码:84 104 101</p>
+<p>8位binary：01010100 01101000 01100101</p>
+<p>6位binary：010101 000110 100001 100101</p>
+<p>高位补0：000010101 00000110 00100001 00100101</p>
+<p>对应ascii码：21 6 33 37</p></p>
+<p>查表：V G h l</p>
+</div>
+<p>利用Python base64模块，我们分别可以这样加密解密base64 32 16：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_4"> </p>
+<h3>3.shellcode编码</h3>
+<p> 源文本： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p>编码后：</p>
+<pre>#!shell
+\x54\x68\x65\x7f\x71\x75\x69\x63\x6b\x7f\x62\x72\x6f\x77\x6e\x7f\x66\x6f\x78\x7f\x6a\x75\x6d\x70\x73\x7f\x6f\x76\x65\x72\x7f\x74\x68\x65\x7f\x6c\x61\x7a\x79\x7f\x64\x6f\x67</pre>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_5"> </p>
+<h3>4.Quoted-printable 编码</h3>
+<p> 它是多用途互联网邮件扩展（MIME) 一种实现方式。有时候我们可以邮件头里面能够看到这样的编码，编码原理 <a href="http://blog.chacuo.net/494.html" rel="nofollow,noindex" target="_blank">参考</a> 。 </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_6"> </p>
+<p> 源文本： <code>敏捷的棕色狐狸跳过了懒惰的狗</code> </p>
+<p>编码后：</p>
+<pre>#!shell
+=E6=95=8F=E6=8D=B7=E7=9A=84=E6=A3=95=E8=89=B2=E7=8B=90=E7=8B=B8=E8=B7=B3=E8
+=BF=87=E4=BA=86=E6=87=92=E6=83=B0=E7=9A=84=E7=8B=97</pre>
+<p> 编码解码 <a href="http://www.mxcz.net/tools/QuotedPrintable.aspx" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<h3>5.XXencode编码</h3>
+<p>XXencode将输入文本以每三个字节为单位进行编码。如果最后剩下的资料少于三个字节，不够的部份用零补齐。这三个字节共有24个Bit，以6bit为单位分为4个组，每个组以十进制来表示所出现的数值只会落在0到63之间。以所对应值的位置字符代替。它所选择的可打印字符是：+-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz，一共64个字符。跟base64打印字符相比，就是UUencode多一个“-” 字符，少一个”/” 字符。</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_7"> </p>
+<p> 源文本： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p> 编码后： <code>hJ4VZ653pOKBf647mPrRi64NjS0-eRKpkQm-jRaJm65FcNG-gMLdt64FjNkc+</code> </p>
+<p> 编码解码 <a href="http://web.chacuo.net/charsetxxencode" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<h3>6.UUencode编码</h3>
+<p>UUencode是一种二进制到文字的编码，最早在unix 邮件系统中使用，全称：Unix-to-Unix encoding，UUencode将输入文本以每三个字节为单位进行编码，如果最后剩下的资料少于三个字节，不够的部份用零补齐。三个字节共有24个Bit，以6-bit为单位分为4个组，每个组以十进制来表示所出现的字节的数值。这个数值只会落在0到63之间。然后将每个数加上32，所产生的结果刚好落在ASCII字符集中可打印字符（32-空白…95-底线）的范围之中。</p>
+<p> 源文本： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p> 编码后： <code>M5&amp;AE('%U:6-K(&amp;)R;W=N(&amp;9O&gt;"!J=6UP&lt;R!O=F5R('1H92!L87IY(&amp;1O9PH*</code> </p>
+<p> 编码解码 <a href="http://web.chacuo.net/charsetuuencode" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<h3>7.URL编码</h3>
+<p>url编码又叫百分号编码，是统一资源定位(URL)编码方式。URL地址（常说网址）规定了常用地数字，字母可以直接使用，另外一批作为特殊用户字符也可以直接用（/,:@等），剩下的其它所有字符必须通过%xx编码处理。 现在已经成为一种规范了，基本所有程序语言都有这种编码，如js：有encodeURI、encodeURIComponent，PHP有 urlencode、urldecode等。编码方法很简单，在该字节ascii码的的16进制字符前面加%. 如 空格字符，ascii码是32，对应16进制是'20'，那么urlencode编码结果是:%20。</p>
+<p> 源文本： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p>编码后：</p>
+<pre>#!shell
+%54%68%65%20%71%75%69%63%6b%20%62%72%6f%77%6e%20%66%6f%78%20%6a%75%6d%70%73%20%6f%76%65%72%20%74%68%65%20%6c%61%7a%79%20%64%6f%67</pre>
+<p> 编码解码 <a href="http://web.chacuo.net/charseturlencode" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<h4>8.Unicode编码</h4>
+<p>Unicode编码有以下四种编码方式：</p>
+<p> 源文本： <code>The</code> </p>
+<p> &amp;#x [Hex]： <code>&amp;#x0054;&amp;#x0068;&amp;#x0065;</code> </p>
+<p> &amp;# [Decimal]： <code>&amp;#00084;&amp;#00104;&amp;#00101;</code> </p>
+<p> \U [Hex]： <code>\U0054\U0068\U0065</code> </p>
+<p> \U+ [Hex]： <code>\U+0054\U+0068\U+0065</code> </p>
+<p> 编码解码 <a href="http://www.mxcz.net/tools/Unicode.aspx" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<h3>9.Escape/Unescape编码</h3>
+<p>Escape/Unescape加密解码/编码解码,又叫%u编码，采用UTF-16BE模式， Escape编码/加密,就是字符对应UTF-16 16进制表示方式前面加%u。Unescape解码/解密，就是去掉"%u"后，将16进制字符还原后，由utf-16转码到自己目标字符。如：字符“中”，UTF-16BE是：“6d93”，因此Escape是“%u6d93”。</p>
+<p> 源文本： <code>The</code> </p>
+<p> 编码后： <code>%u0054%u0068%u0065</code> </p>
+<h3>10.HTML实体编码</h3>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_8"> </p>
+<p> 完整编码手册 <a href="http://www.w3school.com.cn/tags/html_ref_entities.html" rel="nofollow,noindex" target="_blank">参考</a> </p>
+<h3>11.敲击码</h3>
+<p>敲击码(Tap code)是一种以非常简单的方式对文本信息进行编码的方法。因该编码对信息通过使用一系列的点击声音来编码而命名，敲击码是基于5×5方格波利比奥斯方阵来实现的，不同点是是用K字母被整合到C中。</p>
+<p>敲击码表:</p>
+<pre>#!shell
+  1  2  3  4  5
+1 A  B C/K D  E
+2 F  G  H  I  J 
+3 L  M  N  O  P
+4 Q  R  S  T  U
+5 V  W  X  Y  Z</pre>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_9"> </p>
+<h3>12.莫尔斯电码</h3>
+<p>摩尔斯电码(Morse Code)是由美国人萨缪尔·摩尔斯在1836年发明的一种时通时断的且通过不同的排列顺序来表达不同英文字母、数字和标点符号的信号代码，摩尔斯电码主要由以下5种它的代码组成：</p>
+<ol>
+<li>点（.）</li>
+<li>划（-）</li>
+<li>每个字符间短的停顿（通常用空格表示停顿）</li>
+<li> 每个词之间中等的停顿（通常用 <code>/</code> 划分） </li>
+<li>以及句子之间长的停顿</li>
+</ol>
+<p>摩尔斯电码字母和数字对应表：</p>
+<pre>#!shell
+A  .-    N  -.    .  .-.-.-  +  .-.-.    1  .----
+B  -...  O  ---   ,  --..--  _  ..--.-   2  ..---
+C  -.-.  P  .--.  :  ---...  $  ...-..-  3  ...--
+D  -..   Q  --.-  "  .-..-.  &amp;  .-...    4  ....-
+E  .     R  .-.   '  .----.  /  -..-.    5  .....
+F  ..-.  S  ...   !  -.-.--              6  -....
+G  --.   T  -     ?  ..--..              7  --...
+H  ....  U  ..-   @  .--.-.              8  ---..
+I  ..    V  ...-  -  -....-              9  ----.
+J  .---  W  .--   ;  -.-.-.              0  -----
+K  -.-   X  -..-  (  -.--.           
+L  .-..  Y  -.--  )  -.--.-          
+M  --    Z  --..  =  -...-</pre>
+<p> 源文本: <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p>编码后:</p>
+<pre>#!shell
+- .... . / --.- ..- .. -.-. -.- / -... .-. --- .-- -. / ..-. --- -..- / .--- ..- -- .--. ... / --- ...- . .-. / - .... . / .-.. .- --.. -.-- / -.. --- --.</pre>
+<p> 在线编码解码 <a href="http://rumkin.com/tools/cipher/morse.php" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<p> 摩尔斯电码除了能对字母数字编码以外还对一些标点符号，非英语字符进行了编码，而且还有一些特定意义的组合称为特殊符号，比如 <code>·-·-·-·-·-</code> 表达的意思是调用信号，表示“我有消息发送”。如果你感兴趣可以参考 <a href="https://zh.wikipedia.org/wiki/%E6%91%A9%E5%B0%94%E6%96%AF%E7%94%B5%E7%A0%81" rel="nofollow,noindex" target="_blank">WiKi</a> 。 </p>
+<h3>13.编码的故事</h3>
+<p> 推荐大家去看 <a href="http://wenku.baidu.com/link?url=kTrscV5j5AsZq5zvBpr2jdkEJW8LqgrkkKsddwWA3YlXmgeqh_be95nMxqbFPOYoVBVy3A6lutlcXVDYLdZ-3iRawJpc0VZ71as07FnxtGS" rel="nofollow,noindex" target="_blank">编码的故事</a> 一文。 </p>
+<h2>各种文本加密</h2>
+<p>文本加密可以将正常文本内容打乱为不可连读的文字或符号(汉字 数字 字母 音乐符号 国际音标 盲文 韩文 日文 傣文 彝文 箭头符号 花朵符号 俄文)，换行等格式信息也会被清除，达到加密的作用。在进行文本加密时可以设定一个密码，这样只有知道密码的人才能解密文本。密码可以是数字、字母和下划线，最多九位。</p>
+<p>加密示例：</p>
+<p> 源文本： <code>敏捷的棕色狐狸跳过了懒惰的狗</code> </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_10"> </p>
+<p> 编码解码 <a href="http://www.qqxiuzi.cn/bianma/wenbenjiami.php" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<h2>换位加密</h2>
+<h3>1.栅栏密码</h3>
+<h4>（1）介绍</h4>
+<p>栅栏密码(Rail-fence Cipher)就是把要加密的明文分成N个一组，然后把每组的第1个字符组合，每组第2个字符组合...每组的第N(最后一个分组可能不足N个)个字符组合，最后把他们全部连接起来就是密文，这里以2栏栅栏加密为例。</p>
+<p> 明文： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p> 去空格： <code>Thequickbrownfoxjumpsoverthelazydog</code> </p>
+<p> 分组： <code>Th eq ui ck br ow nf ox ju mp so ve rt he la zy do g</code> </p>
+<p> 第一组： <code>Teucbonojmsvrhlzdg</code> </p>
+<p> 第二组： <code>hqikrwfxupoeteayo</code> </p>
+<p> 密文： <code>Teucbonojmsvrhlzdghqikrwfxupoeteayo</code> </p>
+<p> 加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/rail-fence/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>2.曲路密码</h3>
+<p>曲路密码(Curve Cipher)是一种换位密码，需要事先双方约定密钥(也就是曲路路径)。</p>
+<p> 明文： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p>填入5行7列表(事先约定填充的行列数)</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_11"> </p>
+<p>加密的回路线(事先约定填充的行列数)</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_12"> </p>
+<p> 密文： <code>gesfc inpho dtmwu qoury zejre hbxva lookT</code> </p>
+<h3>3.列移位密码</h3>
+<h4>（1）介绍</h4>
+<p>列移位密码(Columnar Transposition Cipher)是一种比较简单，易于实现的换位密码，通过一个简单的规则将明文打乱混合成密文。下面我们以明文 The quick brown fox jumps over the lazy dog，密钥 how are u为例：</p>
+<p>填入5行7列表(事先约定填充的行列数，如果明文不能填充完表格可以约定使用某个字母进行填充)</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_11"> </p>
+<p> 密钥： <code>how are u</code> </p>
+<p>按how are u在字母表中的出现的先后顺序进行编号，我们就有a为1,e为2，h为3，o为4，r为5，u为6，w为7，所以先写出a列，其次e列，以此类推写出的结果便是密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_13"> </p>
+<p> 密文： <code>qoury inpho Tkool hbxva uwmtd cfseg erjez</code> </p>
+<p> 这里提供一个行列数相等的填充规则列移位密码加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/columnar-transposition/" rel="nofollow,noindex" target="_blank">链接</a> </p>
+<p> 另外由列移位密码变化来的密码也有其他的，比如 <a href="http://www.thonky.com/kryptos/amsco-cipher" rel="nofollow,noindex" target="_blank">Amsco密码</a> (Amsco Cipher)和 <a href="http://www.thonky.com/kryptos/cadenus-cipher" rel="nofollow,noindex" target="_blank">Cadenus密码</a> (Cadenus Cipher)。 </p>
+<h2>替换加密</h2>
+<h3>1.埃特巴什码</h3>
+<h4>（1）介绍</h4>
+<p>埃特巴什码(Atbash Cipher)是一种以字母倒序排列作为特殊密钥的替换加密，也就是下面的对应关系：</p>
+<pre>ABCDEFGHIJKLMNOPQRSTUVWXYZ
+ZYXWVUTSRQPONMLKJIHGFEDCBA</pre>
+<p> 明文： <code>the quick brown fox jumps over the lazy dog</code> </p>
+<p> 密文： <code>gsv jfrxp yildm ulc qfnkh levi gsv ozab wlt</code> </p>
+<p> 加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/atbash-cipher/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>2.凯撒密码</h3>
+<h4>（1）介绍</h4>
+<p> 凯撒密码(Caesar Cipher或称恺撒加密、恺撒变换、变换加密、位移加密)是一种替换加密，明文中的所有字母都在字母表上向后（或向前）按照一个固定数目进行偏移后被替换成密文。例，当偏移量是3的时候，所有的字母A将被替换成D，B变成E，以此类推，更多 <a href="https://en.wikipedia.org/wiki/Caesar_cipher" rel="nofollow,noindex" target="_blank">参考</a> 。 </p>
+<p>加密实例：</p>
+<p> 明文： <code>The quick brown fox jumps over the lazy dog</code> </p>
+<p>偏移量：1</p>
+<p> 密文： <code>Uif rvjdl cspxo gpy kvnqt pwfs uif mbaz eph</code> </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_14"> </p>
+<p> 你也可以使用Python的pycipher模块来加解密，如果提示没有这个模块可以通过 <code>pip install pycipher</code> 或者其他方式来安装pycipher模块。 </p>
+<pre>#!python
+&gt;&gt;&gt; from pycipher import Caesar
+&gt;&gt;&gt; Caesar(key=1).encipher('The quick brown fox jumps over the lazy dog')
+'UIFRVJDLCSPXOGPYKVNQTPWFSUIFMBAZEPH'
+&gt;&gt;&gt; Caesar(key=1).decipher('UIFRVJDLCSPXOGPYKVNQTPWFSUIFMBAZEPH')
+'THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG'</pre>
+<p>参考表(这里是向后移位加密，向前移位解密)：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_15"> </p>
+<p> 加密解密 <a href="http://planetcalc.com/1434/" rel="nofollow,noindex" target="_blank">链接</a> (这个网站可以将26种情况一次性列举出来，比较方便) </p>
+<h3>3.ROT5/13/18/47</h3>
+<h4>（1）介绍</h4>
+<p>ROT5/13/18/47是一种简单的码元位置顺序替换暗码。此类编码具有可逆性，可以自我解密，主要用于应对快速浏览，或者是机器的读取。</p>
+<div>
+<p>ROT5 是 rotate by 5 places 的简写，意思是旋转5个位置，其它皆同。下面分别说说它们的编码方式：</p>
+<p>ROT5：只对数字进行编码，用当前数字往前数的第5个数字替换当前数字，例如当前为0，编码后变成5，当前为1，编码后变成6，以此类推顺序循环。</p>
+<p>ROT13：只对字母进行编码，用当前字母往前数的第13个字母替换当前字母，例如当前为A，编码后变成N，当前为B，编码后变成O，以此类推顺序循环。</p>
+<p>ROT18：这是一个异类，本来没有，它是将ROT5和ROT13组合在一起，为了好称呼，将其命名为ROT18。</p>
+<p>ROT47：对数字、字母、常用符号进行编码，按照它们的ASCII值进行位置替换，用当前字符ASCII值往前数的第47位对应字符替换当前字符，例如当前为小写字母z，编码后变成大写字母K，当前为数字0，编码后变成符号_。用于ROT47编码的字符其ASCII值范围是33－126，具体可参考ASCII编码，下面以rot13以例。</p>
+</div>
+<p> 明文： <code>the quick brown fox jumps over the lazy dog</code> </p>
+<p> 密文： <code>gur dhvpx oebja sbk whzcf bire gur ynml qbt</code> </p>
+<p> <a href="http://www.qqxiuzi.cn/bianma/ROT5-13-18-47.php" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>4.简单替换密码</h3>
+<h4>（1）介绍</h4>
+<p>简单换位密码(Simple Substitution Cipher)加密方式是以每个明文字母被与之唯一对应且不同的字母替换的方式实现的，它不同于恺撒密码，因为密码字母表的字母不是简单的移位，而是完全是混乱的。 比如：</p>
+<pre>#!shell
+明文字母 : abcdefghijklmnopqrstuvwxyz
+明文字母 : phqgiumeaylnofdxjkrcvstzwb</pre>
+<p> 明文： <code>the quick brown fox jumps over the lazy dog</code> </p>
+<p> 密文： <code>cei jvaql hkdtf udz yvoxr dsik cei npbw gdm</code> </p>
+<h4>（2）破解</h4>
+<p> 当密文数据足够多时这种密码我们可以通过字频分析方法破解或其他方法破解，比较好的在线词频分析网站 <a href="http://quipqiup.com/index.php" rel="nofollow,noindex" target="_blank">http://quipqiup.com/index.php</a> (翻= =墙)，这里推荐一篇通过"爬山算法"来破解简单替换密码 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-simple-substitution-cipher/" rel="nofollow,noindex" target="_blank">文章</a> ，基于文中的算法实现的工具来破解示例。 </p>
+<p>密文：</p>
+<pre>#!shell
+pmpafxaikkitprdsikcplifhwceigixkirradfeirdgkipgigudkcekiigpwrpucikceiginasikwduearrxiiqepcceindgmieinpwdfprduppcedoikiqiasafmfddfipfgmdafmfdteiki</pre>
+<p>解密：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_16"> </p>
+<p>(ps:score值越小越准确)</p>
+<p> 密钥： <code>PHQGIUMEAVLNOFDXBKRCZSTJWY</code> </p>
+<p>明文：</p>
+<pre>#!shell
+AGAINPIERREWASOVERTAKENBYTHEDEPRESSIONHESODREADEDFORTHREEDAYSAFTERTHEDELIVERYOFHISSPEECHATTHELODGEHELAYONASOFAATHOMERECEIVINGNOONEANDGOINGNOWHERE</pre>
+<p>将明文转换成可读句子：</p>
+<p>again pierre was over taken by the depression he so dreaded for three day safter the delivery of his speech at the lodge he lay on a sofa at home receiving no one and going no where</p>
+<h3>5.希尔密码</h3>
+<h4>（1）介绍</h4>
+<p> 希尔密码(Hill Cipher)是基于线性代数多重代换密码，由Lester S. Hill在1929年发明。每个字母转换成26进制数字：A=0, B=1, C=2...Z=25一串字母当成n维向量，跟一个n×n的矩阵相乘，再将得出的结果MOD26。更多 <a href="https://en.wikipedia.org/wiki/Hill_cipher" rel="nofollow,noindex" target="_blank">参考</a> </p>
+<h4>（2）加密</h4>
+<p> 明文： <code>ACT</code> </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_17"> </p>
+<p>明文对应矩阵：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_18"> </p>
+<p> 加密密钥： <code>GYBNQKURP</code> </p>
+<p>加密矩阵：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_19"> </p>
+<p>计算过程：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_20"> </p>
+<p> 密文： <code>FIN</code> </p>
+<h4>（3）解密</h4>
+<p> 密文： <code>FIN</code> </p>
+<p>计算加密矩阵的逆矩阵：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_21"> </p>
+<p>解密计算：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_22"> </p>
+<p> 明文： <code>ACT</code> </p>
+<p>至于证明和求逆可以参考线性代数知识。</p>
+<h4>（4）破解</h4>
+<p>密码分析一门破解编码和密码的艺术。当我们尝试去攻破希尔密码你会发现频率分析实际上没有什么用处，特别在密钥长度增多的情况下。对于较长的二元矩阵（2×2的希尔密码）频率分析可能可能会有帮助，但是对于较短的密文分析是没有实际作用的。</p>
+<p> 这里推荐一篇关于用 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-hill-cipher/" rel="nofollow,noindex" target="_blank">已知明文样本攻击的方式破解希尔密码</a> 的文章，基础的希尔密码用 <a href="https://en.wikipedia.org/wiki/Known-plaintext_attack" rel="nofollow,noindex" target="_blank">已知明文攻击</a> 的方式是可攻破的，由于加密完全是线性的，所以攻击者在截取到部分明文/密文字符对可以轻松建立一个线性系统，轻松搞定希尔密码，如果不能完全确定线性系统，那么只需要添加部分明文/密文对即可。已知明文攻击时最好的方式去破解写入密码，如果明文一无所知，那就进行推测猜出部分明文。基于已知明文样本攻击的方式破解希尔密码的算法的实现工具破解示例： </p>
+<p>密文：</p>
+<pre>#!shell
+XUKEXWSLZJUAXUNKIGWFSOZRAWURORKXAOSLHROBXBTKCMUWDVPTFBLMKEFVWMUXTVTWUIDDJVZKBRMCWOIWYDXMLUFPVSHAGSVWUFWORCWUIDUJCNVTTBERTUNOJUZHVTWKORSVRZSVVFSQXOCMUWPYTRLGBMCYPOJCLRIYTVFCCMUWUFPOXCNMCIWMSKPXEDLYIQKDJWIWCJUMVRCJUMVRKXWURKPSEEIWZVXULEIOETOOFWKBIUXPXUGOWLFPWUSCH</pre>
+<p>解密：</p>
+<p> 解密 <a href="http://bobao.360.cn/ctf/learning/136.html" rel="nofollow,noindex" target="_blank">脚本实例</a> </p>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/hill-cipher/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>6.猪圈密码</h4>
+<h4>（1）介绍</h4>
+<p> 猪圈密码(Pigpen Cipher或称九宫格密码、朱高密码、共济会密码或共济会员密码)，是一种以格子为基础的简单替代式密码。更多 <a href="https://en.wikipedia.org/wiki/Pigpen_cipher" rel="nofollow,noindex" target="_blank">参考</a> </p>
+<p>明文字母和对应密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_23"> </p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p>密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_24"> </p>
+<p> 在线加密 <a href="http://www.simonsingh.net/The_Black_Chamber/pigpen.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（2）变种</h4>
+<p>圣堂武士密码(Templar Cipher)是共济会的“猪圈密码”的一个变种，一直被共济会圣殿骑士用。</p>
+<p>明文字母和对应密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_25"> </p>
+<h4>（3）其他变种</h4>
+<p>明文字母和对应密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_26"> </p>
+<p>明文字母和对应密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_27"> </p>
+<p>明文字母和对应密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_28"> </p>
+<h3>7.波利比奥斯方阵密码</h3>
+<h4>（1）介绍</h4>
+<p> 波利比奥斯方阵密码（Polybius Square Cipher或称波利比奥斯棋盘）是棋盘密码的一种，是利用波利比奥斯方阵进行加密的密码方式，简单的来说就是把字母排列好，用坐标(行列)的形式表现出来。字母是密文，明文便是字母的坐标。更多 <a href="https://en.wikipedia.org/wiki/Polybius_square" rel="nofollow,noindex" target="_blank">参考</a> </p>
+<p>常见的排布方式：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_29"> </p>
+<p>加密实例：</p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 密文： <code>442315 4145241325 1242345233 213453 2445323543 442315 31115554 143422</code> </p>
+<h3>8.夏多密码(曲折加密)</h3>
+<h4>（1）介绍</h4>
+<p>夏多密码是作者麦克斯韦·格兰特在中篇小说《死亡之链》塑造夏多这一英雄人物中所自创的密码，如下图所示：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_30"> </p>
+<div>
+<p>注意，在以上所示的字母表密钥的底部，列有四个附加符号1，2，3，4.他们可以放在密文中的任何地方。每个附加符号指示，如何转动写有密文的纸张，再进行后续的加密或解密操作，直到出现另一个附加符号。可以把每个附加符号中的那根线看作是指示针，它指示了纸张的上端朝上，朝右，朝下，朝左。比如说：如果出现符号3，那么纸张就应该转动180度，使其上端朝下； 符号2表示纸张上端朝右，依次类推。</p>
+</div>
+<p> 源文本： <code>I AM IN DANGER SEND HELP(我有危险，速来增援)</code> </p>
+<p>密文：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_31"> </p>
+<h3>9.普莱菲尔密码</h3>
+<div>
+<p>普莱菲尔密码(Playfair Cipher)是第一种用于实际的双字替换密码，用双字加密取代了简单代换密码的单字加密，很明显这样使得密文更难破译，因为使用简单替换密码的频率分析基本没有什么作用，虽然频率分析，通常仍然可以进行，但是有25×25=625种可能而不是25种可能，可以分为三个步骤，即编制密码表、整理明文、编写译文，下面我们以明文：</p>
+<p> <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> 和密钥 <code>CULTURE</code> 为例来讲解。普莱菲尔密码又称为单方密码(Single Cipher)之后又出现它的升级版Double Playfair，也就是 <a href="https://en.wikipedia.org/wiki/Two-square_cipher" rel="nofollow,noindex" target="_blank">二方密码</a> (Two-square Cipher),在之后又有四方密码(Four-square Cipher) </p>
+</div>
+<h4>(1)编制密码表</h4>
+<p> 1.整理密钥字母 <code>C U L T U R E</code> ，去掉后面重复的字母得到： <code>C U L T R E</code> </p>
+<p>2.用上一步得到的字母自上而下来填补5乘5方表的纵列（也可横排），之后的空白按照相同的顺序用字母表中剩余的字母依次填补完整，得到如下的方格:</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_32"> </p>
+<div>
+<p>这一步需要注意的要点：整理密钥字母时，如果出现"Z"，则需要去除，因为在英文里"Z"的使用频率最低，相应的如果是德文，则需将"I"与"J"当作一个字母来看待，而法语则去掉"W"或"K"。</p>
+</div>
+<h4>(2)整理明文</h4>
+<p> 我们要遵循的原则是“两个一组”，得到是若干个两两成对的字母段，用到的是明文 <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> 与字母" <code>X</code> "： </p>
+<p> 1.将明文两两一组按顺序排开，得到： <code>TH EQ UI CK BR OW NF OX JU MP SO VE RT HE LA ZY DO G</code> </p>
+<p> 2.对于末尾的单个字母要加上一个" <code>X</code> "使之成对： <code>TH EQ UI CK BR OW NF OX JU MP SO VE RT HE LA ZY DO GX</code> </p>
+<div>
+<p> 这一步需要注意的要点：对于相连字母相同者，每个后面都需要加" <code>X</code> "，例如 <code>TOMORROW</code> ，需要写成： <code>TO MO RX RX OW</code> 。 </p>
+</div>
+<h4>(3)编写密文</h4>
+<p>我们要得到的密文，当然，对于每个字母对，要严格遵循如下的原则：</p>
+<div>
+<p> 1.如果两个字母在同一行则要用它右邻的字母替换，如果已在最右边，则用该行最左边的替换，如明文为" <code>CE</code> "，依据上表，应替换为" <code>EG</code> "； </p>
+<p> 2.如果两个字母在同一列则要用它下边的字母替换，如果已在最下边，则用该行最上边的替换，如明文为" <code>OQ</code> "，依据上表，应替换为" <code>PS</code> "； </p>
+<p> 3.如果两个字母在不同的行或列，则应在密码表中找两个字母使四个字母组成一个矩形，明文占据两个顶点，需用另外两个顶点的字母替换，如明文为" <code>HX</code> "，可以替换为" <code>WI/J</code> "或" <code>I/JW</code> "（下面的例子将按照横向替换原则即同行优先）。 </p>
+</div>
+<p> 按照上述原则，将明文 <code>TH EQ UI CK BR OW NF OX JU MP SO VE RT HE LA ZY DO GX</code> 加以转换得到 <code>KU ND LH GT LF WU ES PW LH SI/J NP CG CR AG BU VZ QA I/JV</code> （/表示或者，不过一般用I不用J，所以分析密文时你看25个字母都有而只差一个字母没有用到可以考虑一下这种加密方式）将得到的字母改为大写并五个一组列好，得到密文 <code>KUNDL HGTLF WUESP WLHSI NPCGC RAGBU VZQAI V</code> 。 </p>
+<p> 加密解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/playfair/" rel="nofollow,noindex" target="_blank">传送门</a> (ps：这里加解密是横向编制密码表) </p>
+<p>加密解密实例(ps：这里加解密也是横向编制密码表)：</p>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import Playfair
+&gt;&gt;&gt;Playfair('CULTREABDFGHIKMNOPQSVWXYZ').encipher('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG')
+'UKDNLHTGFLWUSEPWHLISNPCGCRGAUBVZAQIV'
+&gt;&gt;&gt;Playfair('CULTREABDFGHIKMNOPQSVWXYZ').decipher('UKDNLHTGFLWUSEPWHLISNPCGCRGAUBVZAQIV')
+'THEQUICKBROWNFOXIUMPSOVERTHELAZYDOGX'</pre>
+<h3>10.维吉尼亚密码</h3>
+<h4>（1）介绍</h4>
+<p> 维吉尼亚密码(Vigenère Cipher)是在单一恺撒密码的基础上扩展出多表代换密码，根据密钥(当密钥长度小于明文长度时可以循环使用)来决定用哪一行的密表来进行替换，以此来对抗字频统计，更多 <a href="https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher" rel="nofollow,noindex" target="_blank">参考</a> 。 </p>
+<p>密表：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_33"> </p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 密钥(循环使用，密钥越长相对破解难度越大)： <code>CULTURE</code> </p>
+<p>加密过程：如果第一行为明文字母，第一列为密钥字母，那么明文字母'T'列和密钥字母'C'行的交点就是密文字母'V'，以此类推。</p>
+<p> 密文： <code>VBP JOZGM VCHQE JQR UNGGW QPPK NYI NUKR XFK</code> </p>
+<h4>（2）已知密钥加解密</h4>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import Vigenere
+&gt;&gt;&gt;Vigenere('CULTURE').encipher('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG')
+'VBPJOZGMVCHQEJQRUNGGWQPPKNYINUKRXFK'
+&gt;&gt;&gt;Vigenere('CULTURE').decipher('VBPJOZGMVCHQEJQRUNGGWQPPKNYINUKRXFK')
+'THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG'</pre>
+<p> 在线加密解密 <a href="http://planetcalc.com/2468/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（3）未知密钥破解</h4>
+<p> 可以参考 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-vigenere-cipher/" rel="nofollow,noindex" target="_blank">维吉尼亚密码分析</a> 这篇文章，破解维吉尼亚密码第一步是确定密钥长度，维吉尼亚密码分析这篇文章里介绍了使用 <a href="https://en.wikipedia.org/wiki/Index_of_coincidence" rel="nofollow,noindex" target="_blank">重合指数</a> 算法来确定密钥长度，在确定密钥长度后就可以尝试确定密钥，通常我们可以使用 <a href="https://en.wikipedia.org/wiki/Chi-squared_test" rel="nofollow,noindex" target="_blank">卡方检验</a> 来找到每个字母的偏移量，基于维吉尼亚密码分析一文中的算法实现的工具破解示例。 </p>
+<p> 密文： <code>kiqpbkxspshwehospzqhoinlgapp</code> </p>
+<p>解密：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_34"> </p>
+<p>(ps:结合左边的值，密钥以及解出明文可以确定kien 5或者klen 10为准确的结果)</p>
+<p> 明文： <code>DEFEND THE EAST WALL OF THE CASTLE</code> </p>
+<h4>（4）变种</h4>
+<p> 有几种密码和维吉尼亚密码相似，格罗斯费尔德密码(Gronsfeld cipher)实际上和维吉尼亚密码相同，除了使用了数字来代替字母以外没有什么区别。数字可以选择一种数列，如斐波那契数列，或者一些其他的伪随机序列。格罗斯费尔德密码密码分析过程和维吉尼亚密码大同小异，不过，自动密钥密码不能使用 <a href="http://www.zybang.com/question/a0a1108423f63d10dbbf0c3e1bfdf3b3.html" rel="nofollow,noindex" target="_blank">卡西斯基算法</a> (kasiski)来破译，因为自动密钥密码的密钥不重复循环使用，破译自动密钥密码最好的方法的就是从密文不断尝试和猜测其中明文或密钥的一部分。 </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_35"> </p>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import Gronsfeld
+&gt;&gt;&gt;Gronsfeld([2,20,11,45,20,43,4]).encipher('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG')
+'VBPJOZGMVCHQEJQRUNGGWQPPKNYINUKRXFK'
+&gt;&gt;&gt;Gronsfeld([2,20,11,45,20,43,4]).decipher('VBPJOZGMVCHQEJQRUNGGWQPPKNYINUKRXFK')
+'THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG'</pre>
+<p> 在线加解密 <a href="http://rumkin.com/tools/cipher/gronsfeld.php" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>11.自动密钥密码</h3>
+<h4>（1）介绍</h4>
+<p>自动密钥密码(Autokey Cipher)是多表替换密码，与维吉尼亚密码密切相关，但使用不同的方法生成密钥，通常来说要比维吉尼亚密码更安全。自动密钥密码主要有两种，关键词自动密钥密码和原文自动密钥密码.下面我们以关键词自动密钥为例：</p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 关键词： <code>CULTURE</code> </p>
+<p> 自动生成密钥： <code>CULTURE THE QUICK BROWN FOX JUMPS OVER THE</code> </p>
+<p>接下来的加密过程和维吉尼亚密码类似，从密表可得：</p>
+<p> 密文： <code>VBP JOZGD IVEQV HYY AIICX CSNL FWW ZVDP WVK</code> </p>
+<h4>（2）已知关键词加解密</h4>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import Autokey
+&gt;&gt;&gt;Autokey('CULTURE').encipher('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG')
+'VBPJOZGDIVEQVHYYAIICXCSNLFWWZVDPWVK'
+&gt;&gt;&gt;Autokey('CULTURE').decipher('VBPJOZGDIVEQVHYYAIICXCSNLFWWZVDPWVK')
+'THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG'</pre>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/autokey/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（3）未知关键词破解</h4>
+<p> 推荐去看这篇 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-autokey-cipher/" rel="nofollow,noindex" target="_blank">自动密钥密码分析文章</a> ，基于文中的算法实现的工具来破解示例。 </p>
+<p>密文:</p>
+<pre>#!shell
+isjiqymdebvuzrvwhmvysibugzhyinmiyeiklcvioimbninyksmmnjmgalvimlhspjxmgfiraqlhjcpvolqmnyynhpdetoxemgnoxl</pre>
+<p>解密</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_36"> </p>
+<p>(ps:从klen 13可以看出使用的关键词为'FORTIFICATION')</p>
+<p>明文：</p>
+<pre>#!shell
+DESPITEBEINGMORESECURETHANTHEVIGENERECIPHERTHEAUTOKEYCIPHERISSTILLVERYEASYTOBREAKUSINGAUTOMATEDMETHODS</pre>
+<p>将明文转换成可读句子：</p>
+<p>despite being more secure than the vigenere cipher the autokey cipher is still very easy to break using automated methods</p>
+<h3>12.博福特密码</h3>
+<h4>（1）介绍</h4>
+<p>博福特密码(Beaufort Cipher)，是一种类似于维吉尼亚密码的代换密码，由弗朗西斯·蒲福(Francis Beaufort)发明。它最知名的应用是Hagelin M-209密码机。博福特密码属于对等加密，即加密演算法与解密演算法相同。</p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 密钥(循环使用，密钥越长相对破解难度越大)： <code>CULTURE</code> </p>
+<p>加密过程：如果第一行为明文字母，第一列为密文字母，那么沿明文字母'T'列出现密钥字母'C'的行号就是密文字母'J'，以此类推。</p>
+<p> 密文： <code>JNH DAJCS TUFYE ZOX CZICM OZHC BKA RUMV RDY</code> </p>
+<h4>（2）已知密钥加解密</h4>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import Beaufort
+&gt;&gt;&gt;Beaufort('CULTURE').encipher('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG')
+'JNHDAJCSTUFYEZOXCZICMOZHCBKARUMVRDY'
+&gt;&gt;&gt;Beaufort('CULTURE').decipher('JNHDAJCSTUFYEZOXCZICMOZHCBKARUMVRDY')
+'THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG'</pre>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/beaufort/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>13.滚动密钥密码</h3>
+<h4>（1）介绍</h4>
+<p>滚动密钥密码(Running Key Cipher)和维吉尼亚密码有着相同的加密机制，区别是密钥的选取，维吉尼亚使用的密钥简短，而且重复循环使用，与之相反，滚动密钥密码使用很长的密钥，比如引用一本书作为密钥。这样做的目的是不重复循环使用密钥，使密文更难破译，尽管如此，滚动密钥密码还是可以被攻破，因为有关于密钥和明文的统计分析模式可供利用，如果滚动密钥密码使用统计上的随机密钥来源，那么理论上是不可破译的，因为任何可能都可以成为密钥，并且所有的可能性都是相等的。</p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p>密钥：选取C语言编程(1978版)第63页第1行"errors can occur in several places. A label has..."，去掉非字母部分作为密钥(实际选取的密钥很长，长度至少不小于明文长度)。</p>
+<p>加密过程：加密过程和维吉尼亚密码加密过程相同</p>
+<p> 密文: <code>XYV ELAEK OFQYH WWK BYHTJ OGTC TJI DAK YESR</code> </p>
+<p> 已知密钥在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/running-key/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>14.Porta密码</h3>
+<h4>（1）介绍</h4>
+<p>Porta密码(Porta Cipher)是一个由意大利那不勒斯的医生Giovanni Battista della Porta发明的多表代换密码，Porta密码具有加密解密过程的是相同的特点。</p>
+<p>密表：</p>
+<pre>#!shell
+KEYS| A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+----|----------------------------------------------------
+A,B | N O P Q R S T U V W X Y Z A B C D E F G H I J K L M
+C,D | O P Q R S T U V W X Y Z N M A B C D E F G H I J K L
+E,F | P Q R S T U V W X Y Z N O L M A B C D E F G H I J K
+G,H | Q R S T U V W X Y Z N O P K L M A B C D E F G H I J
+I,J | R S T U V W X Y Z N O P Q J K L M A B C D E F G H I
+K,L | S T U V W X Y Z N O P Q R I J K L M A B C D E F G H
+M,N | T U V W X Y Z N O P Q R S H I J K L M A B C D E F G
+O,P | U V W X Y Z N O P Q R S T G H I J K L M A B C D E F
+Q,R | V W X Y Z N O P Q R S T U F G H I J K L M A B C D E
+S,T | W X Y Z N O P Q R S T U V E F G H I J K L M A B C D
+U,V | X Y Z N O P Q R S T U V W D E F G H I J K L M A B C
+W,X | Y Z N O P Q R S T U V W X C D E F G H I J K L M A B
+Y,Z | Z N O P Q R S T U V W X Y B C D E F G H I J K L M A</pre>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 密钥(循环使用，密钥越长相对破解难度越大)： <code>CULTURE</code> </p>
+<p>加密过程：明文字母'T'列与密钥字母'C'行交点就是密文字母'F',以此类推。</p>
+<p> 密文： <code>FRW HKQRY YMFMF UAA OLWHD ALWI JPT ZXHC NGV</code> </p>
+<p> 已知密钥在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/porta/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（2）破解</h4>
+<p> Porta密码可以被以 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-vigenere-cipher-part-2/" rel="nofollow,noindex" target="_blank">维吉尼亚密码</a> 破解相类似方式进行自动攻破，破解Porta密码第一步是先确定密钥长度，这里推荐一篇关于使用 <a href="https://en.wikipedia.org/wiki/Index_of_coincidence" rel="nofollow,noindex" target="_blank">重合指数算法</a> 确定为维吉尼亚密钥长度 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-vigenere-cipher/" rel="nofollow,noindex" target="_blank">文章</a> 。 </p>
+<h3>15.同音替换密码</h3>
+<h4>（1）介绍</h4>
+<p>同音替换密码(Homophonic Substitution Cipher)是单字母可以被其他几种密文字母同时替换的密码，通常要比标准替换密码破解更加困难，破解标准替换密码最简单的方法就是分析字母出现频率，通常在英语中字母'E'(或'T')出现的频率是最高的，如果我们允许字母'E'可以同时被3种不同字符代替，那么就不能还是以普通字母的频率来分析破解，如果允许可代替字符越多，那么密文就会更难破译。</p>
+<p>常见代换规则表：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_37"> </p>
+<p> 明文: <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 密文(其中一种)： <code>6CZ KOVST XJ0MA EQY IOGL4 0W1J UC7 P9NB F0H</code> </p>
+<h4>（2）破解</h4>
+<p> 如果同音替换密码的同音词个数很多，那么破解它难度很大，通常的方法采取类似破解替换密码的"爬山算法"，除了找到一个明文字母映射几个字符之外，我们还需要确定映射了那些字符，可以尝试 <a href="http://www.cs.sjsu.edu/faculty/stamp/RUA/homophonic.pdf" rel="nofollow,noindex" target="_blank">2层嵌套"爬山算法"</a> 来破解，外层确定映射的数量，内层确定映射字符。 </p>
+<h3>16.仿射密码</h3>
+<h4>（1）介绍</h4>
+<p> 仿射密码(Affine Cipher)是一种单表代换密码，字母表中的每个字母相应的值使用一个简单的数学函数映射到对应的数值，再把对应数值转换成字母。这个公式意味着每个字母加密都会返回一个相同的字母，意义着这种加密方式本质上是一种标准替代密码。因此，它具有所有替代密码的弱点。每一个字母都是通过函数（ax + b）mod m加密，其中B是位移量，为了保证仿射密码的可逆性，a和m需要满足gcd(a , m)=1，一般m为设置为26。更多 <a href="https://en.wikipedia.org/wiki/Affine_cipher" rel="nofollow,noindex" target="_blank">参考</a> </p>
+<p>常见的字母对应关系：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_38"> </p>
+<p>下面我们以E(x) = (5x + 8) mod 26函数为例子</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_39"> </p>
+<p>至于解密我们知道</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_40"> </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_41"> </p>
+<p>即可得出解密结果</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_42"> </p>
+<p>以E(x) = (5x + 8) mod 26加密，通过计算可得D(x)=21(x - 8) mod 26，这样便可以得到明文。</p>
+<p>可参考的Python脚本</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_43"> </p>
+<p> 加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/affine/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>17.培根密码</h3>
+<h4>（1）介绍</h4>
+<p>培根密码(Baconian Cipher)是一种替换密码，每个明文字母被一个由5字符组成的序列替换，最初的加密方式就是由'A'和'B'组成序列替换明文(所以你当然也可以用别的字母)，比如字母'D'替换成"aaabb"，以下是全部的对应关系(另一种对于关系是每个字母都有唯一对应序列，I和J与U/V各自都有不同对应序列)：</p>
+<pre>#!shell
+A = aaaaa  I/J = abaaa  R = baaaa
+
+<p>B = aaaab  K = abaab    S = baaab</p>
+<p>C = aaaba  L = ababa    T = baaba</p>
+<p>D = aaabb  M = ababb    U/V = baabb</p>
+<p>E = aabaa  N = abbaa    W = babaa</p>
+<p>F = aabab  O = abbab    X = babab</p>
+<p>G = aabba  P = abbba    Y = babba</p>
+<p>H = aabbb  Q = abbbb    Z = babbb</pre></p>
+<p> 明文： <code>T H E F O X</code> </p>
+<p> 密文： <code>baaba aabbb aabaa aabab abbab babab</code> </p>
+<p> 加解密 <a href="http://rumkin.com/tools/cipher/baconian.php" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>18.ADFGX和ADFGVX密码</h3>
+<h4>（1）ADFGX密码</h4>
+<p>ADFGX密码(ADFGX Cipher)是结合了改良过的Polybius方格替代密码与单行换位密码的矩阵加密密码，使用了5个合理的密文字母：A，D，F，G，X，这些字母之所以这样选择是因为当转译成摩尔斯电码(ADFGX密码是德国军队在一战发明使用的密码)不易混淆，目的是尽可能减少转译过程的操作错误。</p>
+<p>加密矩阵示例：</p>
+<pre>#!shell
+    A  D  F  G   X
+  ----------------
+A | p  h  q  g   m 
+D | e  a  y  n   o 
+F | f  d  x  k   r
+G | c  v  s  z   w 
+X | b  u  t  i/j l</pre>
+<p> 明文： <code>THE QUICK BROWN FOX</code> </p>
+<p>结果矩阵加密：</p>
+<pre>#!shell
+XF AD DA   AF XD XG GA FG   XA FX DX GX DG   FA DX FF</pre>
+<p> 列移位密钥： <code>how are u</code> </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_44"> </p>
+<p> 密文： <code>DXADF AGXF XFFXD FXGGX DGFG AADA ADXXF</code> </p>
+<p>已知密钥加解密：</p>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import ADFGX
+&gt;&gt;&gt;a = ADFGX('phqgmeaynofdxkrcvszwbutil','HOWAREU')
+&gt;&gt;&gt;a.encipher('THE QUICK BROWN FOX')
+'DXADFAGXFXFFXDFXGGXDGFGAADAADXXF'
+&gt;&gt;&gt;a.decipher('DXADFAGXFXFFXDFXGGXDGFGAADAADXXF')
+'THEQUICKBROWNFOX'</pre>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/adfgx-cipher/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（2）ADFGVX密码</h4>
+<p>ADFGVX密码实际上就是ADFGX密码的扩充升级版，一样具有ADFGX密码相同的特点，加密过程也类似，不同的是密文字母增加了V，使得可以再使用10数字来替换明文。</p>
+<pre>#!shell
+    A D F G V X
+  -------------
+A | p h 0 q g 6
+D | 4 m e a 1 y
+F | l 2 n o f d
+G | x k r 3 c v
+V | s 5 z w 7 b
+X | j 9 u t i 8</pre>
+<p>由于两种加密过程完全类似这里就不再重复给出加密过程。</p>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import ADFGVX
+&gt;&gt;&gt;a = ADFGVX('ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8','HOWAREU')
+&gt;&gt;&gt;a.encipher('THE QUICK BROWN FOX')
+'DXXFAFGFFXGGGFGXDVGDVGFAVFVAFVGG'
+&gt;&gt;&gt;a.decipher('DXXFAFGFFXGGGFGXDVGDVGFAVFVAFVGG')
+'THEQUICKBROWNFOX'</pre>
+<h3>19.双密码</h3>
+<h4>（1）双密码</h4>
+<p> 双密码(Bifid Cipher)结合了波利比奥斯方阵换位密码，并采用分级实现扩散，这里的“双”是指用2个密钥进行加密。双密码是由法国Felix Delastelle发明，除此之外Felix Delastelle还发明了三分密码(Trifid Cipher)，四方密码(Four-Square Cipher)。还有一个 <a href="https://en.wikipedia.org/wiki/Two-square_cipher" rel="nofollow,noindex" target="_blank">两方密码</a> (Two-Square)与四方密码类似， <a href="http://www.thonky.com/kryptos/cm-bifid-cipher" rel="nofollow,noindex" target="_blank">共轭矩阵双密码</a> (Conjugated Matrix Bifid Cipher)也是双密码的变种。 </p>
+<p>示例密阵:</p>
+<pre>#!shell
+   1 2 3 4 5
+1| p h q g m
+2| e a y l n
+3| o f d x k
+4| r c v s z
+5| w b u t i/j</pre>
+<p> 明文: <code>THE QUICK BROWN FOX</code> </p>
+<p>经过密阵转换：</p>
+<p> 行: <code>512 15543 54352 333</code> </p>
+<p> 列: <code>421 33525 21115 214</code> </p>
+<p>分组:</p>
+<p>51215 54354 35233 3</p>
+<p>42133 52521 11521 4</p>
+<p>合并：</p>
+<pre>#!shell
+5121542133 5435452521 3523311521 34</pre>
+<p> 在经过密阵转换后密文: <code>WETED TKZNE KYOME X</code> </p>
+<h4>（2）已知密阵加解密</h4>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import
+&gt;&gt;&gt;Bifid('phqgmeaylnofdxkrcvszwbuti',5).encipher('THE QUICK BROWN FOX')
+'WETEDTKZNEKYOMEX'
+&gt;&gt;&gt;Bifid('phqgmeaylnofdxkrcvszwbuti',5).decipher('WETEDTKZNEKYOMEX')
+'THEQUICKBROWNFOX'</pre>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/bifid/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（3）未知密阵破解</h4>
+<p> 手工分析破解双密码是有一定难度的，每个字母都是同过3个数字进行非线性代替转换，而且之后还会对字母顺序进行打乱，这样使双密码比一些替换密码和换位密码更难破解。然而，现在是计算机时代，这张加密方式没有安全性可言，通过 <a href="http://baike.baidu.com/link?url=mkceUr0W4L7B7UVQxc-dUkXKPJbj9v4YyBh_hrskt5iXk99UdnjW6mZ_YxoJO1PkT1zdjEZD2hd7TCMiSxpOma" rel="nofollow,noindex" target="_blank">模拟退火</a> 算法就能快速找到双密码的密阵。 这里推荐一篇详细的 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-bifid-cipher/" rel="nofollow,noindex" target="_blank">双密码破解分析</a> 的文章，基于模拟退火算法实现的工具破解示例： </p>
+<p>密文:</p>
+<pre>#!shell
+KWTAZQLAWWZCPONIVBTTBVQUZUGRNHAYIYGIAAYURCUQLDFTYVHTNQEENUPAIFCUNQTNGITEFUSHFDWHRIFSVTBISYDHHASQSROMUEVPQHHCCRBYTQBHWYRRHTEPEKHOBFSZUQBTSYRSQUDCSAOVUUGXOAUYWHPGAYHDNKEZPFKKWRIEHDWPEIOTBKESYETPBPOGTHQSPUMDOVUEQAUPCPFCQHRPHSOPQRSSLPEVWNIQDIOTSQESDHURIEREN</pre>
+<p>解密：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_45"> </p>
+<p>得到加密矩阵:</p>
+<pre>#!shell
+G B C M K
+D H U E T
+L V Y W I
+X O Z S P
+N F A R Q</pre>
+<p>明文:</p>
+<pre>#!shell
+CRYPTANALYS IS OF BIFID BY HAND IS ACTUALLY FAIRLY DIFFICULT THE FRACTIONATING NATURE OF THE CIPHER IE EACH LETTER IS SUBSTITUTED BY CHARACTERS THEN THESE CHARACTERS ARE IUM BLED WHICH WILL PULL THEM APART MAKES THE CIPHER MUCH STRONGER THAN SUBSTITUTION CIPHERS OR TRANSPOSITION CIPHER SON THEIR OWN</pre>
+<h3>20.三分密码</h3>
+<p>三分密码(Trifid Cipher)结合换位和替换，三分密码与双密码非常相似，差别之处就是用除了3×3×3的密阵代替5×5密阵。</p>
+<p>示例密阵:</p>
+<pre>#!shell
+密阵顺序 = EPSDUCVWYM.ZLKXNBTFGORIJHAQ      
+
+<p>方阵 1      方阵 2      方阵 3<br>  1 2 3      1 2 3      1 2 3<br>1 E P S    1 M . Z    1 F G O<br>2 D U C    2 L K X    2 R I J<br>3 V W Y    3 N B T    3 H A Q</pre></p>
+<p> 明文: <code>THE QUICK BROWN FOX.</code> </p>
+<p>经过密阵转换：</p>
+<pre>#!shell
+T H E Q U I C K B R O W N F O X .
+2 3 1 3 1 3 1 2 2 3 3 1 2 3 3 2 2
+3 3 1 3 2 2 2 2 3 2 1 3 3 1 1 2 1
+3 1 1 3 2 2 3 2 2 1 3 2 1 1 3 3 2</pre>
+<p>T(233)表示T在第一个方阵第三行第三列的位置</p>
+<p>分组(分组密钥以5为例):</p>
+<pre>#!shell
+THEQU ICKBR OWNFO X.
+23131 31223 31233 22
+33132 22232 13311 21
+31132 23221 32113 32</pre>
+<p>合并：</p>
+<pre>#!shell
+23131 33132 31132 31223 22232 23221 31233 13311 32113 22 21 32</pre>
+<p>在经过密阵转换后密文:</p>
+<pre>#!shell
+231313313231132312232223223221312331331132113222132
+N  O  O  N  W  G  B  X  X  L  G  H  H  W  S  K  W</pre>
+<p> 想要深入了解三分密码并破解三分密码的小伙伴推荐去看LANIKI教授的一篇密码课程章节的 <a href="http://www.und.nodak.edu/org/crypto/crypto/lanaki.crypt.class/lessons/lesson17.zip" rel="nofollow,noindex" target="_blank">讲义</a> 。 </p>
+<h3>21.四方密码</h3>
+<h4>（1）介绍</h4>
+<p>四方密码(Four-Square Cipher)是类似普莱菲尔密码双字母加密密码，这样使加密效果强于其他替换密码，因为频率分析变得更加困难了。</p>
+<p>四方密码使用4个预先设置的5×5字母矩阵，每个矩阵包括25个字母，通常字母'j'被融入到'i'中(维基百科上说'q'被忽略，不过这不重要，因为'q'和'j'都是很少出现的字母)，通常左上和右下矩阵式是标准字母排序明文矩阵，右上和左下矩阵是打乱顺序的密钥矩阵。</p>
+<p>示例矩阵：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_46"> </p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 整理明文(分组不够时用'X'填充)： <code>TH EQ UI CK BR OW NF OX JU MP SO VE RT HE LA ZY DO GX</code> </p>
+<p>加密过程：分别在明文矩阵中找到'TH'，分别找到他们在右上矩阵有左下矩阵的交点字母'ES'就是密文，以此类推。</p>
+<p> 密文： <code>ESZWQAFHGTDKWHRKUENYQOLMQTUNWMBPTGHQ</code> </p>
+<h4>（2）已知密钥矩阵加解密</h4>
+<pre>#!python
+&gt;&gt;&gt;from pycipher import Foursquare
+&gt;&gt;&gt;fs = Foursquare('zgptfoihmuwdrcnykeqaxvsbl','mfnbdcrhsaxyogvituewlqzkp')
+&gt;&gt;&gt;fs.encipher('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG')
+'ESZWQAFHGTDKWHRKUENYQOLMQTUNWMBPTGHQ'
+&gt;&gt;&gt;fs.decipher('ESZWQAFHGTDKWHRKUENYQOLMQTUNWMBPTGHQ')
+'THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG'</pre>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/four-square/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h4>（3）未知密钥矩阵破解</h4>
+<p> 推荐一篇关于采用 <a href="http://blog.csdn.net/xianlingmao/article/details/7798647" rel="nofollow,noindex" target="_blank">模拟退火算法</a> 的 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-foursquare-cipher/" rel="nofollow,noindex" target="_blank">四方密码分析</a> 文章，如果有足够多的密文那么四方密码可以轻易被破解，如果知道了明文和密文推出密钥是很容易的，猜测部分明文是一个有效的方法去破解四方密码，如果一部分明文已知或者可以被猜测出 那么我们首先要确定尽可能多可利用的密钥，然后才可以进行更多的推测或者用其他的方法破译。基于四方密码分析一文实现的 <a href="http://www.practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-foursquare-cipher/" rel="nofollow,noindex" target="_blank">C代码</a> 破解示例： </p>
+<p>密文(密文最好在200个字符以上)：</p>
+<p>HMMKEQESDTMDHLAWFWMNKSOSFOMRFNLWLKHNSQGGEKXEOLLVDXNRSQQGARTFKSAVNUDLFNDHESPZGQ TWESAGPGSQSQSTPKUSBBQLQHESAGPGSQSQGXLNAVHTPMHMKKNYGSUGDMTPDGFNKYAVHXLWGEKRILESLZ ZOFNAVIHRHRKAGHSMYUGEGNSRGAVMVOQPRLNKRXLMYLQPXILESQYBNRHRKAGKYQXDIHMPGPYOERZOLBEZ LURFWLWUOLDDPNSQYAGMUQPQWESBEZVEQESDTMDBQLWDIUSHB</p>
+<p>用法：</p>
+<pre>#!shell
+gcc -O3 -lm foursquarecrack2.c scoreText_2.c -o fsc
+./fsc</pre>
+<p>输出结果：</p>
+<pre>#!shell
+Running foursquarecrack, this could take a few minutes... 
+best score so far: -1239.505249, on iteration 1
+Key: 'KFMLUGWSQEPOZTNRBHDAVXCIY','UGSVKFIZMOYXPQRWTHLNCABED'     
+plaintext: 'THECIPHERTEXTSQUARESCANBEGENERATEDUSINGAKEYWORDDROPPINGDUPLICAT
+            ELETTERSTHENFILLTHEREMAININGSPACESWITHTHEREMAININGLETTERSOFTHEA
+            LPHABETINORDERALTERNATIVELYTHECIPHERTEXTSQUARESCANBEGENERATEDCO
+            MPLETELYRANDOMLYTHEFOURSQUAREALGORITHMALLOWSFORTWOSEPARATEKEYSO
+            NEFOREACHOFTHETWOCIPHERTEXTMATRICESX'</pre>
+<h3>2.棋盘密码</h3>
+<p>棋盘密码（Checkerboard Cipher)是使用一个波利比奥斯方阵和两个密钥作为密阵的替换密码，通常在波利比奥斯方阵中J字母往往被包含在I字母中。</p>
+<p>示例密阵：</p>
+<pre>#!shell
+   Q  U  I  C  K
+  --------------
+B |K  N I/J G  H
+R |P  Q  R  S  T
+O |O  Y  Z  U  A
+W |M  X  W  V  B
+N |L  F  E  D  C</pre>
+<p>经过密阵替换:</p>
+<pre>#!shell
+明文:T  H  E  Q  U  I  C  K  B  R  O  W  N  F  O  X
+密文:RK BK RU OC OC BI NK BQ WK RI OQ WI BU NU OQ WU</pre>
+<h3>23.跨棋盘密码</h3>
+<p>跨棋盘密码(Straddle Checkerboard Cipher)是一种替换密码，当这种密码在结合其他加密方式，加密效果会更好。</p>
+<p>棋盘示例(选择3和7作为变换):</p>
+<pre>#!shell
+   0 1 2 3 4 5 6 7 8 9
+   f k m   c p d   y e
+3: h b i g q r o s a z
+7: l u t j n w v x</pre>
+<p> 明文: <code>T H E Q U I C K B R O W N F O X</code> </p>
+<p> 经过加密棋盘替换得到密文: <code>72 30 9 34 71 32 4 1 31 35 36 75 74 0 36 77</code> </p>
+<p>当然我们还可以继续用其他的加密方式在对跨棋盘密码加密出的结果再进行加密:</p>
+<p>示例变换密钥:83729</p>
+<pre>#!shell
+     8372983729837298372983729837
+    +7230934713241313536757403677
+    -----------------------------
+     5502817432078501808630122404</pre>
+<p>在经过棋盘转换后:</p>
+<pre>#!shell
+5502817432078501808630122404
+ppfmyk n if  pfkyfyd hkmmcfc</pre>
+<p>最终得到密文: ppfmyk n if pfkyfyd hkmmcfc</p>
+<p> 在线加解密 <a href="http://www.practicalcryptography.com/ciphers/classical-era/straddle-checkerboard/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>24.分组摩尔斯替换密码</h3>
+<p> 分组摩尔斯替换密码(Fractionated Morse Cipher)首先把明文转换为莫尔斯电码，不过每个字母之间用 <code>x</code> 分开，每个单词用 <code>xx</code> 分开。然后使用密钥生成一个替换密表，这个密表包含所有 <code>. - x</code> 组合的情况(因为不会出现 <code>xxx</code> 的情况，所以一共26种组合)。 </p>
+<p> 密钥: <code>MORSECODE</code> </p>
+<p>密表:</p>
+<pre>#!shell
+MORSECDABFGHIJKLNPQTUVWXYZ
+.........---------XXXXXXXX
+...---XXX...---XXX...---XX
+.-X.-X.-X.-X.-X.-X.-X.-X.-</pre>
+<p>说明:密表下半部分是固定的，密表的安全性以及加密效果主要取决于使用的密钥。</p>
+<p> 明文： <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p>(类似)摩尔斯电码:</p>
+<pre>#!shell
+-x....x.xx--.-x..-x..x-.-.x-.-xx-...x.-.x---x.--x-.xx..-.x---x-..-xx.---x..- --x.--.x...xx---x...-x.x.-.xx-x....x.xx.-..x.-x--..x-.--xx-..x---x--.</pre>
+<p>说明:明文在转换为(类似)摩尔斯电码后进行每3个字符分组，再进行密表的查表。</p>
+<p> 密文(经过密表替换): <code>LMUWC OQVHG ZMTAK EVYSW NOYJQ NLIQB JQCDH XMDYF TWRGP FWNH</code> </p>
+<p> 已知密钥在线加解密 <a href="http://ruffnekk.stormloader.com/fractmorse_tool.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>25.Bazeries密码</h3>
+<p>Bazeries密码(Bazeries Cipher)是换位密码和替换密码的组合，使用两个波利比奥斯方阵，一个明文字母方阵，使用一个随机的数字(一般小于1000000)的生成一个密钥矩阵同时作为第一轮明文划分分组，比如2333这个数字翻译为英文便是TWO THOUSAND THREE HUNDRED THIRTY THREE,从第一个字母T开始选取不重复的字母，之后再从字母表中按序选取没有出现的字母组成密钥矩阵。</p>
+<p> 明文: <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
+<p> 随机数字: <code>2333</code> </p>
+<p>明文矩阵:</p>
+<pre>#!shell
+A  F  L  Q  V
+B  G  M  R  W
+C  H  N  S  X
+D I/J O  T  Y
+E  K  P  U  Z</pre>
+<p>示例密钥矩阵:</p>
+<pre>#!shell
+T  W  O  H  U
+S  A  N  D  R
+E I/J Y  B  C
+F  G  K  L  M
+P  Q  V  X  Z</pre>
+<p>明文分组:</p>
+<pre>#!shell
+2   3   3   3   2   3   3   3  2   3   3  3
+TH EQU ICK BRO WN FOX JUM PSO VE RTH ELA ZYD OG</pre>
+<p>分组明文反序:</p>
+<pre>#!shell
+HT UQE KCI ORB WN XOF MUJ OSP EV EHT ALE DYZ GO</pre>
+<p>使用密钥矩阵替换:</p>
+<pre>#!shell
+IL XHP QEG KDS YR CKW NXG KBV PU ILD TOP FMZ AK</pre>
+<p>(比如'H'在明文矩阵对应到密钥矩阵的位置就是'I'）</p>
+<p> 已知密钥在线加解密 <a href="http://ruffnekk.stormloader.com/bazeries_tool.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>26.Digrafid密码</h3>
+<p>Digrafid密码(Digrafid Cipher)使用两个密钥生成分别生成类似波利比奥斯方阵的3x9方格的密表。，主要有3分组和4分组两类。</p>
+<p> 第一个方阵密钥: <code>digrafid</code> </p>
+<p> 第二个方阵密钥: <code>cipher</code> </p>
+<p>密表：</p>
+<pre>#!shell
+1 2 3 4 5 6 7 8 9
+D I G R A F D B C 1 2 3
+E H J L M N O P Q 4 5 6
+S T U V W X Y Z # 7 8 9
+                  c f s 1
+                  i g t 2
+                  p j u 3
+                  h k v 4
+                  e l w 5
+                  r m x 6
+                  a n y 7
+                  b o z 8
+                  d q # 9</pre>
+<p> 明文: <code>THE QUICK BROWN FOX</code> </p>
+<p>密表转换(以4分组为例):</p>
+<pre>#!shell
+Th Eq Ui Ck   Br Ow Nf Ox
+2  1  3  9    8  7  6  7
+7  5  7  2    1  6  5  6
+4  9  2  4    6  5  1  6</pre>
+<p>说明:T在第一矩阵第2列，h在第二矩阵第4行，T所在的行与h所在的列相交的位置数字为7，所以Th表示为274。</p>
+<p>转换密文:</p>
+<pre>#!shell
+213 975 724 924   876 716 566 516
+Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
+<h3>27.格朗普雷密码</h3>
+<p>格朗普雷密码(Grandpré Cipher)是替换密码的一种，一般使用8个8字母的单词横向填充8x8方阵，且第一列为一个单词，并且在方阵中26个字母都必须出现一次以上。</p>
+<p>示例密阵:</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_47"> </p>
+<pre>#!shell
+明文:T  H  E  Q  U  I  C  K  B  R  O  W  N  F  O 
+密文:84 27 82 41 51 66 31 36 15 71 67 73 52 34 67</pre>
+<p>说明：明文中的字母在密阵位置可能不止一个，所以加密结果可能有多种，但是不影响解密。密阵还有6x6，7x7，9x9,10x10几种。显然密阵越大每个字母被替换的情况就可能越多，那么加密效果就更好。</p>
+<h3>28.比尔密码</h3>
+<p>比尔密码(Beale ciphers)有三份密码，当然这里说的是已被破解第二份，是一种类似书密码的替换密码。</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_48"> </p>
+<p>以第二密码为例，每一个数字代表美国《独立宣言》的文本中的第几个词的首字母，如1代表第1个词的首字母“w”，2代表第2个词首字母“i”。解密后的文字如下：</p>
+<p>I have deposited in the county of Bedford...</p>
+<p> 比尔密码还有一段有趣的故事，感兴趣可以看一下比尔密码的 <a href="https://zh.wikipedia.org/wiki/%E6%AF%94%E5%B0%94%E5%AF%86%E7%A0%81" rel="nofollow,noindex" target="_blank">详细介绍</a> 。 </p>
+<h3>29.键盘密码</h3>
+<p> 一般用到的键盘密码就是手机键盘和电脑键盘两种，2014 0ctf比赛里Crypto类型中Classic一题就是电脑键盘密码，详细可以 <a href="http://www.programlife.net/0ops-ctf-writeup.html" rel="nofollow,noindex" target="_blank">参考</a> ，另外给出另外一些 <a href="http://www.secbox.cn/hacker/ctf/8078.html" rel="nofollow,noindex" target="_blank">参考</a> 情况。 </p>
+<h2>其他有趣的机械密码</h2>
+<h3>1.恩尼格玛密码</h3>
+<p> 恩尼格玛密码机（德语：Enigma，又译哑谜机，或“谜”式密码机）是一种用于加密与解密文件的密码机。确切地说，恩尼格玛是对二战时期纳粹德国使用的一系列相似的转子机械加解密机器的统称，它包括了许多不同的型号，为密码学对称加密算法的流加密。详细工作原理参考 <a href="https://zh.wikipedia.org/wiki/%E6%81%A9%E5%B0%BC%E6%A0%BC%E7%8E%9B%E5%AF%86%E7%A0%81%E6%9C%BA" rel="nofollow,noindex" target="_blank">维基百科</a> 。 </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_49"> </p>
+<p> 在线模拟 <a href="http://enigmaco.de/enigma/enigma.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<p> 感兴趣可以观看 <a href="http://list.youku.com/albumlist/show?id=23400097&amp;ascending=1&amp;page=1" rel="nofollow,noindex" target="_blank">播单:计算机历史文化课</a> </p>
+<h2>代码混淆加密</h2>
+<p> 1. <a href="http://www.zhaoyuanma.com/aspfix.html" rel="nofollow,noindex" target="_blank">asp混淆加密</a> </p>
+<p> 2.[php language="混淆加密"][/php] <a href="http://www.zhaoyuanma.com/phpjmvip.html" rel="nofollow,noindex" target="_blank">118</a> </p>
+<p> 3.[css language="/js混淆加密"][/css] <a href="http://tool.css-js.com/" rel="nofollow,noindex" target="_blank">119</a> </p>
+<p> 4. <a href="http://www.zhaoyuanma.com/aspfix.html" rel="nofollow,noindex" target="_blank">VBScript.Encode混淆加密</a> </p>
+<h3>5.ppencode</h3>
+<p>ppencode-Perl把Perl代码转换成只有英文字母的字符串。</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_50"> </p>
+<p> ppencode <a href="http://namazu.org/~takesako/ppencode/demo.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>6.rrencode</h3>
+<p>rrencode可以把ruby代码全部转换成符号。</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_51"> </p>
+<p> rrencode <a href="http://www.lab2.kuis.kyoto-u.ac.jp/~yyoshida/rrencode.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>7.jjencode/aaencode</h3>
+<p> jjencode将JS代码转换成只有符号的字符串，类似于rrencode，介绍的 <a href="http://utf-8.jp/public/20090710/jjencode.pps" rel="nofollow,noindex" target="_blank">PPT</a> ，aaencode可以将JS代码转换成常用的网络表情，也就是我们说的颜文字js加密。 </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_52"> </p>
+<p> aaencode <a href="http://utf-8.jp/public/aaencode.html" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<p> jjencode/aaencode的解密直接在浏览器的控制台里输入密文即可执行解密，想要详细了解jjencode是如何进行请 <a href="http://pferrie2.tripod.com/papers/jjencode.pdf" rel="nofollow,noindex" target="_blank">参考</a> ，你也可以在github上 <a href="https://github.com/jacobsoo/Decoder-JJEncode" rel="nofollow,noindex" target="_blank">下载</a> 实现jjdecoder的源码进行分析。 </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_53"> </p>
+<h3>8.JSfuck</h3>
+<p> JSFuck 可以让你只用 6 个字符 <code>[ ]( ) ! +</code> 来编写 JavaScript 程序。 </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_54"> </p>
+<p> JSfuck <a href="http://www.jsfuck.com/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<h3>9.jother</h3>
+<p> jother是一种运用于javascript语言中利用少量字符构造精简的匿名函数方法对于字符串进行的编码方式。其中8个少量字符包括： <code>! + ( ) [ ] &#123; &#125;</code> 。只用这些字符就能完成对任意字符串的编码。 </p>
+<p> <a href="http://drops.wooyun.org/author/do9gy" rel="nofollow,noindex" target="_blank">do9gy</a> 的 <a href="http://drops.wooyun.org/web/4410" rel="nofollow,noindex" target="_blank">jother编码之谜</a> </p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_55"> </p>
+<p> jother编码 <a href="http://tmxk.org/jother/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<p>jother直接在浏览器(IE可以)的控制台里输入密文即可执行解密：</p>
+<p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_56"> </p>
+<h3>10.brainfuck</h3>
+<p> Brainfuck是一种极小化的计算机语言，按照"Turing complete（完整图灵机）"思想设计的语言，它的主要设计思路是：用最小的概念实现一种“简单”的语言，BrainF**k 语言只有八种符号，所有的操作都由这八种符号( <code>&gt; &lt; + - . , [ ]</code> )的组合来完成。 </p>
+<p>明文：hello!</p>
+<pre>#!shell
++++++ +++++ [-&gt;++ +++++ +++&lt;] &gt;++++ .---. +++++ ++..+ ++.&lt;+ +++++ +++++
+[-&gt;++ +++++ ++++&lt; ]&gt;+++ ++++. &lt;++++ +++[- &gt;---- ---&lt;] &gt;--.&lt; +++++ ++[-&gt;
+----- --&lt;]&gt; ----- ----- .&lt;</pre>
+<p> brainfuck <a href="http://www.splitbrain.org/services/ook" rel="nofollow,noindex" target="_blank">传送门</a> </p>
+<p> 其他稀奇古怪的编程语言请 <a href="http://news.mydrivers.com/1/190/190926.htm" rel="nofollow,noindex" target="_blank">参考</a> </p>
+
+
+
+
+
+<p>============================</p>
+<h4 id="Base64"><a href="#Base64" class="headerlink" title="Base64"></a>Base64</h4><p>ZXZhbCgkX1BPU1RbcDRuOV96MV96aDNuOV9qMXVfU2gxX0oxM10p</p>
+<p>NTU2NJC3ODHHYWJIZ3P4ZWY=</p>
+<p>Base64编码要求把3个8位字节转化为4个6位的字节，之后在6位的前面补两个0，形成8位一个字节的形式。 如果剩下的字符不足3个字节，则用0填充，输出字符使用’=’，因此编码后输出的文本末尾可能会出现1或2个’=’</p>
+<h4 id="Base32"><a href="#Base32" class="headerlink" title="Base32"></a>Base32</h4><p>Base32和Base64相比只有一个区别就是，用32个字符表示256个ASC字符，也就是说5个ASC字符一组可以生成8个Base字符，反之亦然。</p>
+<p><a target="_blank" rel="noopener" href="http://base64.xpcha.com/">在线编解码</a></p>
+<h4 id="希尔密码"><a href="#希尔密码" class="headerlink" title="希尔密码"></a>希尔密码</h4><p>密文： 22,09,00,12,03,01,10,03,04,08,01,17<br>明文：wjamdbkdeibr</p>
+<p>解题思路：使用的矩阵是 1 2 3 4 5 6 7 8 10</p>
+<p>a b c d e f g h i j  k  l  m  n   o   p   q   r   s   t   u   v   w   x   y   z</p>
+<p>0 1 2 3 4 5 6 7 8 9 10 11  12 13  14  15  16  17  18  19  20  21  22  23  24  25</p>
+<p>把字母用数字表示，解密时把数字转换成字母，然后放入脚本，密钥要分成矩阵。一般是对称的</p>
+<p><a target="_blank" rel="noopener" href="http://bobao.360.cn/ctf/learning/136.html">原文链接</a></p>
+<p><a target="_blank" rel="noopener" href="http://baike.baidu.com/link?url=R6oWhCdKvzlG8hB4hdIdUT1cZPbFOCrpU6lJAkTtdiKodD7eRTbASpd_YVfi4LMl7N8yFyhVNOz5ki6TC7_5eq">百度百科</a></p>
+<p>脚本已存</p>
+<h4 id="栅栏密码"><a href="#栅栏密码" class="headerlink" title="栅栏密码"></a>栅栏密码</h4><p>把要加密的明文分成N个一组，然后把每组的第1个字连起来，形成一段无规律的话。</p>
+<p>密文样例：tn c0afsiwal kes,hwit1r  g,npt  ttessfu}ua u  hmqik e {m,  n huiouosarwCniibecesnren.</p>
+<p>解密程序：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">char s[]= “tn c0afsiwal kes,hwit1r  g,npt  ttessfu&#125;ua u  hmqik e &#123;m,  n huiouosarwCniibecesnren.”;</span><br><span class="line">char t[86]= “”;</span><br><span class="line">int i,j,k;</span><br><span class="line"><span class="attribute">k</span>=0;</span><br><span class="line"><span class="keyword">for</span> (<span class="attribute">i</span>=0;i&lt;17;i++)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">for</span>(<span class="attribute">j</span>=0;j&lt;5;j++)</span><br><span class="line">&#123;</span><br><span class="line">t[k++]= ch[j<span class="number">*17</span>+i];</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">for</span>(<span class="attribute">i</span>=0;i&lt;85;i++)</span><br><span class="line">&#123;</span><br><span class="line">printf(“%c”,t[i]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/shinukami/article/details/45980629">原文链接</a></p>
+<p><a target="_blank" rel="noopener" href="http://www.practicalcryptography.com/ciphers/classical-era/rail-fence/">在线解密</a></p>
+<h4 id="凯撒密码"><a href="#凯撒密码" class="headerlink" title="凯撒密码"></a>凯撒密码</h4><p>通过把字母移动一定的位数来实现加密和解密。明文中的所有字母都在字母表上向后（或向前）按照一个固定数目进行偏移后被替换成密文。</p>
+<p>常规解密：</p>
+<p>from pycipher import Caesar<br>for i in range(1,27):<br>str=Caesar(key=i).encipher(‘UIF RVJDLCSPXOGPYKVNQTPWFSUIFMBAZEPH’)<br>print “mingwen:”+str.lower()+“rn“</p>
+<p>密文样例：U8Y]:8KdJHTXRI&gt;XU#?!K_ecJH]kJG<em>bRH7YJH7YSH]</em>=93dVZ3^S8*$:8″&amp;:9U]RH;g=8Y!U92’=j*$KH]ZSj&amp;[S#!gU#*dK9.</p>
+<p>解题思路：</p>
+<p>得知是凯撒加密之后，尝试进行127次轮转爆破：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">lstr</span>=”””U<span class="number">8</span>Y]:<span class="number">8</span>KdJHTXRI&gt;XU#?!K_ecJH]kJG*bRH<span class="number">7</span>YJH<span class="number">7</span>YSH]*=<span class="number">93</span>dVZ<span class="number">3</span>^S<span class="number">8</span>*$:<span class="number">8</span>″&amp;:<span class="number">9</span>U]RH;g=<span class="number">8</span>Y!U<span class="number">92</span>’=j*$KH]ZSj&amp;[S#!gU#*dK<span class="number">9</span>.”””</span><br><span class="line"><span class="attribute">forp</span> in range(<span class="number">127</span>):</span><br><span class="line"><span class="attribute">str1</span> = ”</span><br><span class="line"><span class="attribute">for</span> i in lstr:</span><br><span class="line"><span class="attribute">temp</span> = chr((ord(i)+p)%<span class="number">127</span>)</span><br><span class="line"><span class="attribute">if</span> <span class="number">32</span>&lt;ord(temp)&lt;<span class="number">127</span> :</span><br><span class="line"><span class="attribute">str1</span> = str<span class="number">1</span> + temp</span><br><span class="line"><span class="attribute">feel</span> = <span class="number">1</span></span><br><span class="line"><span class="attribute">else</span>:</span><br><span class="line"><span class="attribute">feel</span> = <span class="number">0</span></span><br><span class="line"><span class="attribute">break</span></span><br><span class="line"><span class="attribute">if</span> feel == <span class="number">1</span>:</span><br><span class="line"><span class="attribute">print</span>(str<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/shinukami/article/details/46369765">原文链接</a></p>
+<h4 id="Unicode"><a href="#Unicode" class="headerlink" title="Unicode"></a>Unicode</h4><p>密文样例：u5927u5bb6u597duff0cu6211u662fu0040u65e0u6240u4e0du80fdu7684u9b42u5927u4ebauff01u8bddu8bf4u5faeu535au7c89u4e1du8fc7</p>
+<p><a href="tool.chinaz.com/Tools/Unicode.aspx">在线解密</a></p>
+<h4 id="brainfuck"><a href="#brainfuck" class="headerlink" title="brainfuck"></a>brainfuck</h4><p>类型：++++++++++[&gt;+++++++&gt;++++++++++&gt;+++&gt;+&lt;&lt;&lt;&lt;-]</p>
+<blockquote>
+<p>++.&gt;+.+++++++..+++.&gt;++.&lt;&lt;+++++++++++++++.</p>
+</blockquote>
+<blockquote>
+<p>.+++.——.——–.&gt;+.&gt;.</p>
+</blockquote>
+<p>利用BFVM.exe直接解密</p>
+<p>用法 loadtxt 1.txt</p>
+<p><a target="_blank" rel="noopener" href="http://www.splitbrain.org/services/ook">在线解密</a></p>
+<h4 id="摩斯密码"><a href="#摩斯密码" class="headerlink" title="摩斯密码"></a>摩斯密码</h4><p>密文样例：–  —  .-.  …  .</p>
+<p><a target="_blank" rel="noopener" href="http://www.jb51.net/tools/morse.htm">在线解密</a></p>
+<h4 id="jsfuck"><a href="#jsfuck" class="headerlink" title="jsfuck"></a>jsfuck</h4><p>密文中 ()[]{}!+</p>
+<p><a href="www.jsfuck.com">在线解密</a></p>
+<p><a target="_blank" rel="noopener" href="http://patriciopalladino.com/files/hieroglyphy/">在线解密</a></p>
+<p>如果jsfuck定义的是一个函数并且最后以()结尾，则在火狐console中运行时函数也会运行，就会错掉什么提示。这时候需要把最后的()换成.toString() </p>
+<h4 id="培根密码"><a href="#培根密码" class="headerlink" title="培根密码"></a>培根密码</h4><p>培根所用的密码是一种本质上用二进制数设计的。不过，他没有用通常的0和1来表示，而是采用a和b。</p>
+<p><a target="_blank" rel="noopener" href="http://baike.baidu.com/link?url=acaeI3babB7MogPQFh98rDAVSwHfPwh-HnEFTb9cx7DZ5Nz4MkMA14H4SDjBNnOdBsJpliNYa1vnfikQGqvA7K">百科链接</a></p>
+<p>已知将一个flag以一种加密形式为使用密钥进行加密，使用密钥WELCOMETOCFF加密后密文为</p>
+<p>培根密码表看其他文件</p>
+<h4 id="费娜姆密码"><a href="#费娜姆密码" class="headerlink" title="费娜姆密码"></a>费娜姆密码</h4><h4 id="异或"><a href="#异或" class="headerlink" title="异或"></a>异或</h4><p>已知将一个flag以一种加密形式为使用密钥进行加密，使用密钥WELCOMETOCFF加密后密文为 00000000000000000000000000000000000</p>
+<p>0000000000000000101110000110001000000101000000001 请分析出flag。</p>
+<p>密钥为12位，密文为84位，可能是异或：</p>
+<p>7位二进制可能表示字母顺序：</p>
+<p>W     E     L     C     O     M    E    T    O     C     F    F</p>
+<p>密文</p>
+<p>0000000 0000000 0000000 0000000 0000000 0000000 0000000 0010111 0000110 0010000 0010100 0000001</p>
+<p>密钥</p>
+<p>0010111 0000101 0001100 0000011 0001111 0001101 0000101 0010100 0001111 0000011 0000110 0000110</p>
+<p>Xor</p>
+<p>0010111 0000101 0001100 0000011 0001111 0001101 0000101 0000011 0001001 0010011 0010010 0000111</p>
+<p>W     E     L     C     O     M    E    C     I     S    R     G</p>
+<p>即：WELCOMECISRG</p>
+<p>flag：WELCOMECISRG</p>
+<h4 id="猪圈密码，又称共济会密码"><a href="#猪圈密码，又称共济会密码" class="headerlink" title="猪圈密码，又称共济会密码"></a>猪圈密码，又称共济会密码</h4><p><a target="_blank" rel="noopener" href="http://baike.baidu.com/link?url=yN39kWG2pGd9XHo3RjeUAbd7xs0QlnJ2uHzCJfxC03V-fJcQUdfcJ-WuGoAkKGFVE0AxFK4-98wa4FtzvxRA0_">百度百科</a></p>
+<h4 id="CRC32"><a href="#CRC32" class="headerlink" title="CRC32"></a>CRC32</h4><p>密文样例：4D1FAE0B</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">import zlib</span><br><span class="line"></span><br><span class="line">def crc32(<span class="keyword">st</span>):</span><br><span class="line"></span><br><span class="line"><span class="keyword">crc</span> = zlib.crc32(<span class="keyword">st</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="keyword">crc</span> &gt; 0:</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> “%x” % (<span class="keyword">crc</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> “%x” % (~<span class="keyword">crc</span> ^ 0xffffffff)</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/ab748998806/article/details/46382017">原文链接</a></p>
+<h4 id="颜文字加密-aaencode"><a href="#颜文字加密-aaencode" class="headerlink" title="颜文字加密(aaencode)"></a>颜文字加密(aaencode)</h4><p>这个好萌啊&gt;.&lt;</p>
+<p>颜文字js加密：明文alert(“flag”);</p>
+<p>密文：ﾟωﾟﾉ= /｀ｍ´）ﾉ ~┻━┻ //<em>´∇｀</em>/ [‘<em>’]; o=(ﾟｰﾟ) =</em>=3; c=(ﾟΘﾟ) =(ﾟｰﾟ)-(ﾟｰﾟ); (ﾟДﾟ) =(ﾟΘﾟ)= (o^_^o)/ (o^_^o);(ﾟДﾟ)={ﾟΘﾟ: ‘_’ ,ﾟωﾟﾉ : ((ﾟωﾟﾉ==3) +’_’) [ﾟΘﾟ] ,ﾟｰﾟﾉ :(ﾟωﾟﾉ+ ‘_’)[o^_^o -(ﾟΘﾟ)] ,ﾟДﾟﾉ:((ﾟｰﾟ==3) +’_’)[ﾟｰﾟ] }; (ﾟДﾟ) [ﾟΘﾟ] =((ﾟωﾟﾉ==3) +’_’) [c language=”^_^o”][/c];(ﾟДﾟ) [‘c’] = ((ﾟДﾟ)+’_’) [ (ﾟｰﾟ)+(ﾟｰﾟ)-(ﾟΘﾟ) ];(ﾟДﾟ) [‘o’] = ((ﾟДﾟ)+’_’) [ﾟΘﾟ];(ﾟoﾟ)=(ﾟДﾟ) [‘c’]+(ﾟДﾟ) [‘o’]+(ﾟωﾟﾉ +’_’)[ﾟΘﾟ]+ ((ﾟωﾟﾉ==3) +’_’) [ﾟｰﾟ] + ((ﾟДﾟ) +’_’) [(ﾟｰﾟ)+(ﾟｰﾟ)]+ ((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ]+((ﾟｰﾟ==3) +’_’) [(ﾟｰﾟ) – (ﾟΘﾟ)]+(ﾟДﾟ) [‘c’]+((ﾟДﾟ)+’_’) [(ﾟｰﾟ)+(ﾟｰﾟ)]+ (ﾟДﾟ) [‘o’]+((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ];(ﾟДﾟ) [‘_’] =(o^_^o) [ﾟoﾟ] [ﾟoﾟ];(ﾟεﾟ)=((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ]+ (ﾟДﾟ) .ﾟДﾟﾉ+((ﾟДﾟ)+’_’) [(ﾟｰﾟ) + (ﾟｰﾟ)]+((ﾟｰﾟ==3) +’_’) [o^_^o -ﾟΘﾟ]+((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ]+ (ﾟωﾟﾉ +’_’) [ﾟΘﾟ]; (ﾟｰﾟ)+=(ﾟΘﾟ); (ﾟДﾟ)[ﾟεﾟ]=’\’; (ﾟДﾟ).ﾟΘﾟﾉ=(ﾟДﾟ+ ﾟｰﾟ)[o^_^o -(ﾟΘﾟ)];(oﾟｰﾟo)=(ﾟωﾟﾉ +’_’)[c language=”^_^o”][/c];(ﾟДﾟ) [ﾟoﾟ]=’”‘;(ﾟДﾟ) [‘_’] ( (ﾟДﾟ) [‘_’] (ﾟεﾟ+(ﾟДﾟ)[ﾟoﾟ]+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((o^_^o) +(o^_^o))+ ((o^_^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((o^_^o) +(o^_^o))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (ﾟΘﾟ))+ (c^_^o)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟｰﾟ)+ ((o^_^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((o^_^o) +(o^_^o))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((ﾟｰﾟ) + (o^_^o))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟｰﾟ)+ ((o^_^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (o^_^o))+ (o^_^o)+ (ﾟДﾟ)[ﾟoﾟ]) (ﾟΘﾟ)) (‘_’);</p>
+<p><a target="_blank" rel="noopener" href="http://utf-8.jp/public/aaencode.html">在线解密</a></p>
+<h4 id="Jjencode"><a href="#Jjencode" class="headerlink" title="Jjencode"></a>Jjencode</h4><p>密文：$=~[];$={<em><strong>:++$,$$$$:(![]+””)[$],</strong>$:++$,$</em>$<em>:(![]+””)[$],</em>$<em>:++$,$</em>$$:({}+””)[$],$$<em>$:($[$]+””)[$],</em>$$:++$,$$$<em>:(!””+””)[$],$__:++$,$</em>$:++$,$$<strong>:({}+””)[$],$$<em>:++$,$$$:++$,$</em></strong>:++$,$<strong>$:++$};$.$<em>=($.$</em>=$+””)[$.$<em>$]+($.</em>$=$.$_[$.</strong>$])+($.$$=($.$+””)[$.<strong>$])+((!$)+””)[$._$$]+($.</strong>=$.$<em>[$.$$</em>])+($.$=(!””+””)[$.<strong>$])+($.<em>=(!””+””)[$.</em>$<em>])+$.$</em>[$.$_$]+$.</strong>+$.<em>$+$.$;$.$$=$.$+(!””+””)[$.</em>$$]+$.<strong>+$.<em>+$.$+$.$$;$.$=($.</em></strong>)[$.$<em>][$.$</em>];$.$($.$($.$$+”””+$.$<em>$</em>+(![]+””)[$.<em>$</em>]+$.$$$<em>+”\”+$.__$+$.$$</em>+$.<em>$</em>+$.<strong>+”(\”\”+$.</strong>$+$.<strong>$+$.</strong><em>+$.$$$</em>+(![]+””)[$.<em>$</em>]+(![]+””)[$.<em>$</em>]+$.<em>$+”,\”+$.$<strong>+$.</strong></em>+”\”+$.<strong>$+$.</strong>$+$.<em>$</em>+$.$<em>$</em>+”\”+$.<strong>$+$.$$<em>+$.$$</em>+$.$<em>$</em>+”\”+$.</strong>$+$.<em>$</em>+$.<em>$$+$.$$<strong>+”\”+$.</strong>$+$.$$</em>+$.<em>$</em>+”\”+$.<strong>$+$.$_$+$.</strong>$+”\”+$.<strong>$+$.$$<em>+$.</em></strong>+$.<strong>+”\”\”+$.$</strong>+$.___+”)”+”””)())();</p>
+<p><a target="_blank" rel="noopener" href="http://utf-8.jp/public/jjencode.html?src=&var=$">解密地址</a></p>
+<h4 id="无字母加密"><a href="#无字母加密" class="headerlink" title="无字母加密"></a>无字母加密</h4><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">@<span class="variable">$_</span>++; <span class="comment">// $_ = 1</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>=(“<span class="comment">#”^”|”); // $__ = _</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“.”^”~”); <span class="comment">// _P</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“/”^”`”); <span class="comment">// _PO</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“|”^”/”); <span class="comment">// _POS</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“&#123;“^”/”); <span class="comment">// _POST</span></span><br><span class="line"></span><br><span class="line">$&#123;<span class="variable">$__</span>&#125;[!<span class="variable">$_</span>]($&#123;<span class="variable">$__</span>&#125;[<span class="variable">$_</span>]); <span class="comment">// $_POST[0]($_POST[1]);</span></span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="http://www.waitalone.cn/php-backdoor.html">在线解密</a></p>
+<h4 id="Utf-7编解码"><a href="#Utf-7编解码" class="headerlink" title="Utf-7编解码"></a>Utf-7编解码</h4><p>原文：gdfgdfg</p>
+<p>密文：+AGcAZABmAGcAZABmAGc-</p>
+<p>无论何种，都是+开头-结尾</p>
+<p><a target="_blank" rel="noopener" href="http://tomeko.net/online_tools/base32.php?lang=en">在线解密</a></p>
+<h4 id="云影密码"><a href="#云影密码" class="headerlink" title="云影密码"></a>云影密码</h4><p>如果密码只有01248组成。。。</p>
+<p>原理很简单，有了1，2，4，8这四个简单的数字，你可以以加法表示出0-9任何一个数字，例如0=28，7=124，9=18。</p>
+<p>这样，再用1-26来表示A-Z，就可以用作密码了。</p>
+<p>为了不至于混乱，我个人引入了第五个数字0，来用作间隔，以避免翻译错误，所以还可以称“01248密码”。</p>
+<p>题目：12401011801180212011401804</p>
+<p>第一步，分割，即124  1  118  118  212  114  18  4</p>
+<p>第二步，基本翻译，例如124可以表示7，也可以表示16（但不可能是34，因为不会超过26），所以可以放在一边，翻译其他没有异议的，可得：124  a  s  s  w  o  18  d</p>
+<p>第三步，推测得出明文。可以推测后面的18表示r，前面的为p最合适。</p>
+<p>明文：password（密码）.</p>
+<h4 id="RC4"><a href="#RC4" class="headerlink" title="RC4"></a>RC4</h4><p>key welcometoicqedu</p>
+<p>密文UUyFTj8PCzF6geFn6xgBOYSvVTrbpNU4OF9db9wMcPD1yDbaJw==</p>
+<p>用脚本解密 脚本已存 </p>
+<h4 id="曼彻斯特"><a href="#曼彻斯特" class="headerlink" title="曼彻斯特"></a>曼彻斯特</h4><p>转二进制 不是10就是01 即是曼彻斯特 解密看脚本</p>
+<p>对于其他一些未知密文，可尝试到下列几个网站转换试试，看看运气</p>
+<p><a target="_blank" rel="noopener" href="http://web.chacuo.net/charsetuuencode">在线解密</a></p>
+<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/ab748998806/article/details/46368337">在线解密</a></p>
+<p><a target="_blank" rel="noopener" href="http://www.qqxiuzi.cn/bianma/wenbenjiami.php">在线解密</a></p>
+<h3 id="其他小技巧："><a href="#其他小技巧：" class="headerlink" title="其他小技巧："></a>其他小技巧：</h3><ul>
+<li><p>如果密文是十进制，字符范围为“0-9”，可以猜测是ASCII编码；</p>
+</li>
+<li><p>如果密文由“a-z”“A-Z”和“=”构成，特别是末尾有“=”，那么可以判断为Base64编码；</p>
+</li>
+<li><p>如果密文含有“%” ，形式为 “%xx” 和 “%uxxxx”，字符范围又是十六进制“0-F”，判断是escape() 函数编码，用unescape()解码；</p>
+</li>
+<li><p>若密文由“[]，()，{}，+,！”字符组成的编码通常就通过Jother解密。</p>
+</li>
+</ul>
+<p>判断出可能的编码方式，就可以使用程序或工具进行解密。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/CTF-Coding-and-Encryption.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/PC-DIY-Hardware.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            电脑DIY系列——电脑硬件
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Essay-Love-and-Respect.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">爱与尊重</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>
