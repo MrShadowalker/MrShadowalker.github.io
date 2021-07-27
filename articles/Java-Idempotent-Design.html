@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Java 幂等设计，很重要的一项基本功和意识。" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    Java 幂等设计 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Java-Idempotent-Design"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Java 幂等设计
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Java-Idempotent-Design.html" class="article-date">
+  <time datetime="2021-07-26T01:39:55.000Z" itemprop="datePublished">2021-07-26</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">8 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>小伙伴们有没有遇到过<strong>生产环境经常出现过重复的数据？</strong>在排查问题的时候，数据又是正常的。这个是何解呢？<strong>怎么会出现这种情况，而且还很难排查问题</strong>。</p>
+<p>今天给大家分享一下这里的原因，以及解决方案。</p>
+<span id="more"></span>
+
+<h1 id="罪魁祸首"><a href="#罪魁祸首" class="headerlink" title="罪魁祸首"></a>罪魁祸首</h1><p>产生<strong>重复数据或数据不一致</strong>（假定程序业务代码没问题），绝大部分就是发生了<strong>重复的请求</strong>，<strong>重复请求是指同一个请求因为某些原因被多次提交</strong>。导致这个情况会有<strong>几种场景</strong>：</p>
+<p>1）<strong>微服务场景</strong>，在我们传统应用架构中调用接口，要么成功，要么失败。但是<strong>在微服务架构下，会有第三个情况【未知】，也就是超时</strong>。如果超时了，<strong>微服务框架会进行重试。</strong></p>
+<p>2）用户<strong>交互的时候多次点击</strong>。如：快速点击按钮多次。</p>
+<p>3）MQ 消息中间件，<strong>消息重复消费</strong>。</p>
+<p>4）第三方平台的接口（如：支付成功回调接口），因为异常也会导致多次异步回调。</p>
+<p>5）其他中间件/应用服务根据自身的特性，也有可能进行重试。</p>
+<p>我们知道了发生的原因，<strong>本质就是多次请求了，那如何解决呢？</strong></p>
+<h1 id="幂等性"><a href="#幂等性" class="headerlink" title="幂等性"></a><strong>幂等性</strong></h1><p>有些小伙伴们会想到<strong>幂等</strong>这个词，是的，就是我们在设计某些接口时，要考虑如何保证接口幂等，<strong>那什么是接口幂等呢？</strong></p>
+<blockquote>
+<p>网上是这样介绍的【接口的幂等性实际上就是<strong>接口可重复调用</strong>,在调用方多次调用的情况下，接口<strong>最终得到的结果是一致的</strong>】</p>
+</blockquote>
+<p>网上的说法定义，有点不是太正确，我们看下怎么不正确</p>
+<blockquote>
+<p>如<strong>一个线程请求用户列表接口</strong>：select * from user，返回用户表中的数据，而<strong>另一个线程往用户表插入数据</strong>。那请求用户列表的线程返回的数据每次都不一样，那按照上面的说法，<strong>查询用户列表的接口就不是幂等的，</strong>这显然是不正确的。</p>
+</blockquote>
+<p>我的理解应该是<strong>多次调用对系统的产生的影响是一样的，即对资源的作用是一样的，但是返回值允许不同。</strong></p>
+<h1 id="幂等场景"><a href="#幂等场景" class="headerlink" title="幂等场景"></a><strong>幂等场景</strong></h1><p>我们来看一下 SQL 相关业务<strong>是否幂等？</strong></p>
+<p>一. <strong>查询</strong>，select * from user where xxx，不会对数据产生任何变化，<strong>具备幂等性</strong>。</p>
+<p>二. <strong>新增</strong>，insert into user(userid,name) values(1,’a’)</p>
+<blockquote>
+<p>如 <strong>userid 为唯一主键</strong>，即重复操作上面的业务，只会插入一条用户数据，<strong>具备幂等性</strong>。</p>
+<p>如 <strong>userid 不是主键</strong>，可以重复，那上面业务多次操作，数据都会新增多条，<strong>不具备幂等性</strong>。</p>
+</blockquote>
+<p>三. <strong>修改</strong>，区分直接赋值和计算赋值。</p>
+<blockquote>
+<p>1、<strong>直接赋值</strong>，update user set point = 20 where userid=1，不管执行多少次，point 都一样，<strong>具备幂等性</strong>。</p>
+<p>2、<strong>计算赋值</strong>，update user set point = point + 20 where userid=1，每次操作 point 数据都不一样，<strong>不具备幂等性</strong>。</p>
+</blockquote>
+<p>四. <strong>删除</strong>，delete from user where userid=1，多次操作，结果一样，<strong>具备幂等性。</strong></p>
+<blockquote>
+<p>上面场景中，我们发现新增没有唯一主键约束的数据，和修改计算赋值型操作都不具备幂等性</p>
+</blockquote>
+<p><strong>那怎么去解决呢？</strong></p>
+<blockquote>
+<p>网上介绍很多，但介绍得太简单了，且关键点都没有介绍到。</p>
+<p>这里只介绍常用的方案.</p>
+</blockquote>
+<h1 id="token-机制"><a href="#token-机制" class="headerlink" title="token 机制"></a>token 机制</h1><p>token 方式的流程，上一张图，比较清晰</p>
+<p>![何为幂等？如何设计？](Java-Idempotent-Design/token 机制.png)</p>
+<p>上图就是 <strong>token + Redis 的幂等方案</strong>，适用绝大部分场景。</p>
+<p>主要思想：</p>
+<blockquote>
+<p>1、服务端<strong>提供了发送 token 的接口</strong>。我们在分析业务的时候，<strong>哪些业务是存在幂等问题的</strong>，就<strong>必须在执行业务前，先去获取 token</strong>，服务器会把 <strong>token 保存到 Redis</strong> 中。（微服务肯定是分布式了，如果单机就适用 JVM 缓存）。</p>
+<p>2、然后<strong>调用业务接口请求时，把 token 携带过去</strong>，一般放在请求头部。</p>
+<p>3、服务器<strong>判断 token 是否存在 Redis</strong> 中，<strong>存在表示第一次请求</strong>，可以继续执行业务，执行业务完成后，<strong>最后需要把 Redis 中的 token 删除</strong>。</p>
+<p>4、如果<strong>判断 token 不存在 Redis</strong> 中，就表示是<strong>重复操作，直接返回重复标记给 client</strong>，这样就保证了业务代码，不被重复执行。</p>
+</blockquote>
+<p>这种方案是比较常用的方案，也是网上经常介绍的，但是有一点不同的地方：</p>
+<blockquote>
+<p>网上方案：检验 token 存在（表示第一次请求）后，<strong>就立刻删除 token，再进行业务处理</strong></p>
+<p>上面方案：检验 token 存在（表示第一次请求）后，<strong>先进行业务处理，再删除 token</strong></p>
+</blockquote>
+<p><strong>关键点就是 先删除 token，还是后删除 token。</strong></p>
+<p><strong>一、网上方案缺点</strong></p>
+<blockquote>
+<p>我们看下网上方案，<strong>先删除 token</strong>，这是出现系统问题导致<strong>业务处理出现异常</strong>，业务处理没有成功，接口调用方也没有获取到明确的结果，然后<strong>进行重试，但 token 已经删除掉了</strong>，服务端判断 token 不存在，<strong>认为是重复请求，就直接返回了</strong>，无法进行业务处理了。</p>
+</blockquote>
+<p><strong>二、上面方案缺点</strong></p>
+<blockquote>
+<p><strong>后删除 token</strong> 也是会存在问题的，如果进行业务处理成功后，删除 Redis 中的 token 失败了，这样就导致了有可能会发生重复请求，因为 token 没有被删除</p>
+</blockquote>
+<p>小伙伴们有没有发现，其实上面的问题就是<strong>数据库和缓存 Redis 数据不一致</strong>的问题。</p>
+<p>之前在秒杀场景系列中整理了一篇文章，里面详细介绍了<strong>如何解决数据库和缓存 Redis 数据不一致的问题</strong>，小伙伴们可自行查阅。</p>
+<blockquote>
+<p>其实根据这个场景的业务，可以有个简单的处理方式。<strong>笔者推荐是网上方案先删除 token</strong>，先保证不会因为重复请求，业务数据出现问题。顶多再让用户处理一次。</p>
+</blockquote>
+<p>出现业务异常，可以让调用方配合处理一下，<strong>重新获取新的 token，再次由业务调用方发起重试请求就 OjbK 了</strong>。</p>
+<h2 id="token机制缺点"><a href="#token机制缺点" class="headerlink" title="token机制缺点"></a>token机制缺点</h2><p>小伙伴们有没有发现，<strong>业务请求每次请求，都会有额外的请求（一次获取 token 请求、判断 token 是否存在的业务）</strong>。其实真实的生产环境中，<strong>1 万请求也许只会存在 10 个左右的请求会发生重试</strong>，为了这 10 个请求，我们让 <strong>9990 个请求都发生了额外的请求</strong>。（当然 Redis 性能很好，耗时不会太明显）</p>
+<h1 id="乐观锁机制"><a href="#乐观锁机制" class="headerlink" title="乐观锁机制"></a>乐观锁机制</h1><p>关于乐观锁之前也讲过，大家可以去查阅。<strong>乐观锁这里解决了计算赋值型的修改场景</strong>。我们对之前的 SQL 语句进行修改。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">update user set point = point + 20, version = version + 1 where userid=1 and version=1</span><br></pre></td></tr></table></figure>
+
+<p><strong>加上了版本号后，就让此计算赋值型业务，具备了幂等性</strong>。</p>
+<h2 id="乐观锁机制缺点"><a href="#乐观锁机制缺点" class="headerlink" title="乐观锁机制缺点"></a>乐观锁机制缺点</h2><p>就是在操作业务前，需要先查询出当前的 version 版本</p>
+<h1 id="唯一主键机制"><a href="#唯一主键机制" class="headerlink" title="唯一主键机制"></a>唯一主键机制</h1><p>这个机制是<strong>利用了数据库的主键唯一约束的特性</strong>，解决了在 <strong>insert 场景</strong>时幂等问题。但主键的要求不是自增的主键，这样就需要业务<strong>生成全局唯一</strong>的主键，之前的文章也介绍过<strong>分布式唯一主键 ID</strong> 的生成，可自行查阅。</p>
+<p>如果是<strong>分库分表场景下</strong>，<strong>路由规则要保证相同请求下</strong>，<strong>落地在同一个数据库和同一表中</strong>，要不然<strong>数据库主键约束就不起效果</strong>了，因为是不同的数据库和表主键不相关。</p>
+<p>因为对主键有一定的要求，这个方案就跟业务有点耦合了，<strong>无法用自增主键了</strong>。</p>
+<h1 id="去重表机制"><a href="#去重表机制" class="headerlink" title="去重表机制"></a>去重表机制</h1><p><strong>这个方案业务中要有唯一主键</strong>，这个去重表中只要一个字段就行，<strong>设置唯一主键约束</strong>，当然根据业务自行添加其他字段。</p>
+<p>主要流程上图</p>
+<p><img src="Java-Idempotent-Design/%E5%8E%BB%E9%87%8D%E8%A1%A8%E6%9C%BA%E5%88%B6.png" alt="何为幂等？如何设计？"></p>
+<p>上面的主要流程就是 <strong>把唯一主键插入去重表，再进行业务操作，且他们在同一个事务中。</strong>这个保证了重复请求时，因为去重表有唯一约束，导致请求失败，<strong>避免了幂等问题</strong>。</p>
+<blockquote>
+<p>这里要注意的是，<strong>去重表和业务表应该在同一库中</strong>，这样就保证了在同一个事务，即使业务操作失败了，也会把去重表的数据回滚。<strong>这个很好的保证了数据一致性</strong>。</p>
+</blockquote>
+<p>这个方案也是比较常用的，<strong>去重表是跟业务无关的</strong>，很多业务可以共用同一个去重表，只要规划好唯一主键就行了。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>上面介绍了一些幂等方案，小伙伴们根据自身的业务进行选择，<strong>尽量不要让系统变的复杂</strong>，所以<strong>推荐唯一主键和乐观锁方式，因为实现比较简单</strong>。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-Idempotent-Design.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Java-SecKill-DB-Cache-Inconsistent.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            秒杀系列（三）数据库与缓存双写问题的思考
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Java-Framework-HSF-Operation.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">HSF 应用开发</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

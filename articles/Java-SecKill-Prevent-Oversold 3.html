@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Valar Morghulis" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    秒杀系列（一）防止超卖 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Java-SecKill-Prevent-Oversold"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  秒杀系列（一）防止超卖
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Java-SecKill-Prevent-Oversold.html" class="article-date">
+  <time datetime="2021-07-26T03:03:30.000Z" itemprop="datePublished">2021-07-26</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.7k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">11 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="秒杀系统"><a href="#秒杀系统" class="headerlink" title="秒杀系统"></a>秒杀系统</h1><p>秒杀系统相信网上已经介绍了很多了，我也不想粘贴很多定义过来了。</p>
+<p>废话少说，秒杀系统主要应用在商品抢购的场景，比如：</p>
+<ul>
+<li>电商抢购限量商品</li>
+<li>卖周董演唱会的门票</li>
+<li>火车票抢座</li>
+<li>……</li>
+</ul>
+<p>秒杀系统抽象来说就是以下几个步骤：</p>
+<ul>
+<li>用户选定商品下单</li>
+<li>校验库存</li>
+<li>扣库存</li>
+<li>创建用户订单</li>
+<li>用户支付等后续步骤</li>
+</ul>
+<p>听起来就是个用户买商品的流程而已嘛！确实，所以我们为啥要说它是个专门的系统呢？</p>
+<span id="more"></span>
+
+<h2 id="为什么要做所谓的“系统”"><a href="#为什么要做所谓的“系统”" class="headerlink" title="为什么要做所谓的“系统”"></a>为什么要做所谓的“系统”</h2><p>如果你的项目流量非常小，完全不用担心有并发的购买请求，那么做这样一个系统意义不大。</p>
+<p>但如果你的系统要像 12306 那样，接受高并发访问和下单的考验，那么你就需要一套完整的流程保护措施，来保证你系统在用户流量高峰期不会被搞挂了。（就像 12306 刚开始网络售票那几年一样）</p>
+<p>这些措施有什么呢：</p>
+<ul>
+<li><p>严格防止超卖：库存 100 件你卖了 120 件，等着辞职吧。</p>
+</li>
+<li><p>防止黑产：防止不怀好意的人群通过各种技术手段把你本该下发给群众的利益全收入了囊中。</p>
+</li>
+<li><p>保证用户体验：高并发下，别网页打不开了，支付不成功了，购物车进不去了，地址改不了了。</p>
+</li>
+<li><p>……</p>
+</li>
+</ul>
+<p>这些问题非常之大，涉及到各种技术，也不是一下子就能讲完的，甚至根本就没法讲完。</p>
+<p>之前列举的措施中，如果防止黑产和网页卡顿等现象出现，其实用户也能一定程度上理解，毕竟秒杀都很可能会卡顿和抢不到，最多大家没参与到活动，口吐芬芳一波。</p>
+<p>但是，如果要是超卖了，本该拿到商品的用户可就不乐意了，轻则亏本发货，重则起诉赔偿，哪一样都吃不了兜着走。</p>
+<p>以下开始从零开始搭建秒杀系统 demo。</p>
+<h1 id="数据库建表（简版）"><a href="#数据库建表（简版）" class="headerlink" title="数据库建表（简版）"></a>数据库建表（简版）</h1><h2 id="库存表-stock"><a href="#库存表-stock" class="headerlink" title="库存表 stock"></a>库存表 stock</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">DROP TABLE IF EXISTS `stock`;</span><br><span class="line">CREATE TABLE `stock` (</span><br><span class="line">  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,</span><br><span class="line">  `name` varchar(50) NOT NULL DEFAULT &#x27;&#x27; COMMENT &#x27;名称&#x27;,</span><br><span class="line">  `count` int(11) NOT NULL COMMENT &#x27;库存&#x27;,</span><br><span class="line">  `sale` int(11) NOT NULL COMMENT &#x27;已售&#x27;,</span><br><span class="line">  `version` int(11) NOT NULL COMMENT &#x27;乐观锁，版本号&#x27;,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB DEFAULT CHARSET=utf8;</span><br></pre></td></tr></table></figure>
+
+<h2 id="订单表-stock-order"><a href="#订单表-stock-order" class="headerlink" title="订单表 stock_order"></a>订单表 stock_order</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">DROP TABLE IF EXISTS `stock_order`;</span><br><span class="line">CREATE TABLE `stock_order`</span><br><span class="line">(</span><br><span class="line">    `id`          int(11) unsigned NOT NULL AUTO_INCREMENT,</span><br><span class="line">    `sid`         int(11)          NOT NULL COMMENT &#x27;库存ID&#x27;,</span><br><span class="line">    `name`        varchar(30)      NOT NULL DEFAULT &#x27;&#x27; COMMENT &#x27;商品名称&#x27;,</span><br><span class="line">    `create_time` timestamp        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT &#x27;创建时间&#x27;,</span><br><span class="line">    PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE = InnoDB</span><br><span class="line">  DEFAULT CHARSET = utf8;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="防止超卖"><a href="#防止超卖" class="headerlink" title="防止超卖"></a>防止超卖</h1><h2 id="通过-HTTP-接口发起购买请求"><a href="#通过-HTTP-接口发起购买请求" class="headerlink" title="通过 HTTP 接口发起购买请求"></a>通过 HTTP 接口发起购买请求</h2><p>只是个 demo，所以采用 Spring MVC + MyBatis 结构。</p>
+<h3 id="先用常规方案做一个购买请求接口"><a href="#先用常规方案做一个购买请求接口" class="headerlink" title="先用常规方案做一个购买请求接口"></a>先用常规方案做一个购买请求接口</h3><h4 id="Controller-层-V0"><a href="#Controller-层-V0" class="headerlink" title="Controller 层 V0"></a>Controller 层 V0</h4><p>提供一个接口，入参为商品 ID</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RequestMapping(&quot;/createWrongOrder/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createWrongOrder</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    log.info(<span class="string">&quot;购买物品编号sid =【&#123;&#125;】&quot;</span>,sid);</span><br><span class="line">    <span class="keyword">int</span> id=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        id = orderService.createWrongOrder(sid);</span><br><span class="line">        log.info(<span class="string">&quot;创建订单id:【&#123;&#125;】&quot;</span>,id);</span><br><span class="line">    &#125; <span class="keyword">catch</span>(Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;Exception&quot;</span>,e);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> String.valueOf(id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Service-层-V0"><a href="#Service-层-V0" class="headerlink" title="Service 层 V0"></a>Service 层 V0</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">createWrongOrder</span><span class="params">(<span class="keyword">int</span> sid)</span><span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="comment">// 校验库存</span></span><br><span class="line">    Stock stock = checkStock(sid);</span><br><span class="line">    <span class="comment">// 扣库存</span></span><br><span class="line">    saleStock(stock);</span><br><span class="line">    <span class="comment">// 创建订单</span></span><br><span class="line">    <span class="keyword">int</span> id = createWrongOrder(stock);</span><br><span class="line">    <span class="keyword">return</span> id;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> Stock <span class="title">checkStock</span><span class="params">(<span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    Stock stock = stockService.getStockById(sid);</span><br><span class="line">    <span class="keyword">if</span>(stock.getSale().equals(stock.getCount())) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">&quot;库存不足&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> stock;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">saleStock</span><span class="params">(Stock stock)</span> </span>&#123;</span><br><span class="line">    stock.setSale(stock.getSale() + <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">return</span> stockService.updateStockById(stock);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">createWrongOrder</span><span class="params">(Stock stock)</span> </span>&#123;</span><br><span class="line">    StockOrder order = <span class="keyword">new</span> StockOrder();</span><br><span class="line">    order.setSid(stock.getId());</span><br><span class="line">    order.setName(stock.getName());</span><br><span class="line">    <span class="keyword">int</span> id = orderMapper.insertSelective(order);</span><br><span class="line">    <span class="keyword">return</span> id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="测试：发起并发购买请求，复现超卖问题"><a href="#测试：发起并发购买请求，复现超卖问题" class="headerlink" title="测试：发起并发购买请求，复现超卖问题"></a>测试：发起并发购买请求，复现超卖问题</h3><p>推荐使用【 <a target="_blank" rel="noopener" href="https://jmeter.apache.org/">JMeter</a> 】来模拟大量用户同时请求购买接口的场景。</p>
+<p>为啥不使用 Postman？因为暂时不支持并发请求，只能顺序请求。</p>
+<p>如何通过 JMeter 进行压测，可参考这篇 【 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/stulzq/p/8971531.html">JMeter 压测教程</a> 】。</p>
+<p>同时开启 1000 线程，抢数据库插入的 <strong>100 台</strong> iPhone，结果卖了 <strong>16 台</strong>，但是创建了 <strong>1000 个</strong>订单。</p>
+<p>哭唧唧……是该表扬 Spring 强大的并发处理能力，还是该口吐芬芳 MySQL 这么成熟的数据库却不会给自己锁库存……</p>
+<h3 id="避免超卖问题：更新商品库存的版本号"><a href="#避免超卖问题：更新商品库存的版本号" class="headerlink" title="避免超卖问题：更新商品库存的版本号"></a>避免超卖问题：更新商品库存的版本号</h3><p>为解决上述超卖问题，有几种方案：</p>
+<ul>
+<li>悲观锁：在 Service 层给表更新添加事务，这样每个线程更新请求的时候先锁表的这一行，更新完库存之后释放锁。</li>
+</ul>
+<p>缺点：性能问题，1000 个线程存在阻塞。需要乐观锁。</p>
+<ul>
+<li>乐观锁：一般有两种方案，CAS 和 version。最简单的办法就是，给每个商品库存一个版本号 version 字段。</li>
+</ul>
+<p>修改之前的代码，createWrongOrder 修改为新的悲观锁/乐观锁方案 ~</p>
+<h3 id="悲观锁和乐观锁两种方案的分析与比较"><a href="#悲观锁和乐观锁两种方案的分析与比较" class="headerlink" title="悲观锁和乐观锁两种方案的分析与比较"></a>悲观锁和乐观锁两种方案的分析与比较</h3><blockquote>
+<ul>
+<li><p>悲观锁（Pessimistic Lock），顾名思义就是很悲观，每次去拿数据的时候都认为别人会修改，所以每次在拿数据的时候都会上锁，这样别人想拿这个数据就会 block 直到它拿到锁。传统的关系型数据库里就用到了很多这种锁机制，比如行锁、表锁等，读锁、写锁等，都是在操作之前先上锁。</p>
+</li>
+<li><p>乐观锁（Optimistic Lock），顾名思义就是很乐观，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据，可以使用版本号等机制。乐观锁适用于多读的应用类型，这样可以提高吞吐量，像数据库如果提供类似于 write_condition 机制的其实都是提供的乐观锁。</p>
+</li>
+</ul>
+</blockquote>
+<p><strong>两种锁各有优缺点，不能单纯定义哪个好于哪个，需要结合实际业务场景做选择。</strong></p>
+<ul>
+<li>乐观锁比较适合数据修改比较少，读取比较频繁的场景，即使出现了少量的冲突，也省去了大量锁开销，能提高系统吞吐量。</li>
+<li>但是如果经常发生冲突（写数据比较多的情况下），上层应用不断 retry，这样反而降低了性能，对于这种情况，悲观锁可能更合适。</li>
+</ul>
+<h4 id="悲观锁方案"><a href="#悲观锁方案" class="headerlink" title="悲观锁方案"></a>悲观锁方案</h4><h5 id="Controller-层-V1"><a href="#Controller-层-V1" class="headerlink" title="Controller 层 V1"></a>Controller 层 V1</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 事务for update更新库存</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createPessimisticOrder/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createPessimisticOrder</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> id;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        id = orderService.createPessimisticOrder(sid);</span><br><span class="line">        log.info(<span class="string">&quot;购买成功，剩余库存为:【&#123;&#125;】&quot;</span>,id);</span><br><span class="line">    &#125; <span class="keyword">catch</span>(Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败:【&#123;&#125;】&quot;</span>,e.getMessage());</span><br><span class="line">        <span class="keyword">return</span><span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>,id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Service-层-V1"><a href="#Service-层-V1" class="headerlink" title="Service 层 V1"></a>Service 层 V1</h5><p>Service 中，给卖商品流程加上事务：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">createPessimisticOrder</span><span class="params">(<span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 校验库存(悲观锁for update)</span></span><br><span class="line">    Stock stock = checkStockForUpdate(sid);</span><br><span class="line">    <span class="comment">// 更新库存</span></span><br><span class="line">    saleStock(stock);</span><br><span class="line">    <span class="comment">// 创建订单</span></span><br><span class="line">    <span class="keyword">int</span> id = createOrder(stock);</span><br><span class="line">    <span class="keyword">return</span> stock.getCount() - (stock.getSale());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 检查库存 ForUpdate</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> Stock <span class="title">checkStockForUpdate</span><span class="params">(<span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    Stock stock = stockService.getStockByIdForUpdate(sid);</span><br><span class="line">    <span class="keyword">if</span>(stock.getSale().equals(stock.getCount())) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">&quot;库存不足&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> stock;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 更新库存</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> stock</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">saleStock</span><span class="params">(Stock stock)</span> </span>&#123;</span><br><span class="line">    stock.setSale(stock.getSale() + <span class="number">1</span>);</span><br><span class="line">    stockService.updateStockById(stock);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建订单</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> stock</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">createOrder</span><span class="params">(Stock stock)</span> </span>&#123;</span><br><span class="line">    StockOrder order = <span class="keyword">new</span> StockOrder();</span><br><span class="line">    order.setSid(stock.getId());</span><br><span class="line">    order.setName(stock.getName());</span><br><span class="line">    <span class="keyword">int</span> id = orderMapper.insertSelective(order);</span><br><span class="line">    <span class="keyword">return</span> id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里使用 Spring 的事务，<code>@Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)</code><br>，如果遇到回滚，则返回Exception，并且事务传播使用 <code>PROPAGATION_REQUIRED —— 支持当前事务，如果当前没有事务，就新建一个事务</code>，关于 Spring 事务传播机制可以自行查阅资料。</p>
+<h5 id="悲观锁方案测试"><a href="#悲观锁方案测试" class="headerlink" title="悲观锁方案测试"></a>悲观锁方案测试</h5><p>设置 100 个商品，清空订单表，使用 JMeter 更改请求接口为悲观锁接口，发起 200 个请求。</p>
+<p>结果：200 个请求，100 个返回抢购成功，100 个返回抢购失败，并且商品卖给了前 100 个进来的请求，十分有序。</p>
+<p>所以，悲观锁在大量请求的请求下，有着更好的卖出成功率。</p>
+<p>但是需要注意的是，如果请求量巨大，悲观锁会导致后面的请求进行了长时间的阻塞等待，用户就必须在页面等待，很像是”假死”，可以通过配合令牌桶限流，或者是给用户显著的等待提示来优化。</p>
+<h4 id="乐观锁版本号方案"><a href="#乐观锁版本号方案" class="headerlink" title="乐观锁版本号方案"></a>乐观锁版本号方案</h4><h5 id="Controller-层-V2"><a href="#Controller-层-V2" class="headerlink" title="Controller 层 V2"></a>Controller 层 V2</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 乐观锁更新库存</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOptimisticOrder/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createOptimisticOrder</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> id;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        id = orderService.createOptimisticOrder(sid);</span><br><span class="line">        log.info(<span class="string">&quot;购买成功，剩余库存为:【&#123;&#125;】&quot;</span>, id);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败:【&#123;&#125;】&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Service-层-V2"><a href="#Service-层-V2" class="headerlink" title="Service 层 V2"></a>Service 层 V2</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">createOptimisticOrder</span><span class="params">(<span class="keyword">int</span> sid)</span><span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="comment">// 校验库存</span></span><br><span class="line">    Stock stock = checkStock(sid);</span><br><span class="line">    <span class="comment">// 乐观锁更新库存</span></span><br><span class="line">    saleStockOptimistic(stock);</span><br><span class="line">    <span class="comment">// 创建订单</span></span><br><span class="line">    <span class="keyword">int</span> id = createOrder(stock);</span><br><span class="line">    <span class="keyword">return</span> stock.getCount() - (stock.getSale() + <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">saleStockOptimistic</span><span class="params">(Stock stock)</span> </span>&#123;</span><br><span class="line">    log.info(<span class="string">&quot;查询数据库，尝试更新库存&quot;</span>);</span><br><span class="line">    <span class="keyword">int</span> count = stockService.updateStockByOptimistic(stock);</span><br><span class="line">    <span class="keyword">if</span>(count == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">&quot;并发更新库存失败，version不匹配&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Mapper"><a href="#Mapper" class="headerlink" title="Mapper"></a>Mapper</h5><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">update</span> <span class="attr">id</span>=<span class="string">&quot;updateByOptimistic&quot;</span> <span class="attr">parameterType</span>=<span class="string">&quot;org.shadowalker.seckilldao.dao.Stock&quot;</span>&gt;</span></span><br><span class="line">    UPDATE stock</span><br><span class="line">    <span class="tag">&lt;<span class="name">set</span>&gt;</span></span><br><span class="line">        sale = sale + 1,</span><br><span class="line">        version = version + 1,</span><br><span class="line">    <span class="tag">&lt;/<span class="name">set</span>&gt;</span></span><br><span class="line">    WHERE id = #&#123;id, jdbcType=INTEGER&#125;</span><br><span class="line">    AND version = #&#123;version, jdbcType=INTEGER&#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">update</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>在实际减库存的 SQL 操作中，首先判断 version 是否是我们查询库存时候的 version，如果是，扣减库存，秒杀成功；如果 version 变了，则不更新数据库，秒杀失败。</p>
+<h5 id="乐观锁不需要版本号字段方案-Mapper"><a href="#乐观锁不需要版本号字段方案-Mapper" class="headerlink" title="乐观锁不需要版本号字段方案 Mapper"></a>乐观锁不需要版本号字段方案 Mapper</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;update id=&quot;updateByOptimistic&quot; parameterType=&quot;org.shadowalker.seckilldao.dao.Stock&quot;&gt;</span><br><span class="line">UPDATE stock</span><br><span class="line">    &lt;set&gt;</span><br><span class="line">      sale = sale + 1,</span><br><span class="line">    &lt;/set&gt;</span><br><span class="line">    WHERE id = #&#123;id,jdbcType=INTEGER&#125;</span><br><span class="line">    AND sale = #&#123;sale,jdbcType=INTEGER&#125;</span><br><span class="line">&lt;/update&gt;</span><br></pre></td></tr></table></figure>
+
+<h5 id="乐观锁版本号方案测试：重新发起并发购买请求，验证正确秒杀"><a href="#乐观锁版本号方案测试：重新发起并发购买请求，验证正确秒杀" class="headerlink" title="乐观锁版本号方案测试：重新发起并发购买请求，验证正确秒杀"></a>乐观锁版本号方案测试：重新发起并发购买请求，验证正确秒杀</h5><p>库存恢复 <strong>100 台</strong>，清空订单表，通过 JMeter 重新发起 <strong>1000次</strong>并发请求。</p>
+<p>结果：卖出去 <strong>39 台</strong>，库存 version 更新为 39，创建了 <strong>39 个订单</strong>。没有超卖。</p>
+<p>说明：由于并发访问的原因，很多线程更新库存失败了，所以在这种设计下，1000 人同时发起购买，只有 39 个人能买到。</p>
+<p>其实这完全 OK，一方面用户其实无感知，另一方面还减少了秒杀造成的低收益甚至是亏本（本身秒杀就是为了提升人气和引流的），最关键的是，防止了超卖。</p>
+<p>当然，如果用户更多的话，最终大概率是可以全部卖完的。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-SecKill-Prevent-Oversold.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Java-SecKill-Asynchronous.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            秒杀系列（二）如何优雅地异步下订单
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Java-SecKill-Distributed-Design.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">秒杀系列（零）高并发设计</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

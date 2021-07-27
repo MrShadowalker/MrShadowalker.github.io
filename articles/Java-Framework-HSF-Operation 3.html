@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Valar Morghulis" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    HSF 应用开发 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Java-Framework-HSF-Operation"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  HSF 应用开发
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Java-Framework-HSF-Operation.html" class="article-date">
+  <time datetime="2021-07-22T07:23:17.000Z" itemprop="datePublished">2021-07-22</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">9.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">39 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>本篇介绍 HSF 框架的开发应用。</p>
+<span id="more"></span>
+
+<h1 id="HSF-应用开发"><a href="#HSF-应用开发" class="headerlink" title="HSF 应用开发"></a>HSF 应用开发</h1><h2 id="启动轻量级配置及注册中心"><a href="#启动轻量级配置及注册中心" class="headerlink" title="启动轻量级配置及注册中心"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44163.html?spm=a2c4g.11186623.6.1027.27264b33khgdrj">启动轻量级配置及注册中心</a></h2><h2 id="使用-Ali-Tomcat-开发应用"><a href="#使用-Ali-Tomcat-开发应用" class="headerlink" title="使用 Ali-Tomcat 开发应用"></a>使用 Ali-Tomcat 开发应用</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/90754.html?spm=a2c4g.11186623.6.1029.3ada74fbcxOUbd">Ali-Tomcat 概述</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99410.html?spm=a2c4g.11186623.6.1030.79cf74fbdM0TKw">安装及开发环境配置</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99912.html?spm=a2c4g.11186623.6.1031.6a0e8387dWFkGT">开发 HSF 应用（SDK）</a></li>
+</ul>
+<h2 id="使用-Pandora-Boot-开发应用"><a href="#使用-Pandora-Boot-开发应用" class="headerlink" title="使用 Pandora Boot 开发应用"></a>使用 Pandora Boot 开发应用</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/91226.html?spm=a2c4g.11186623.6.1033.34185582RnVI3r">Pandora Boot 概述</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/66643.html?spm=a2c4g.11186623.6.1034.44b97f2eH11P9b">配置 EDAS 的私服地址和轻量级配置及注册中心</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99943.html?spm=a2c4g.11186623.6.1035.4fe52cefH2qFQw">开发 HSF 应用（Pandora Boot）</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/99988.html?spm=a2c4g.11186623.6.1036.2f7551ec6REtto">开发 RESTful 应用（不推荐）</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/68162.html?spm=a2c4g.11186623.6.1037.62413b8bXvRzfU">将 Dubbo 应用迁移到 HSF（不推荐）</a></li>
+</ul>
+<h2 id="将应用从-HSF-架构迁移到-Dubbo（Ali-Tomcat）"><a href="#将应用从-HSF-架构迁移到-Dubbo（Ali-Tomcat）" class="headerlink" title="将应用从 HSF 架构迁移到 Dubbo（Ali-Tomcat）"></a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/138922.html?spm=a2c4g.11186623.6.1038.7d5f7b59Ba4TPW">将应用从 HSF 架构迁移到 Dubbo（Ali-Tomcat）</a></h2><h2 id="一次调用过程"><a href="#一次调用过程" class="headerlink" title="一次调用过程"></a>一次调用过程</h2><p>HSF 的一次调用过程是从服务消费方发起，经过网络抵达服务提供方，再将服务提供方的结果通过网络携带返回，最终返回给用户。该过程涉及多线程交互，同时也涉及 HSF 中的不同领域对象。</p>
+<p>HSF 的一次调用过程如下图所示：</p>
+<p><img src="Java-Framework-HSF-Operation/%E4%B8%80%E6%AC%A1%E8%B0%83%E7%94%A8%E8%BF%87%E7%A8%8B.png" alt="SAE产品HSF应用开发之一次调用过程"></p>
+<table>
+<thead>
+<tr>
+<th align="left">过程</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">在客户端线程中将用户的请求参数即请求对象进行序列化，并将序列后的内容存放在请求通信的对象中。 <strong>说明</strong> 请求通信对象对应的是 HSF 协议，包括了请求 ID 等多个与请求对象无关的内容。</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">系统将请求通信对象递交给 I/O 线程，并在 I/O 线程中完成编码。</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">编码完成后，将内容传递到服务提供方的 I/O 线程。客户端线程会等待结果返回。</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">服务提供方的 I/O 线程接收到二进制内容，解码后生成通信请求对象，并将其递交给 HSF 服务端线程。</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">在 HSF 服务端线程完成反序列化还原成请求对象。</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td align="left">发起反射调用，并得到结果，即响应对象。</td>
+</tr>
+<tr>
+<td align="left">7</td>
+<td align="left">响应对象会在 HSF 服务端线程中完成序列化，并存储在通信响应对象中。</td>
+</tr>
+<tr>
+<td align="left">8</td>
+<td align="left">HSF 服务端线程将通信响应对象递交给 I/O 线程，在 I/O 线程中完成编码。</td>
+</tr>
+<tr>
+<td align="left">9</td>
+<td align="left">服务提供方将 I/O 线程中完成编码，发送回服务消费方。</td>
+</tr>
+<tr>
+<td align="left">10</td>
+<td align="left">服务消费方收到二进制内容，在 I/O 线程中完成解码，生成响应通信对象，并唤醒客户端线程。</td>
+</tr>
+<tr>
+<td align="left">11</td>
+<td align="left">客户端线程根据响应通信对象中的内容进行反序列化，用户收到响应对象，一次远程调用结束。</td>
+</tr>
+</tbody></table>
+<h2 id="异步调用"><a href="#异步调用" class="headerlink" title="异步调用"></a>异步调用</h2><h3 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h3><p>在开发应用前，您已经完成以下工作：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/66643.htm#task-2310132">配置 EDAS 的私服地址和轻量级配置及注册中心</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44163.htm#task-2310117">启动轻量级配置及注册中心</a></li>
+</ul>
+<h3 id="同步调用"><a href="#同步调用" class="headerlink" title="同步调用"></a>同步调用</h3><p>HSF 的 IO 操作是异步操作，客户端同步调用的本质是执行<code>future.get（timeout）</code>操作，等待服务端的结果返回，这里的 <code>timeout</code> 就是客户端生效的超时时间 （默认 3000 ms）。同步调用时序图如下所示：</p>
+<p><img src="Java-Framework-HSF-Operation/SAE%E6%9C%8D%E5%8A%A1HSF%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91%E5%BC%82%E6%AD%A5%E8%B0%83%E7%94%A8.png" alt="SAE服务HSF应用开发异步调用"></p>
+<p>对于客户端来说，并不是所有的 HSF 服务都是需要同步等待服务端返回结果的，对于这些服务，HSF 提供异步调用的形式，让客户端不必同步阻塞在 HSF 操作上。 异步调用在发起调用时，HSF 服务的调用结果都是返回值的默认值，例如返回类型是 int，则会返回 0，返回类型是 Object，则会返回 null。而真正的结果，是在 HSFResponseFuture 或者回调函数（callback）中获得的。</p>
+<h3 id="Future-异步调用"><a href="#Future-异步调用" class="headerlink" title="Future 异步调用"></a>Future 异步调用</h3><p>HSF 发起调用后，用户可以在上下文中获取跟返回结果关联的<code>HSFFuture</code>对象，获取对象后调用 HSFFuture.getResponse(timeout) 获取服务端的返回结果。Future 异步调用的时序图如下所示：</p>
+<p><img src="Java-Framework-HSF-Operation/SAE%E5%BA%94%E7%94%A8HSF%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91%E4%B9%8BFuture%E5%BC%82%E6%AD%A5%E8%B0%83%E7%94%A8.png" alt="SAE应用HSF应用开发之Future异步调用"></p>
+<ul>
+<li><p>API 形式配置 HSF 服务</p>
+<p>HSF 提供了方法级别的异步调用配置，格式为<code>name:$&#123;methodName&#125;;type:future</code>，由于只用方法名字来标识方法，所以并不区分重载的方法。同名的方法都会被设置为同样的调用方式。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">HSFApiConsumerBean hsfApiConsumerBean = <span class="keyword">new</span> HSFApiConsumerBean();</span><br><span class="line">hsfApiConsumerBean.setInterfaceName(<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setVersion(<span class="string">&quot;1.0.0&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setGroup(<span class="string">&quot;HSF&quot;</span>);</span><br><span class="line"><span class="comment">// [设置] 异步future调用</span></span><br><span class="line">List&lt;String&gt; asyncallMethods = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line"><span class="comment">// 格式：name:&#123;methodName&#125;;type:future</span></span><br><span class="line">asyncallMethods.add(<span class="string">&quot;name:queryOrder;type:future&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setAsyncallMethods(asyncallMethods);</span><br><span class="line"></span><br><span class="line">hsfApiConsumerBean.init(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// [代理] 获取HSF代理</span></span><br><span class="line">OrderService orderService = (OrderService) hsfApiConsumerBean.getObject();</span><br><span class="line"><span class="comment">// ---------------------- 调用 -----------------------//</span></span><br><span class="line"><span class="comment">// [调用] 发起HSF异步调用, 返回null</span></span><br><span class="line">OrderModel orderModel = orderService.queryOrder(<span class="number">1L</span>);</span><br><span class="line"><span class="comment">// 及时在当前调用上下文中，获取future对象；因为该对象是放在ThreadLocal中，同一线程中后续调用会覆盖future对象，所以要及时取出</span></span><br><span class="line">HSFFuture hsfFuture = HSFResponseFuture.getFuture();</span><br><span class="line"></span><br><span class="line"><span class="comment">// do something else</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 这里才真正地获取结果，如果调用还未完成，将阻塞等待结果，5000ms是等待结果的最大时间</span></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    System.out.println(hsfFuture.getResponse(<span class="number">5000</span>));</span><br><span class="line">&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>HSF 默认的超时配置是 3000ms，如果过了超时时间，业务对象未返回，这时调用 HSFFuture.getResponse 会抛出超时异常；HSFFuture.getResponse(timeout)，如果这里的 timeout 时间内，业务结果没有返回，也没有超时，可以调用多次执行 getResponse 去获取结果。</p>
+</li>
+<li><p>Spring 配置 HSF 服务</p>
+<p>Spring 框架在应用中广泛使用，如果不想以 API 的形式配置 HSF 服务，您可以使用 Spring XML 的形式进行配置，上述例子中 API 配置等同于如下 XML 配置。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;orderService&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringConsumerBean&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;interfaceName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;version&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1.0.0&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;group&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HSF&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 订阅服务的接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;asyncallMethods&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>name:queryOrder;type:future<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>注解配置 HSF 服务</p>
+<p>SpringBoot 广泛使用的今天，使用注解装配 SpringBean 也成为一种选择，HSF 也支持使用注解进行配置，用来订阅服务。</p>
+<p>在项目中增加依赖 starter。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>pandora-hsf-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>通常一个 HSF Consumer 会在多个地方使用，但并不需要在每次使用的地方都用 <code>@HSFConsumer</code> 来标记。只需要写一个统一个 Config 类，然后在其它需要使用的地方，直接 <code>@Autowired</code> 注入即可。上述例子中的 API 配置等同于如下注解配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HsfConfig</span> </span>&#123;</span><br><span class="line">    <span class="meta">@HSFConsumer(serviceVersion = &quot;1.0.0&quot;, serviceGroup = &quot;HSF&quot;, futureMethods = &quot;sayHelloInFuture&quot;)</span></span><br><span class="line">    OrderService orderService;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在使用时直接注入即可。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line">OrderService orderService;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="Callback-异步调用"><a href="#Callback-异步调用" class="headerlink" title="Callback 异步调用"></a>Callback 异步调用</h3><p>客户端配置为 callback 方式调用时，需要配置一个实现了 HSFResponseCallback 接口的 listener，结果返回之后，HSF 会调用 HSFResponseCallback 中的方法。时序图如下所示：</p>
+<p><img src="Java-Framework-HSF-Operation/Callback%E5%BC%82%E6%AD%A5%E8%B0%83%E7%94%A8.png" alt="Callback异步调用"></p>
+<ul>
+<li><p>API 形式配置 HSF 服务</p>
+<p><strong>callback 的调用上下文</strong></p>
+<p>用户在调用前还可以通过 CallbackInvocationContext.setContext(Object obj)，来设置一个关于本次调用的上下文信息，该信息存放在 threadlocal 中。在 listener 的回调函数中，可以通过 CallbackInvocationContext.getContext() 来获取该对象。</p>
+<p><strong>回调函数示例</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CallbackHandler</span> <span class="keyword">implements</span> <span class="title">HSFResponseCallback</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 业务异常时会触发</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAppException</span><span class="params">(Throwable t)</span> </span>&#123;</span><br><span class="line">        t.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 业务返回结果</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAppResponse</span><span class="params">(Object result)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 取callback调用时设置的上下文</span></span><br><span class="line">        Object context = CallbackInvocationContext.getContext();</span><br><span class="line">        System.out.println(result.toString() + context);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//HSF异常</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onHSFException</span><span class="params">(HSFException e)</span> </span>&#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>接口 callback 方法配置</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">HSFApiConsumerBean hsfApiConsumerBean = <span class="keyword">new</span> HSFApiConsumerBean();</span><br><span class="line">hsfApiConsumerBean.setInterfaceName(<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setVersion(<span class="string">&quot;1.0.0&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setGroup(<span class="string">&quot;HSF&quot;</span>);</span><br><span class="line"><span class="comment">// [设置] 异步callback调用</span></span><br><span class="line">List&lt;String&gt; asyncallMethods = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">asyncallMethods.add(<span class="string">&quot;name:queryOrder;type:callback;listener:com.alibaba.middleware.hsf.CallbackHandler&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setAsyncallMethods(asyncallMethods);</span><br><span class="line">hsfApiConsumerBean.init(<span class="keyword">true</span>);</span><br><span class="line"><span class="comment">// [代理] 获取HSF代理</span></span><br><span class="line">OrderService orderService = (OrderService) hsfApiConsumerBean.getObject();</span><br><span class="line"><span class="comment">// 可选步骤，设置上下文。CallbackHandler中通过api可以获取到CallbackInvocationContext.setContext(&quot;in callback&quot;);</span></span><br><span class="line"><span class="comment">// 发起调用</span></span><br><span class="line">orderService.queryOrder(<span class="number">1L</span>); <span class="comment">// 这里返回的其实是 null</span></span><br><span class="line"><span class="comment">// 清理上下文</span></span><br><span class="line">CallbackInvocationContext.setContext(<span class="keyword">null</span>);</span><br><span class="line"><span class="comment">// do something else</span></span><br></pre></td></tr></table></figure>
+
+<p>在调用线程中可以设置上下文，然后在 listener 中获取使用。相对于 Future 异步调用，callback 会立即知晓结果的返回。</p>
+</li>
+<li><p>Spring 配置 HSF 服务</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;CallHelloWorld&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringConsumerBean&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 订阅服务的接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;interfaceName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的版本 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;version&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1.0.0&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的归组 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;group&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HSF&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;asyncallMethods&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!--future的含义为通过Future的方式去获取请求执行的结果，例如先调用下远程的接口，接着在同一线程继续做别的事情，然后再在同一线程中通过Future来获取结果 --&gt;</span></span><br><span class="line">            <span class="comment">&lt;!--name:methodName;type:future|callback--&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>name:queryOrder;type:callback;listener:com.alibaba.middleware.hsf.CallbackHandler<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>注解配置 HSF 接口方法为 callback 调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@AsyncOn(interfaceName = OrderService.class, methodName = &quot;queryOrder&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CallbackHandler</span> <span class="keyword">implements</span> <span class="title">HSFResponseCallback</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAppException</span><span class="params">(Throwable t)</span> </span>&#123;</span><br><span class="line">        t.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAppResponse</span><span class="params">(Object result)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 取callback调用时设置的上下文</span></span><br><span class="line">        Object context = CallbackInvocationContext.getContext();</span><br><span class="line">        System.out.println(result.toString() + context);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onHSFException</span><span class="params">(HSFException e)</span> </span>&#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong> 回调函数是由单独的线程池（ LinkedBlockingQueue 无限队列）来调用的，不要做太费时间的操作，避免影响其他请求的 onAppResponse 回调。callback 线程默认的 corePoolSize、maxPoolSize 是实例 CPU 数目。 下面的 <em>-D</em> 参数可以去自定义配置。</p>
+<ul>
+<li>CALLBACK 线程池最小配置：<code>-Dhsf.callback.min.poolsize</code></li>
+<li>CALLBACK 线程池最大配置：<code>-Dhsf.callback.max.poolsize</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="泛化调用"><a href="#泛化调用" class="headerlink" title="泛化调用"></a>泛化调用</h2><p>相对于需要依赖业务客户端 JAR 包的正常调用，泛化调用不需要依赖二方包，使用其特定的 GenericService 接口，传入需要调用的方法名、方法签名和参数值进行调用服务。 泛化调用适用于一些网关应用（没办法依赖所有服务的二方包），其中 hsfops 服务测试也是依赖泛化调用功能。</p>
+<h3 id="前提条件-1"><a href="#前提条件-1" class="headerlink" title="前提条件"></a>前提条件</h3><p>在开发应用前，您已经完成以下工作：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/66643.htm#task-2310132">配置 EDAS 的私服地址和轻量级配置及注册中心</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44163.htm#task-2310117">启动轻量级配置及注册中心</a></li>
+</ul>
+<h3 id="API-形式配置-HSF-服务"><a href="#API-形式配置-HSF-服务" class="headerlink" title="API 形式配置 HSF 服务"></a>API 形式配置 HSF 服务</h3><p>将 HSFConsumerBean 配置 <code>generic</code> 为 <code>true</code>，HSF 客户端将忽略加载不到接口的异常。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">HSFApiConsumerBean hsfApiConsumerBean = <span class="keyword">new</span> HSFApiConsumerBean();</span><br><span class="line">hsfApiConsumerBean.setInterfaceName(<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setVersion(<span class="string">&quot;1.0.0&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setGroup(<span class="string">&quot;HSF&quot;</span>);</span><br><span class="line"><span class="comment">// [设置] 泛化配置</span></span><br><span class="line">hsfApiConsumerBean.setGeneric(<span class="string">&quot;true&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.init(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用泛化接口获取代理</span></span><br><span class="line">GenericService genericOrderService = (GenericService) hsfApiConsumerBean.getObject();</span><br><span class="line"><span class="comment">// ---------------------- 调用 -----------------------//</span></span><br><span class="line"><span class="comment">// [调用] 发起HSF泛化调用, 返回map类型的result</span></span><br><span class="line">Map orderModelMap = (Map) genericOrderService.$invoke(<span class="string">&quot;queryOrder&quot;</span>,</span><br><span class="line">                            <span class="comment">// 方法入参类型数组（xxx.getClass().getName())</span></span><br><span class="line">                            <span class="keyword">new</span> String[] &#123; Long.class.getName() &#125;,</span><br><span class="line">                            <span class="comment">// 参数，如果是pojo，则需要转成Map</span></span><br><span class="line">                            <span class="keyword">new</span> Object[] &#123; <span class="number">1L</span>&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>GenericService 提供的 $invoke 方法包含了真实调用的方法名、入参类型和参数，以便服务端找到该方法。由于没有依赖服务端的 API JAR 包，传入的参数如果是自定义的 DTO，需要转成客户端可以序列化的 <code>Map</code> 类型。</p>
+<p>调用方法和参数说明</p>
+<ul>
+<li><p>方法没有入参，可以只传 <code>methodName</code>: <code>service.$invoke(&quot;sayHello&quot;, null, null)</code>。</p>
+</li>
+<li><p>方法类型有泛型的，列如 <code>List&lt;String&gt;</code>，只需要传 <code>java.util.List</code>，即 List.class.getName() 的值，不要传成 <code>java.util.List&lt;String&gt;</code>，否则会出现方法找不到的错误。</p>
+</li>
+<li><p>调用方法在不确定格式的情况下，可以写个单元测试，测试时依赖需要泛化调用的二方包，使用 HSF 提供的工具类 com.taobao.hsf.util.PojoUtils 的 generalize() 方法来生成一个 pojo Bean 的 Map 描述格式。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Map pojoMap = (Map) PojoUtils.generalize(<span class="keyword">new</span> OrderModel());</span><br></pre></td></tr></table></figure></li>
+<li><p>传递参数为 pojo 的 demo。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line">   <span class="keyword">private</span> String name;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">int</span> age;</span><br><span class="line">   <span class="comment">// 需要是标准的pojo格式，这里省略getter setter</span></span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 直接使用map去构造pojo对应的泛化参数</span></span><br><span class="line">  Map param = <span class="keyword">new</span> HashMap&lt;String, Object&gt;();</span><br><span class="line">  param.put(<span class="string">&quot;age&quot;</span>, <span class="number">11</span>);</span><br><span class="line">  param.put(<span class="string">&quot;name&quot;</span>,<span class="string">&quot;Miles&quot;</span>);</span><br><span class="line">  <span class="comment">// 当传递的参数是声明参数类型的子类时，需要传入class字段，标明该pojo的真实类型（服务端需要有该类型）</span></span><br><span class="line">  param.put(<span class="string">&quot;class&quot;</span>, <span class="string">&quot;com.taobao.User&quot;</span>);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="Spring-配置-HSF-服务"><a href="#Spring-配置-HSF-服务" class="headerlink" title="Spring 配置 HSF 服务"></a>Spring 配置 HSF 服务</h3><p>Spring 框架是在应用中广泛使用的组件，如果不想通过 API 的形式配置 HSF 服务，可以使用 Spring XML 的形式进行配置，上述例子中的 API 配置等同于如下 XML 配置。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;CallHelloWorld&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringConsumerBean&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 订阅服务的接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;interfaceName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的版本 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;version&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1.0.0&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的归组 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;group&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HSF&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;generic&quot;</span> <span class="attr">value</span>=<span class="string">&quot;true&quot;</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
+<li><p>泛化调用，如果客户端没有接口类，路由规则默认不生效。</p>
+</li>
+<li><p>泛化调用性能会比正常调用差。</p>
+</li>
+<li><p>配置</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-D hsf.generic.throw.exception=true （默认是false, 把异常泛化成map返回）</span><br></pre></td></tr></table></figure>
+
+<p>抛出业务异常。</p>
+<p>本地存在异常类，如果不是 RuntimeException 类型或其子类，则会抛出 UndeclaredThrowableException，这是由于 com.taobao.hsf.remoting.service.GenericService 上没有声明该异常，可以通过 getCause 获取真实异。</p>
+<p>本地没有该异常类，则抛出 com.taobao.hsf.util.GenericInvocationException。</p>
+</li>
+</ul>
+<h2 id="调用上下文"><a href="#调用上下文" class="headerlink" title="调用上下文"></a>调用上下文</h2><p>请求上下文包括一次调用相关的属性，例如调用的地址，调用方的应用名，超时时间等属性和用户在接口定义的参数之外传递自定义的数据。</p>
+<h3 id="设置和获取本次调用上下文"><a href="#设置和获取本次调用上下文" class="headerlink" title="设置和获取本次调用上下文"></a>设置和获取本次调用上下文</h3><p>com.taobao.hsf.util.RequestCtxUtil 提供设置和获取调用上下文的静态方法，基于 ThreadLocal 工作， getXXX 操作会将 XXX 属性从当前 ThreadLocal 变量中 remove，仅作用于当前线程的单次调用。</p>
+<p>具体属性的设置和获取如下：</p>
+<ul>
+<li><p>客户端</p>
+<table>
+<thead>
+<tr>
+<th align="left">方法</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">setRequestTimeout()</td>
+<td align="left">设置单次调用的超时时间。</td>
+</tr>
+<tr>
+<td align="left">setUserId()</td>
+<td align="left">设置本次调用的单元化服务的 User ID（泛化调用中需要通过此方法配置）。</td>
+</tr>
+<tr>
+<td align="left">getProviderIp()</td>
+<td align="left">获取最近一次调用的服务端的 IP。</td>
+</tr>
+<tr>
+<td align="left">setTargetServerIp(String ip)</td>
+<td align="left">设置当前线程下一次调用的目标服务器 IP（此 IP 必须包含在内存已提供服务的地址列表里）。</td>
+</tr>
+<tr>
+<td align="left">setDirectTargetServerIp(String targetIp)</td>
+<td align="left">设置当前线程下一次调用的目标服务器 IP（绕过注册中心，忽略内存里的地址列表）。</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>服务端</p>
+<table>
+<thead>
+<tr>
+<th align="left">方法</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">getClientIp()</td>
+<td align="left">服务端获取调用方 IP。</td>
+</tr>
+<tr>
+<td align="left">getAppNameOfClient()</td>
+<td align="left">服务端获取调用方的应用名。</td>
+</tr>
+<tr>
+<td align="left">isHttpRequest()</td>
+<td align="left">是否是 HTTP 调用。</td>
+</tr>
+<tr>
+<td align="left">getHttpHeader(String key)</td>
+<td align="left">获取 HTTP 请求的 Header 属性。</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h3 id="传递自定义请求上下文"><a href="#传递自定义请求上下文" class="headerlink" title="传递自定义请求上下文"></a>传递自定义请求上下文</h3><p>RpcContext 提供一种不修改接口，向服务端额外传递数据的方式。参数可以是自定义的 DO 或者基本类型。要保证对端也有该对应的类型，并且可以能够被序列化。</p>
+<ul>
+<li><p>客户端发起调用前，设置上下文。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//setup context before rpc call</span></span><br><span class="line">RPCContext rpcContext = RPCContext.getClientContext();</span><br><span class="line">rpcContext.putAttachment(<span class="string">&quot;tetantId&quot;</span>, <span class="string">&quot;123&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//rpc call，context 也会传到远端</span></span><br><span class="line">orderService.queryOrder(<span class="number">1L</span>);</span><br></pre></td></tr></table></figure></li>
+<li><p>服务端业务方法内，获取上下文。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//get context data</span></span><br><span class="line">RPCContext rpcContext = RPCContext.getServerContext();</span><br><span class="line">String myContext = (String)rpcContext.getAttachment(<span class="string">&quot;tetantId&quot;</span>);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="序列化方式选择"><a href="#序列化方式选择" class="headerlink" title="序列化方式选择"></a>序列化方式选择</h2><p>序列化的过程是将 Java 对象转成 byte 数组在网络中传输，反序列化会将 byte 数组转成 Java 对象。</p>
+<h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>序列化的选择需要考虑兼容性，性能等因素，HSF 的序列化方式支持 Java、hessian2，默认是 hessian2。序列化方式的对比和配置（只在服务端配置 HSFApiProviderBean）如下表所示。</p>
+<table>
+<thead>
+<tr>
+<th align="left">序列化方式</th>
+<th align="left">Maven依赖</th>
+<th align="left">配置</th>
+<th align="left">兼容性</th>
+<th align="left">性能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">hessian2</td>
+<td align="left"><artifactId>hsf-io-serialize-hessian2</artifactId></td>
+<td align="left"><code>setPreferSerializeType(&quot;hessian2&quot;)</code></td>
+<td align="left">好</td>
+<td align="left">好</td>
+</tr>
+<tr>
+<td align="left">java</td>
+<td align="left"><artifactId>hsf-io-serialize-java</artifactId></td>
+<td align="left"><code>setPreferSerializeType(&quot;java&quot;)</code></td>
+<td align="left">佳</td>
+<td align="left">一般</td>
+</tr>
+</tbody></table>
+<h3 id="前提条件-2"><a href="#前提条件-2" class="headerlink" title="前提条件"></a>前提条件</h3><p>在开发应用前，您已经完成以下工作：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/66643.htm#task-2310132">配置 EDAS 的私服地址和轻量级配置及注册中心</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44163.htm#task-2310117">启动轻量级配置及注册中心</a></li>
+</ul>
+<h3 id="API-形式配置-HSF-服务-1"><a href="#API-形式配置-HSF-服务-1" class="headerlink" title="API 形式配置 HSF 服务"></a>API 形式配置 HSF 服务</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HSFApiProviderBean hsfApiProviderBean = <span class="keyword">new</span> HSFApiProviderBean();</span><br><span class="line">hsfApiProviderBean.setPreferSerializeType(<span class="string">&quot;hessian2&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Spring-配置-HSF-服务-1"><a href="#Spring-配置-HSF-服务-1" class="headerlink" title="Spring 配置 HSF 服务"></a>Spring 配置 HSF 服务</h3><p>Spring 框架是在应用中广泛使用的组件，如果不想通过 API 的形式配置 HSF 服务，可以使用 Spring XML 的形式进行配置，上述例子中的 API 配置等同于如下 XML 配置。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringProviderBean&quot;</span> <span class="attr">init-method</span>=<span class="string">&quot;init&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 发布服务的接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceInterface&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的实现对象target必须配置 [ref]，为需要发布为HSF服务的spring bean id--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;target&quot;</span> <span class="attr">ref</span>=<span class="string">&quot;引用的BeanId&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的版本 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceVersion&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1.0.0&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的归组 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceGroup&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HSF&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 服务的响应时间 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;3000&quot;</span>/&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置]  服务传输业务对象时的序列化类型 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;preferSerializeType&quot;</span> <span class="attr">value</span>=<span class="string">&quot;hessian2&quot;</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="超时配置"><a href="#超时配置" class="headerlink" title="超时配置"></a>超时配置</h2><p>本文介绍开发 HSF 应用过程中如何进行超时配置。</p>
+<h3 id="前提条件-3"><a href="#前提条件-3" class="headerlink" title="前提条件"></a>前提条件</h3><p>在开发应用前，您已经完成以下工作：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/66643.htm#task-2310132">配置 EDAS 的私服地址和轻量级配置及注册中心</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44163.htm#task-2310117">启动轻量级配置及注册中心</a></li>
+</ul>
+<h3 id="背景信息"><a href="#背景信息" class="headerlink" title="背景信息"></a>背景信息</h3><p>有关网络调用的请求，都需要配置超时，HSF 的默认超时时间是 3000ms。客户端和服务端都可以设置超时，默认优先采用客户端的配置，如果客户端没有配置，使用服务端的超时配置。 在服务端设置超时时，需要考虑到业务本身的执行耗时，加上序列化和网络通讯的时间。所以推荐服务端给每个服务都配置个默认的时间。当然客户端也可以根据自己的业务场景配置超时时间，例如一些前端应用，需要用户快速看到结果，可以把超时时间设置小一些。</p>
+<p>配置的作用范围、作用域，按照优先级由高到低如下表所示。</p>
+<table>
+<thead>
+<tr>
+<th align="left">优先级</th>
+<th align="left">API</th>
+<th align="left">范围</th>
+<th align="left">作用域</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">0</td>
+<td align="left">com.taobao.hsf.util.RequestCtxUtil#setRequestTimeout</td>
+<td align="left">客户端</td>
+<td align="left">单次调用</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">HSFApiConsumerBean#setMethodSpecials</td>
+<td align="left">客户端</td>
+<td align="left">方法</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">HSFApiConsumerBean#setClientTimeout</td>
+<td align="left">客户端</td>
+<td align="left">接口</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">-D defaultHsfClientTimeout</td>
+<td align="left">客户端</td>
+<td align="left">所有接口</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">HSFApiProviderBean#setMethodSpecials</td>
+<td align="left">服务端</td>
+<td align="left">方法</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">HSFApiProviderBean#setClientTimeout</td>
+<td align="left">服务端</td>
+<td align="left">接口</td>
+</tr>
+</tbody></table>
+<p><strong>说明</strong> 客户端配置优先于服务端，方法优先于接口。</p>
+<h3 id="客户端超时配置"><a href="#客户端超时配置" class="headerlink" title="客户端超时配置"></a>客户端超时配置</h3><ul>
+<li><p>API 形式配置 HSF 服务。</p>
+<p>配置 HSFApiConsumerBean 的 clientTimeout 属性，单位是 ms，我们把接口的超时配置为 1000ms，方法 queryOrder 配置为 100ms，代码如下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HSFApiConsumerBean consumerBean = <span class="keyword">new</span> HSFApiConsumerBean();</span><br><span class="line"><span class="comment">// 接口级别超时配置</span></span><br><span class="line">consumerBean.setClientTimeout(<span class="number">1000</span>);</span><br><span class="line"><span class="comment">//xxx</span></span><br><span class="line">MethodSpecial methodSpecial = <span class="keyword">new</span> MethodSpecial();</span><br><span class="line">methodSpecial.setMethodName(<span class="string">&quot;queryOrder&quot;</span>);</span><br><span class="line"><span class="comment">// 方法级别超时配置，优先于接口超时配置</span></span><br><span class="line">methodSpecial.setClientTimeout(<span class="number">100</span>);</span><br><span class="line">consumerBean.setMethodSpecials(<span class="keyword">new</span> MethodSpecial[]&#123;methodSpecial&#125;);</span><br></pre></td></tr></table></figure></li>
+<li><p>Spring 配置 HSF 服务。</p>
+<p>Spring 框架是在应用中广泛使用的组件，如果不想通过 API 的形式配置 HSF 服务，可以使用 Spring XML 的形式进行配置，上述例子中的 API 配置等同于如下 XML 配置。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;CallHelloWorld&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringConsumerBean&quot;</span>&gt;</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1000&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodSpecials&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.model.metadata.MethodSpecial&quot;</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;queryOrder&quot;</span> /&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;100&quot;</span> /&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    ...</span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>注解配置。</p>
+<p>SpringBoot 广泛使用的今天，使用注解装配 SpringBean 也成为一种选择，HSF 也支持使用注解进行配置，用来订阅服务。</p>
+<ol>
+<li><p>在项目中增加依赖 starter。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>pandora-hsf-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>在代码中注解配置。</p>
+<p>通常一个 HSF Consumer 需要在多个地方使用，但并不需要在每次使用的地方都用 @HSFConsumer 来标记。只需要写一个统一个 Config 类，然后在其它需要使用的地方，直接 @Autowired 注入即可上述例子中的 API 配置等同于如下注解配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@HSFConsumer(clientTimeout = 1000, methodSpecials = @HSFConsumer.ConsumerMethodSpecial(methodName = &quot;queryOrder&quot;, clientTimeout = &quot;100&quot;))</span></span><br><span class="line"><span class="keyword">private</span> OderService orderService;</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+<li><p>客户端全局接口超时配置。</p>
+<ul>
+<li>在启动参数中添加 <code>-D defaultHsfClientTimeout=100</code></li>
+<li>在代码中添加 <code>System.setProperty(&quot;defaultHsfClientTimeout&quot;, “100”)</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="服务端方法超时配置"><a href="#服务端方法超时配置" class="headerlink" title="服务端方法超时配置"></a>服务端方法超时配置</h3><ul>
+<li><p>API 配置 HSF 服务。</p>
+<p>配置 HSFApiProviderBean 的 clientTimeout 属性，单位是 ms，代码如下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HSFApiProviderBean providerBean = <span class="keyword">new</span> HSFApiProviderBean();</span><br><span class="line"><span class="comment">// 接口级别超时配置</span></span><br><span class="line">providerBean.setClientTimeout(<span class="number">1000</span>);</span><br><span class="line"><span class="comment">// xxx</span></span><br><span class="line">MethodSpecial methodSpecial = <span class="keyword">new</span> MethodSpecial();</span><br><span class="line">methodSpecial.setMethodName(<span class="string">&quot;queryOrder&quot;</span>);</span><br><span class="line"><span class="comment">// 方法级别超时配置，优先于接口超时配置</span></span><br><span class="line">methodSpecial.setClientTimeout(<span class="number">100</span>);</span><br><span class="line">providerBean.setMethodSpecials(<span class="keyword">new</span> MethodSpecial[]&#123;methodSpecial&#125;);</span><br></pre></td></tr></table></figure></li>
+<li><p>Spring 配置 HSF 服务。</p>
+<p>Spring 框架是在应用中广泛使用的组件，如果不想通过 API 的形式配置 HSF 服务，可以使用 Spring XML 的形式进行配置，上述例子中的 API 配置等同于如下 XML 配置。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringProviderBean&quot;</span> <span class="attr">init-method</span>=<span class="string">&quot;init&quot;</span>&gt;</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1000&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodSpecials&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.model.metadata.MethodSpecial&quot;</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;queryOrder&quot;</span> /&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;2000&quot;</span> /&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    ...</span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>注解配置 HSF 服务。</p>
+<p>注入即可上述例子中的 API 配置等同于如下注解配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@HSFProvider(serviceInterface = OrderService.class, clientTimeout = 3000)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OrderServiceImpl</span> <span class="keyword">implements</span> <span class="title">OrderService</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> OrderDAO orderDAO;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderModel <span class="title">queryOrder</span><span class="params">(Long id)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> orderDAO.queryOrder(id);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="服务端线程池配置"><a href="#服务端线程池配置" class="headerlink" title="服务端线程池配置"></a>服务端线程池配置</h2><p>本文介绍开发 HSF 应用过程中如何进行服务端线程池配置。</p>
+<h3 id="前提条件-4"><a href="#前提条件-4" class="headerlink" title="前提条件"></a>前提条件</h3><p>在开发应用前，您已经完成以下工作：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/66643.htm#task-2310132">配置 EDAS 的私服地址和轻量级配置及注册中心</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/44163.htm#task-2310117">启动轻量级配置及注册中心</a></li>
+</ul>
+<h3 id="服务线程池业务示意图"><a href="#服务线程池业务示意图" class="headerlink" title="服务线程池业务示意图"></a>服务线程池业务示意图</h3><p>HSF 服务端线程池主要分为 IO 线程和业务线程，其中 IO 线程模型就是 netty reactor 网络模型中使用的。我们主要讨论业务线程池的配置。业务线程池分为默认业务线程池和服务线程池，其中服务线程池是从默认线程池中分割出来的。</p>
+<p><img src="Java-Framework-HSF-Operation/%E6%9C%8D%E5%8A%A1%E7%BA%BF%E7%A8%8B%E4%B8%9A%E5%8A%A1%E7%A4%BA%E6%84%8F%E5%9B%BE.png" alt="服务线程业务示意图"></p>
+<h3 id="默认线程池配置"><a href="#默认线程池配置" class="headerlink" title="默认线程池配置"></a>默认线程池配置</h3><p>服务端线程池是用来执行业务逻辑的线程池，线程池默认的 core size 是 50，max size 是 720，keepAliveTime 500s。队列使用的是 SynchronousQueue，没有缓存队列，不会堆积用户请求。 当服务端线程池所有线程（720）都在处理请求时，对于新的请求，会立即拒绝，返回 Thread pool is full 异常。可以使用下面 VM 参数（-D 参数）进行配置。</p>
+<ul>
+<li>线程池最小配置：<code>-D hsf.server.min.poolsize</code></li>
+<li>线程池最大配置：<code>-D hsf.server.max.poolsize</code></li>
+<li>线程收敛的存活时间：<code>-D hsf.server.thread.keepalive</code></li>
+</ul>
+<h3 id="服务线程池配置"><a href="#服务线程池配置" class="headerlink" title="服务线程池配置"></a>服务线程池配置</h3><p>对于一些慢服务、并发高，可以为其单独配置线程池，以免占用过多的业务线程，影响应用的其他服务的调用。</p>
+<ul>
+<li><p>API 形式配置 HSF 服务</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">HSFApiProviderBean hsfApiProviderBean = <span class="keyword">new</span> HSFApiProviderBean();</span><br><span class="line"><span class="comment">//...</span></span><br><span class="line">hsfApiProviderBean.setCorePoolSize(<span class="string">&quot;50&quot;</span>);</span><br><span class="line">hsfApiProviderBean.setMaxPoolSize(<span class="string">&quot;200&quot;</span>);</span><br></pre></td></tr></table></figure></li>
+<li><p>Spring 配置 HSF 服务</p>
+<p>Spring 框架是在应用中广泛使用的组件，如果不想通过 API 的形式配置 HSF 服务，可以使用 Spring XML 的形式进行配置，上述例子中的 API 配置等同于如下 XML 配置。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringProviderBean&quot;</span> <span class="attr">init-method</span>=<span class="string">&quot;init&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--[设置] 发布服务的接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceInterface&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.alibaba.middleware.hsf.guide.api.service.OrderService&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;corePoolSize&quot;</span> <span class="attr">value</span>=<span class="string">&quot;50&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;maxPoolSize&quot;</span> <span class="attr">value</span>=<span class="string">&quot;200&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>注解配置 HSF 服务</p>
+<p>SpringBoot 广泛使用的今天，使用注解装配 SpringBean 也成为一种选择，HSF 也支持使用注解进行配置，用来发布服务。</p>
+<ol>
+<li><p>在项目中增加依赖 starter。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>pandora-hsf-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>将 @HSFProvider 配置到实现的类型。</p>
+<p>上述例子中的 API 配置等同于如下注解配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@HSFProvider(serviceInterface = OrderService.class, corePoolSize = 50, maxPoolSize = 200)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OrderServiceImpl</span> <span class="keyword">implements</span> <span class="title">OrderService</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> OrderDAO orderDAO;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderModel <span class="title">queryOrder</span><span class="params">(Long id)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> orderDAO.queryOrder(id);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+</ul>
+<h2 id="API-手册"><a href="#API-手册" class="headerlink" title="API 手册"></a>API 手册</h2><p>在 HSF 应用的 API 中，最关键的是创建 ProviderBean 和 ConsumerBean 相关的 API。</p>
+<h3 id="背景信息-1"><a href="#背景信息-1" class="headerlink" title="背景信息"></a>背景信息</h3><p>根据用户使用的场景不同，主要分为4个关键的类。</p>
+<ul>
+<li>com.taobao.hsf.app.api.util.HSFApiProviderBean: 通过 API 编程的方式创建 Provider Bean。</li>
+<li>com.taobao.hsf.app.api.util.HSFApiConsumerBean: 通过 API 编程的方式创建 Consumer Bean。</li>
+<li>com.taobao.hsf.app.spring.util.HSFSpringProviderBean: 通过 Spring 配置的方式创建 Provider Bean。</li>
+<li>com.taobao.hsf.app.spring.util.HSFSpringConsumerBean: 通过 Spring 配置的方式创建 Consumer Bean。</li>
+</ul>
+<p>其中，HSFSpringXxxBean 的配置属性与 HSFApiXxxBean 的 setter 方法相对应。接下来就分别以 ProviderBean 和 ConsumerBean 的视角介绍这 4 个类的 API。</p>
+<h3 id="ProviderBean"><a href="#ProviderBean" class="headerlink" title="ProviderBean"></a>ProviderBean</h3><ul>
+<li><p>API 编程方式 - HSFApiProviderBean</p>
+<p>通过配置并初始化 com.taobao.hsf.app.api.util.HSFApiProviderBean 即可完成 HSF 服务的发布。</p>
+<p>对于一个服务，com.taobao.hsf.app.api.util.HSFApiProviderBean 的配置及初始化过程只需配置一次。此外，考虑到 HSFApiProviderBean 对象比较复杂，建议缓存。</p>
+<ul>
+<li><p>示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 实例化并配置Provider Bean</span></span><br><span class="line">HSFApiProviderBean hsfApiProviderBean = <span class="keyword">new</span> HSFApiProviderBean();</span><br><span class="line">hsfApiProviderBean.setServiceInterface(<span class="string">&quot;com.taobao.hsf.test.HelloWorldService&quot;</span>);</span><br><span class="line">hsfApiProviderBean.setTarget(target); <span class="comment">// target 为 serviceInterface 指定接口的实现对象hsfApiProviderBean.setServiceVersion(&quot;1.0.0&quot;);</span></span><br><span class="line">hsfApiProviderBean.setServiceGroup(<span class="string">&quot;HSF&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化 Provider Bean，发布服务</span></span><br><span class="line">hsfApiProviderBean.init();</span><br></pre></td></tr></table></figure></li>
+<li><p>可配置属性表：</p>
+<p>除上述示例代码中设置的属性，HSFApiProviderBean 还包含许多其他可配置的属性，均可通过对应的 setter 方法进行设置。</p>
+<table>
+<thead>
+<tr>
+<th align="left">属性名</th>
+<th align="left">类型</th>
+<th align="left">是否必选</th>
+<th align="left">默认值</th>
+<th align="left">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">serviceInterface</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">无</td>
+<td align="left">设置 HSF 服务对外提供的业务接口。客户端通过此属性进行订阅。</td>
+</tr>
+<tr>
+<td align="left">target</td>
+<td align="left">Object</td>
+<td align="left">是</td>
+<td align="left">无</td>
+<td align="left">设置 serviceInterface 指定接口的服务实现对象。</td>
+</tr>
+<tr>
+<td align="left">serviceVersion</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">1.0.0</td>
+<td align="left">设置服务的版本号。客户端通过此属性进行订阅。</td>
+</tr>
+<tr>
+<td align="left">serviceGroup</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">HSF</td>
+<td align="left">设置服务的组别。客户端通过此属性进行订阅。</td>
+</tr>
+<tr>
+<td align="left">serviceDesc</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">null</td>
+<td align="left">设置服务的描述，从而方便管理。</td>
+</tr>
+<tr>
+<td align="left">clientTimeout</td>
+<td align="left">int</td>
+<td align="left">否</td>
+<td align="left">3000</td>
+<td align="left">设置响应超时时间（单位：毫秒）。如果服务端在设置的时间内没有返回，则抛出 HSFTimeOutException。</td>
+</tr>
+<tr>
+<td align="left">methodSpecials</td>
+<td align="left">MethodSpecial[]</td>
+<td align="left">否</td>
+<td align="left">空</td>
+<td align="left">设置服务中某些方法的响应超时时间。通过设置 MethodSpecial.methodName 指定方法名，通过设置 MethodSpecial.clientTimout 指定当前方法的超时时间，优先级高于当前服务端的 clientTimeout。</td>
+</tr>
+<tr>
+<td align="left">preferSerializeType</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">hessian2</td>
+<td align="left">针对 HSF2，设置服务的请求参数和响应结果的序列化方式。可选值有 Java、hessian、hessian2、json 和 kryo。</td>
+</tr>
+<tr>
+<td align="left">corePoolSize</td>
+<td align="left">值为整型的String</td>
+<td align="left">否</td>
+<td align="left">0</td>
+<td align="left">配置服务单独的线程池，并指定最小活跃线程数量。若不设置该属性，则默认使用 HSF 服务端的公共线程池。</td>
+</tr>
+<tr>
+<td align="left">maxPoolSize</td>
+<td align="left">值为整型的String</td>
+<td align="left">否</td>
+<td align="left">0</td>
+<td align="left">配置服务单独的线程池，并指定最大活跃线程数量。若不设置该属性，则默认使用 HSF 服务端的公共线程池。</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+</li>
+<li><p>Spring 配置方式 - HSFSpringProviderBean</p>
+<p>通过在 Spring 配置文件中，配置一个 class 为 com.taobao.hsf.app.spring.util.HSFSpringProviderBean 的 bean，即可完成 HSF 服务的发布。</p>
+<p>示例代码</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;helloWorldService&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.test.HelloWorldService&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringProviderBean&quot;</span> <span class="attr">init-method</span>=<span class="string">&quot;init&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- [必选] 设置HSF服务对外提供的业务接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceInterface&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.taobao.hsf.test.HelloWorldService&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [必选] 设置serviceInterface指定接口的服务实现对象，即需要发布为HSF服务的spring bean id --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;target&quot;</span> <span class="attr">ref</span>=<span class="string">&quot;helloWorldService&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务的版本号，默认为1.0.0 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceVersion&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1.0.0&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务的组别，默认为HSF --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceGroup&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HSF&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务的描述，从而方便管理，默认为null --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;serviceDesc&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HelloWorldService providered by HSF&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置响应超时时间（单位：毫秒）。如果服务端在设置的时间内没有返回，则抛出HSFTimeOutException --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 默认为3000 ms --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;3000&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务中某些方法的响应超时时间。优先级高于上面的clientTimeout --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 通过设置MethodSpecial.methodName指定方法名，MethodSpecial.clientTimout指定方法的超时时间 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodSpecials&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.model.metadata.MethodSpecial&quot;</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;sum&quot;</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;2000&quot;</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务的请求参数和响应结果的序列化方式。可选值包含java、hessian、hessian2、json和kryo --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 默认为hessian2 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;preferSerializeType&quot;</span> <span class="attr">value</span>=<span class="string">&quot;hessian2&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 配置服务单独的线程池，并指定最小活跃线程数量。若不设置该属性，则默认使用HSF服务端的公共线程池 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;corePoolSize&quot;</span> <span class="attr">value</span>=<span class="string">&quot;10&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 配置服务单独的线程池，并指定最大活跃线程数量。若不设置该属性，则默认使用HSF服务端的公共线程池 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;maxPoolSize&quot;</span> <span class="attr">value</span>=<span class="string">&quot;60&quot;</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="ConsumerBean"><a href="#ConsumerBean" class="headerlink" title="ConsumerBean"></a>ConsumerBean</h3><ul>
+<li><p>API 配置方式 - HSFApiConsumerBean</p>
+<p>通过配置并初始化 com.taobao.hsf.app.api.util.HSFApiConsumerBean 完成 HSF 服务的订阅。</p>
+<p>对于同一个服务，com.taobao.hsf.app.api.util.HSFApiConsumerBean 的配置及初始化过程只需配置一次。</p>
+<p>由于 HSFApiConsumerBean 对象内容多，建议将该对象以及获取到的 HSF 代理进行缓存。</p>
+<p><strong>说明</strong> 在 HSF 内部 HSFApiConsumerBean 对服务的配置是缓存起来的。即如果对某个订阅的服务进行了多次配置，只有第一次的配置生效。</p>
+<ul>
+<li><p>示例代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 实例化并配置 Consumer Bean</span></span><br><span class="line">HSFApiConsumerBean hsfApiConsumerBean = <span class="keyword">new</span> HSFApiConsumerBean();</span><br><span class="line">hsfApiConsumerBean.setInterfaceName(<span class="string">&quot;com.taobao.hsf.test.HelloWorldService&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setVersion(<span class="string">&quot;1.0.0&quot;</span>);</span><br><span class="line">hsfApiConsumerBean.setGroup(<span class="string">&quot;HSF&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化 Consumer Bean，订阅服务</span></span><br><span class="line"><span class="comment">// true表示等待地址推送（超时时间为3000毫秒），默认为false（异步）</span></span><br><span class="line">hsfApiConsumerBean.init(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取 HSF 代理</span></span><br><span class="line">HelloWorldService helloWorldService = (HelloWorldService) hsfApiConsumerBean.getObject();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 发起 HSF 调用</span></span><br><span class="line">String helloStr = helloWorldService.sayHello(<span class="string">&quot;Li Lei&quot;</span>);</span><br></pre></td></tr></table></figure></li>
+<li><p>可配置属性表</p>
+<p>除上述示例代码中设置的属性，HSFApiConsumerBean 还包含许多其他可配置的属性，均可通过对应的 setter 方法进行设置。</p>
+<table>
+<thead>
+<tr>
+<th align="left">属性名</th>
+<th align="left">类型</th>
+<th align="left">是否必选</th>
+<th align="left">默认值</th>
+<th align="left">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">interfaceName</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">无</td>
+<td align="left">设置需要订阅服务的接口名。客户端通过此属性进行订阅。</td>
+</tr>
+<tr>
+<td align="left">version</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">无</td>
+<td align="left">设置需要订阅服务的版本号。客户端通过此属性进行订阅。</td>
+</tr>
+<tr>
+<td align="left">group</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">无</td>
+<td align="left">设置需要订阅服务的组别。客户端通过此属性进行订阅。</td>
+</tr>
+<tr>
+<td align="left">clientTimeout</td>
+<td align="left">int</td>
+<td align="left">否</td>
+<td align="left">无</td>
+<td align="left">设置请求超时时间（单位：毫秒）。如果客户端在设置的时间内没有收到服务端响应，则抛出 HSFTimeOutException。 若客户端设置了clientTimeout，则优先级高于服务端设置的 clientTimeout。否则，在服务的远程调用过程中，使用服务端设置的 clientTimeout。</td>
+</tr>
+<tr>
+<td align="left">methodSpecials</td>
+<td align="left">MethodSpecial[]</td>
+<td align="left">否</td>
+<td align="left">空</td>
+<td align="left">设置服务中某些方法的请求超时时间。通过设置 MethodSpecial.methodName 指定方法名，通过设置 MethodSpecial.clientTimout 指定当前方法的超时时间，优先级高于当前客户端的 clientTimeout。</td>
+</tr>
+<tr>
+<td align="left">maxWaitTimeForCsAddress</td>
+<td align="left">int</td>
+<td align="left">否</td>
+<td align="left">无</td>
+<td align="left">设置同步等待 ConfigServer 推送地址的时间（单位：毫秒），从而避免因地址还未推送到就发起服务调用造成的 HSFAddressNotFoundException。一般建议设置为 5000 毫秒，即可满足推送等待时间。</td>
+</tr>
+<tr>
+<td align="left">asyncallMethods</td>
+<td align="left">List</td>
+<td align="left">否</td>
+<td align="left">null</td>
+<td align="left">设置需要异步调用的方法列表。List中的每一个字符串的格式为：name：方法名 type：异步调用类型 listener：监听器其中 listener 只对 callback 类型的异步调用生效。type 的类型有：future：通过 Future 的方式去获取请求执行的结果。callback：当远程服务的调用完成后，HSF 会使用响应结果回调此处配置的 listener，该 listener 需要实现 HSFResponseCallback 接口。</td>
+</tr>
+<tr>
+<td align="left">proxyStyle</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">jdk</td>
+<td align="left">设置服务的代理模式，一般不用配置。如果要拦截这个 consumer bean，需要配置成 javassist。</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+</li>
+<li><p>Spring 配置方式 - HSFSpringConsumerBean</p>
+<p>通过在 Spring 配置文件中，配置一个 class为com.taobao.hsf.app.api.util.HSFSpringConsumerBean 的 bean，即可实现服务的订阅。</p>
+<p>示例代码</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;helloWorldService&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.app.spring.util.HSFSpringConsumerBean&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- [必选] 设置需要订阅服务的接口名 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;interfaceName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;com.taobao.hsf.test.HelloWorldService&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [必选] 设置需要订阅服务的版本号 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;version&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1.0.0&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [必选] 设置需要订阅服务的组别 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;group&quot;</span> <span class="attr">value</span>=<span class="string">&quot;HSF&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置请求超时时间（单位：毫秒）。如果客户端在设置的时间内没有收到服务端响应，则抛出HSFTimeOutException --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 若客户端设置了clientTimeout，则优先级高于服务端设置的clientTimeout。否则，在服务的远程调用过程中，使用服务端设置的clientTimeout。--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;3000&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务中某些方法的请求超时时间，优先级高于当前客户端的clientTimeout --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 通过设置MethodSpecial.methodName指定方法名，通过设置MethodSpecial.clientTimout指定当前方法的超时时间 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodSpecials&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">&quot;com.taobao.hsf.model.metadata.MethodSpecial&quot;</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;methodName&quot;</span> <span class="attr">value</span>=<span class="string">&quot;sum&quot;</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;clientTimeout&quot;</span> <span class="attr">value</span>=<span class="string">&quot;2000&quot;</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置同步等待ConfigServer推送地址的时间（单位：毫秒）--&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 从而避免因地址还未推送到就发起服务调用造成的HSFAddressNotFoundException --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 一般建议设置为5000毫秒，即可满足推送等待时间 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;maxWaitTimeForCsAddress&quot;</span>  <span class="attr">value</span>=<span class="string">&quot;5000&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置需要异步调用的方法列表。List中的每一个字符串的格式为：--&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- name：方法名 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- type：异步调用类型 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- listener：监听器 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 其中，listener只对callback类型的异步调用生效--&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- type的类型有： --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- future: 通过Future的方式去获取请求执行的结果 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- callback: 当远程服务的调用完成后，HSF会使用响应结果回调此处配置的listener，该listener需要实现HSFResponseCallback接口 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;asyncallMethods&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>name:sayHello;type:callback;listener:com.taobao.hsf.test.service.HelloWorldServiceCallbackHandler<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- [可选] 设置服务的代理模式，一般不用配置。如果要拦截这个consumer bean，需要配置成javassist --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;proxyStyle&quot;</span> <span class="attr">value</span>=<span class="string">&quot;jdk&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="JVM-D-启动配置参数"><a href="#JVM-D-启动配置参数" class="headerlink" title="JVM -D 启动配置参数"></a>JVM -D 启动配置参数</h2><p>本文介绍 HSF 应用开发时 JVM -D 启动参数的配置信息。</p>
+<h3 id="D-hsf-server-port"><a href="#D-hsf-server-port" class="headerlink" title="-D hsf.server.port"></a>-D hsf.server.port</h3><p>指定 HSF 的启动服务绑定端口，默认为 12200。如果在本地启动多个 HSF Provider，则需要修改此端口。</p>
+<h3 id="D-hsf-server-max-poolsize"><a href="#D-hsf-server-max-poolsize" class="headerlink" title="-D hsf.server.max.poolsize"></a>-D hsf.server.max.poolsize</h3><p>指定 HSF 的服务端最大线程池大小，默认值为<code>720</code>。</p>
+<h3 id="D-hsf-server-min-poolsize"><a href="#D-hsf-server-min-poolsize" class="headerlink" title="-D hsf.server.min.poolsize"></a>-D hsf.server.min.poolsize</h3><p>指定 HSF 的服务端最小线程池大小，默认值为<code>50</code>。</p>
+<h3 id="D-hsf-client-localcall"><a href="#D-hsf-client-localcall" class="headerlink" title="-D hsf.client.localcall"></a>-D hsf.client.localcall</h3><p>打开或者关闭本地优先调用，默认值为<code>true</code>。</p>
+<h3 id="D-pandora-qos-port"><a href="#D-pandora-qos-port" class="headerlink" title="-D pandora.qos.port"></a>-D pandora.qos.port</h3><p>指定 Pandora 监控端口，默认值为<code>12201</code>。如果在本地启动多个 HSF Provider，则需要修改此端口。</p>
+<h3 id="D-hsf-http-enable"><a href="#D-hsf-http-enable" class="headerlink" title="-D hsf.http.enable"></a>-D hsf.http.enable</h3><p>是否开启 HTTP 端口，默认为<code> true</code>。</p>
+<h3 id="D-hsf-http-port"><a href="#D-hsf-http-port" class="headerlink" title="-D hsf.http.port"></a>-D hsf.http.port</h3><p>指定 HSF 暴露的 HTTP 接口，默认值为<code>12220</code>。如果在本地启动多个 HSF Provider，则需要修改此端口。</p>
+<h3 id="D-hsf-run-mode"><a href="#D-hsf-run-mode" class="headerlink" title="-D hsf.run.mode"></a>-D hsf.run.mode</h3><p>指定 HSF 客户端是否指定 target 进行调用，即绕开 ConfigServer。值为<code>1</code>，表示不允许指定 target 调用；值为<code>0</code>，表示允许指定 target 调用。默认值为<code>1</code>时，不推荐指定为<code>0</code>。</p>
+<h3 id="D-hsf-shuthook-wait"><a href="#D-hsf-shuthook-wait" class="headerlink" title="-D hsf.shuthook.wait"></a>-D hsf.shuthook.wait</h3><p>HSF 优雅关闭的等待时间，单位是 ms，默认是<code>10000</code>。</p>
+<h3 id="D-hsf-publish-delayed"><a href="#D-hsf-publish-delayed" class="headerlink" title="-D hsf.publish.delayed"></a>-D hsf.publish.delayed</h3><p>是否所有的服务都需要延迟发布，默认是false，不需要延迟发布 。</p>
+<h3 id="D-hsf-server-ip"><a href="#D-hsf-server-ip" class="headerlink" title="-D hsf.server.ip"></a>-D hsf.server.ip</h3><p>指定需要绑定的 IP 地址。在多网卡情况下默认绑定第一个网卡，通过该参数指定需要绑定的 IP。</p>
+<h3 id="D-HsfBindHost"><a href="#D-HsfBindHost" class="headerlink" title="-D HsfBindHost"></a>-D HsfBindHost</h3><p>指定需要绑定的 Host。在多网卡情况下默认绑定和上报给地址注册中心第一个网卡的IP地址，通过该参数可以指定需要绑定的 Host，列如<code>-DHsfBindHost=0.0.0.0</code>将 HSF Server 端口绑定本机所有网卡。</p>
+<h3 id="D-hsf-publish-interval-400"><a href="#D-hsf-publish-interval-400" class="headerlink" title="-D hsf.publish.interval=400"></a>-D hsf.publish.interval=400</h3><p>指定发布服务之间的时间间隔。HSF 服务发布时会瞬间暴露出去，在应用启动时如果承受不住压力，可以配置该参数。默认值是 400，单位 ms。</p>
+<h3 id="D-hsf-client-low-water-mark-32-D-hsf-client-high-water-mark-64-D-hsf-server-low-water-mark-32-D-hsf-server-high-water-mark-64"><a href="#D-hsf-client-low-water-mark-32-D-hsf-client-high-water-mark-64-D-hsf-server-low-water-mark-32-D-hsf-server-high-water-mark-64" class="headerlink" title="-D hsf.client.low.water.mark=32 -D hsf.client.high.water.mark=64 -D hsf.server.low.water.mark=32 -D hsf.server.high.water.mark=64"></a>-D hsf.client.low.water.mark=32 -D hsf.client.high.water.mark=64 -D hsf.server.low.water.mark=32 -D hsf.server.high.water.mark=64</h3><p>指定客户端或者服务端的每个 channel 写缓冲的限制。</p>
+<ul>
+<li>客户端每个 channel 的写缓冲的限制，单位为 KB，一旦超过高水位，channel 禁写，新的请求放弃写出，直接报错。禁写之后，等到缓冲区低于低水位才能恢复。</li>
+<li>服务端每个 channel 的写缓冲的限制，单位为 KB，超过高水位时，新的响应放弃写出，客户端收不到响应会超时。缓冲区低于低水位时才能恢复写。</li>
+<li>高低水位需成对设置，并且需要高水位大于低水位。</li>
+</ul>
+<h3 id="D-hsf-generic-remove-class-true"><a href="#D-hsf-generic-remove-class-true" class="headerlink" title="-D hsf.generic.remove.class=true"></a>-D hsf.generic.remove.class=true</h3><p>获取泛化调用的结果，但不输出<code>class</code>字段信息。</p>
+<h3 id="D-defaultHsfClientTimeout"><a href="#D-defaultHsfClientTimeout" class="headerlink" title="-D defaultHsfClientTimeout"></a>-D defaultHsfClientTimeout</h3><p>全局的客户端超时配置。</p>
+<h3 id="D-hsf-invocation-timeout-sensitive"><a href="#D-hsf-invocation-timeout-sensitive" class="headerlink" title="-D hsf.invocation.timeout.sensitive"></a>-D hsf.invocation.timeout.sensitive</h3><p><code>hsf.invocation.timeout.sensitive</code> 默认值设置为 false，决定 HSF 调用时间是否包含创建连接、选址等耗时逻辑。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-Framework-HSF-Operation.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%BF%E9%87%8C/" rel="tag">阿里</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Java-Idempotent-Design.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Java 幂等设计
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Java-Framework-HSF-Introduction.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">HSF 框架简介</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

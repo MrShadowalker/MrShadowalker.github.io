@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Valar Morghulis" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    信息安全部技术岗技能整理 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Hack-Security-Engineer-Skills"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  信息安全部技术岗技能整理
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Hack-Security-Engineer-Skills.html" class="article-date">
+  <time datetime="2017-11-30T01:04:40.000Z" itemprop="datePublished">2017-11-30</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/">信息安全</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">10k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">35 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>近期可能会从应用系统开发部转岗至信息安全岗，所以大概了解了一下安全岗的职位描述以及职位要求，顺便整理了一下学习路线。</p>
+<span id="more"></span>
+
+<h1 id="安全人员基本技能"><a href="#安全人员基本技能" class="headerlink" title="安全人员基本技能"></a>安全人员基本技能</h1><p>关键字：时间，翻墙，同步，行业</p>
+<h2 id="职位描述"><a href="#职位描述" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li><p>合理安排工作时间，完成上级交待的任务；</p>
+</li>
+<li><p>打造属于自己的开发与测试环境；</p>
+</li>
+<li><p>专属的网络上网环境；</p>
+</li>
+<li><p>开发工具与代码同步；</p>
+</li>
+<li><p>专业文档编写技巧；</p>
+</li>
+<li><p>能无障碍读懂专业英文资料；</p>
+</li>
+<li><p>关注行业态势和热点。</p>
+</li>
+</ul>
+<h2 id="职位要求"><a href="#职位要求" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li><p>了解行业发展，目前大公司的产品和业务；</p>
+</li>
+<li><p>熟悉 GTD 时间管理方式；</p>
+</li>
+<li><p>能独立安装 Windows/Ubuntu 系统和虚拟机；</p>
+</li>
+<li><p>客户端与服务器通信过程；</p>
+</li>
+<li><p>浏览器插件与使用技巧（Firebug）；</p>
+</li>
+<li><p>突破网络限制，建立自己的私有网络（VPN，Wireshark）；</p>
+</li>
+<li><p>针对每种语言的开发工具（Sublime，Ulipad等），git 的使用技巧；</p>
+</li>
+<li><p>Office 编辑与格式注意（标题、封面、页眉、页码、字体等）；</p>
+</li>
+<li><p>英语水平良好，能阅读各种英文技术文档。</p>
+</li>
+</ul>
+<h2 id="学习路线"><a href="#学习路线" class="headerlink" title="学习路线"></a>学习路线</h2><h3 id="科学的工作环境"><a href="#科学的工作环境" class="headerlink" title="科学的工作环境"></a>科学的工作环境</h3><p>打造适合自己的工作环境，主要包含：电脑，操作系统，科学网络，常用工具，虚拟机。</p>
+<ul>
+<li>学习安装操作系统（Windows、Vmware/VirtualBox、Ubuntu/Kali），学习方法 Google/SecWiki 搜索；</li>
+<li>学习自身安全意识：个人电脑安装杀毒软件、网站安全密码安全，可以参照这里，<a target="_blank" rel="noopener" href="http://evilcos.me/yinsi.html">你得学几招保护自己</a>；</li>
+<li>科学上网环境（goagent 现已整合为 XX-NET、shadowsocks、vpn），学习方法 Google/SecWiki 搜索；</li>
+<li>提问的智慧，<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/20161362">Google 搜索技巧</a>；</li>
+</ul>
+<h3 id="文档编辑技巧"><a href="#文档编辑技巧" class="headerlink" title="文档编辑技巧"></a>文档编辑技巧</h3><p>Word 文档编写，PPT/Prize 基本操纵，Markdown 书写。</p>
+<ul>
+<li>培养感觉，多逛<a target="_blank" rel="noopener" href="http://www.v2ex.com/">v2ex</a>，<a target="_blank" rel="noopener" href="http://www.zhihu.com/">知乎</a>，<a target="_blank" rel="noopener" href="http://stackoverflow.com/">stackoverflow</a>，<a target="_blank" rel="noopener" href="https://twitter.com/">twitter</a>；</li>
+<li>Office 和 Prize 视频教程，在<a target="_blank" rel="noopener" href="http://study.163.com/">网易云课堂</a>和<a target="_blank" rel="noopener" href="http://www.duobei.com/">多贝网</a>搜索；</li>
+<li><a target="_blank" rel="noopener" href="http://wowubuntu.com/markdown/">Markdown 语法说明</a>；</li>
+<li><a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=Sublime">Sublime 相关技巧</a>；</li>
+</ul>
+<h3 id="浏览器插件与技巧"><a href="#浏览器插件与技巧" class="headerlink" title="浏览器插件与技巧"></a>浏览器插件与技巧</h3><p>高效与舒适的上网环境需要优秀的浏览器和众多插件支持。</p>
+<ul>
+<li>Chrome/Firefox 两者选其一，并研究其开发者工具的功能，参见<a target="_blank" rel="noopener" href="http://www.cnblogs.com/QLeelulu/archive/2011/08/28/2156402.html">Chrome 浏览器开发者工具</a>；</li>
+<li>Chrome/Firefox 快捷键和代理设置；</li>
+<li>插件的使用：Firebug、Hackbar、Tamper Data、Adblock、SwitchySharp；</li>
+<li><a target="_blank" rel="noopener" href="http://fex.baidu.com/blog/2014/05/what-happen/">从输入 URL 到页面加载完成的过程中都发生了什么事情</a>；</li>
+<li><a target="_blank" rel="noopener" href="http://www.qianxingzhem.com/post-1499.html">网页编码就是那点事</a>；</li>
+</ul>
+<h3 id="网络配置与分析"><a href="#网络配置与分析" class="headerlink" title="网络配置与分析"></a>网络配置与分析</h3><p>熟悉掌握各类网络环境配置，并知道遇到网络问题如何解决。</p>
+<ul>
+<li>Windows/Linux 环境下动态 IP 获取与静态 IP 配置，DNS 配置；</li>
+<li>利用 wireshark 分析系统网络问题，参见<a target="_blank" rel="noopener" href="https://community.emc.com/message/827199#827199">wireshark 实用技巧</a>；</li>
+<li>路由器上网拨号，路由器无线安全配置；</li>
+<li>浏览器网络问题分析，利用 Wireshark/Fiddler/Burp 工具进行分析；</li>
+</ul>
+<h3 id="个人时间管理"><a href="#个人时间管理" class="headerlink" title="个人时间管理"></a>个人时间管理</h3><p>如何更合理地安排时间和完成任务。</p>
+<ul>
+<li>了解时间管理的解决方法（GTD、番茄工作法、四象限等）；</li>
+<li>阅读《小强升职记》书籍；</li>
+<li>选择适合自己的时间管理软件（Doit.im、ticktick、番茄等）；</li>
+</ul>
+<h3 id="团队协作与个人博客"><a href="#团队协作与个人博客" class="headerlink" title="团队协作与个人博客"></a>团队协作与个人博客</h3><p>学会git实现团协作，并通过 Github 建立自己的博客。</p>
+<ul>
+<li>学习团队协作的重要性和 Git 的安装；</li>
+<li>Git 相关教程：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/4551">猴子都能懂的 GIT 入门</a>、<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/4574">Pro Git book V2</a>、<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=Github">SecWiki-Git</a>；</li>
+<li>了解 Github Pages 或者 Gitcafe Pages；</li>
+<li>了解 Octopress 或者 hexo 的机制，并选择其中一个研究，具体方法可以 Google；</li>
+<li>通过以上软件建立自己的博客，可以参考简明<a target="_blank" rel="noopener" href="http://cnfeat.com/2014/05/10/2014-05-11-how-to-build-a-blog/">Github Pages 与 Hexo 教程</a> ，<a target="_blank" rel="noopener" href="http://leodots.com/2014/06/26/hexo_0/">hexo 搭建博客</a>。</li>
+</ul>
+<h1 id="Web-安全工程师"><a href="#Web-安全工程师" class="headerlink" title="Web 安全工程师"></a>Web 安全工程师</h1><p>关键字：渗透，攻防，编程，挖掘</p>
+<h2 id="职位描述-1"><a href="#职位描述-1" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>对公司网站、业务系统进行安全评估测试（黑盒、白盒测试）；</li>
+<li>对公司各类系统进行安全加固；</li>
+<li>对公司安全事件进行响应，清理后门，根据日志分析攻击途径；</li>
+<li>安全技术研究，包括安全防范技术，黑客技术等；</li>
+<li>跟踪最新漏洞信息，进行业务产品的安全检查。</li>
+</ul>
+<h2 id="职位要求-1"><a href="#职位要求-1" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟悉主流的Web安全技术，包括 SQL 注入、XSS、CSRF、一句话木马等安全风险； </li>
+<li>熟悉国内外主流安全产品和工具，如：Nessus、Nmap、AWVS、Burp、Appscan 等；</li>
+<li>熟悉 Windows、Linux 平台渗透测试、后门分析、加固；</li>
+<li>至少掌握一门编程语言 C/C++/Perl/Python/PHP/Go/Java 等；</li>
+<li>熟悉渗透测试的步骤、方法、流程，具有 Web 安全实战经验；</li>
+<li>熟悉常见安全攻防技术，对网络安全、系统安全、应用安全有深入的理解和自己的认识；</li>
+<li>对 Web 安全整体有深刻理解，具备代码审计和独立漏洞挖掘能力；</li>
+<li>具有较强的团队意识，高度的责任感，文档、方案能力优秀者优先。</li>
+</ul>
+<h2 id="学习路线-1"><a href="#学习路线-1" class="headerlink" title="学习路线"></a>学习路线</h2><h3 id="Web-安全相关概念"><a href="#Web-安全相关概念" class="headerlink" title="Web 安全相关概念"></a>Web 安全相关概念</h3><p>熟悉基本概念（SQL 注入、上传、XSS、CSRF、一句话木马等）。</p>
+<ul>
+<li>通过关键字（SQL 注入、上传、XSS、CSRF、一句话木马等）进行 Google/SecWiki；</li>
+<li>阅读《精通脚本黑客》，虽然很旧也有错误，但是入门还是可以的；</li>
+<li>看一些渗透笔记/视频，了解渗透实战的整个过程，可以 Google（渗透笔记、渗透过程、入侵过程等）；</li>
+</ul>
+<h3 id="熟悉渗透相关工具"><a href="#熟悉渗透相关工具" class="headerlink" title="熟悉渗透相关工具"></a>熟悉渗透相关工具</h3><p>熟悉 AWVS、sqlmap、Burp、nessus、chopper、nmap、Appscan 等相关工具的使用。</p>
+<ul>
+<li>了解该类工具的用途和使用场景，先用软件名字 Google/SecWiki；</li>
+<li>下载无后门版的这些软件进行安装；</li>
+<li>学习并进行使用，具体教材可以在<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/">SecWiki</a>上搜索，例如：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=burp">Brup的教程</a>、<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=sqlmap">sqlmap</a>；</li>
+<li>待常用的这几个软件都学会了可以安装<a target="_blank" rel="noopener" href="http://www.3lsoft.com/">音速启动</a>做一个渗透工具箱；</li>
+</ul>
+<h3 id="渗透实战操作"><a href="#渗透实战操作" class="headerlink" title="渗透实战操作"></a>渗透实战操作</h3><p>掌握渗透的整个阶段并能够独立渗透小型站点。</p>
+<ul>
+<li>网上找渗透视频看并思考其中的思路和原理，关键字（渗透、SQL 注入视频、文件上传入侵、数据库备份、dedecms 漏洞利用等等）；</li>
+<li>自己找站点/搭建测试环境进行测试，记住请隐藏好你自己；</li>
+<li>思考渗透主要分为几个阶段，每个阶段需要做那些工作，例如这个：<a target="_blank" rel="noopener" href="http://netsec.ccert.edu.cn/hacking/files/2011/07/PTES_MindMap_CN1.pdf">PTES渗透测试执行标准</a>；</li>
+<li>研究 SQL 注入的种类、注入原理、手动注入技巧；</li>
+<li>研究文件上传的原理，如何进行截断、双重后缀欺骗(IIS、PHP)、解析漏洞利用（IIS、Nignix、Apache）等，参照：<a target="_blank" rel="noopener" href="http://www.owasp.org.cn/OWASP_Training/Upload_Attack_Framework.pdf">上传攻击框架</a>；</li>
+<li>研究 XSS 形成的原理和种类，具体学习方法可以 Google/SecWiki，可以参考：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=XSS">XSS</a>；</li>
+<li>研究 Windows/Linux 提权的方法和具体使用，可以参考：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=%E6%8F%90%E6%9D%83">提权</a>；</li>
+<li>可以参考: <a target="_blank" rel="noopener" href="http://www.sec-wiki.com/topic/17">开源渗透测试脆弱系统</a>；</li>
+</ul>
+<h3 id="关注安全圈动态"><a href="#关注安全圈动态" class="headerlink" title="关注安全圈动态"></a>关注安全圈动态</h3><p>关注安全圈的最新漏洞、安全事件与技术文章。</p>
+<ul>
+<li>通过 <a target="_blank" rel="noopener" href="http://www.sec-wiki.com/">SecWiki</a> 浏览每日的安全技术文章/事件；</li>
+<li>通过 Weibo/twitter 关注安全圈的从业人员（遇到大牛的关注或者好友果断关注），天天抽时间刷一下；</li>
+<li>通过 feedly/鲜果订阅国内外安全技术博客（不要仅限于国内，平时多注意积累），没有订阅源的可以看一下<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/opml/index">SecWiki的聚合栏目</a>；</li>
+<li>养成习惯，每天主动提交安全技术文章链接到 SecWiki 进行积淀；</li>
+<li>多关注下最新漏洞列表，推荐几个：<a target="_blank" rel="noopener" href="http://www.exploit-db.com/">exploit-db</a>、<a target="_blank" rel="noopener" href="http://cve.scap.org.cn/">CVE中文库</a>、<a target="_blank" rel="noopener" href="http://www.wooyun.org/">Wooyun</a>等，遇到公开的漏洞都去实践下。</li>
+<li>关注国内国际上的安全会议的议题或者录像，推荐<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/index?tag=conference">SecWiki-Conference</a>。</li>
+</ul>
+<h3 id="熟悉Windows-Kali-Linux"><a href="#熟悉Windows-Kali-Linux" class="headerlink" title="熟悉Windows/Kali Linux"></a>熟悉Windows/Kali Linux</h3><p>学习 Windows/Kali Linux 基本命令、常用工具；</p>
+<ul>
+<li>熟悉 Windows 下的常用的 cmd 命令，例如：ipconfig,nslookup,tracert,net,tasklist,taskkill 等；</li>
+<li>熟悉 Linux 下的常用命令，例如：ifconfig,ls,cp,mv,vi,wget,service,sudo等；</li>
+<li>熟悉 Kali Linux 系统下的常用工具，可以参考<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=Kali">SecWiki</a>,《Web Penetration Testing with Kali Linux》、《Hacking with Kali》等；</li>
+<li>熟悉 metasploit 工具，可以参考<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=Metasploit">SecWiki</a>、《Metasploit渗透测试指南》。</li>
+</ul>
+<h3 id="服务器安全配置"><a href="#服务器安全配置" class="headerlink" title="服务器安全配置"></a>服务器安全配置</h3><p>学习服务器环境配置，并能通过思考发现配置存在的安全问题。</p>
+<ul>
+<li>Windows2003/2008 环境下的 IIS 配置，特别注意配置安全和运行权限，可以参考：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=%E9%85%8D%E7%BD%AE">SecWiki-配置</a>；</li>
+<li>Linux 环境下的 LAMP 的安全配置，主要考虑运行权限、跨目录、文件夹权限等，可以参考：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=%E9%85%8D%E7%BD%AE">SecWiki-配置</a>；</li>
+<li>远程系统加固，限制用户名和口令登陆，通过 iptables 限制端口；</li>
+<li>配置软件 Waf 加强系统安全，在服务器配置 mod_security 等系统，参见<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=modsecurity">SecWiki-ModSecurity</a>；</li>
+<li>通过 Nessus 软件对配置环境进行安全检测，发现未知安全威胁。</li>
+</ul>
+<h3 id="脚本编程学习"><a href="#脚本编程学习" class="headerlink" title="脚本编程学习"></a>脚本编程学习</h3><p>选择脚本语言 Perl/Python/PHP/Go/Java 中的一种，对常用库进行编程学习。</p>
+<ul>
+<li>搭建开发环境和选择 IDE，PHP 环境推荐<a target="_blank" rel="noopener" href="http://www.wampserver.com/en/">Wamp</a>和<a target="_blank" rel="noopener" href="https://www.apachefriends.org/index.html">XAMPP</a>，IDE 强烈推荐<a target="_blank" rel="noopener" href="http://www.sublimetext.com/">Sublime</a>，一些 Sublime 的技巧：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=sublime">SecWiki-Sublime</a>；</li>
+<li>Python 编程学习，学习内容包含：语法、正则、文件、网络、多线程等常用库，推荐《Python核心编程》，不要看完；</li>
+<li>用 Python 编写漏洞的 exp，然后写一个简单的网络爬虫，可参见<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=%E7%88%AC%E8%99%AB">SecWiki-爬虫</a>、<a target="_blank" rel="noopener" href="http://www.icoolxue.com/album/show/113">视频</a>；</li>
+<li>PHP 基本语法学习并书写一个简单的博客系统，参见《PHP 与 MySQL 程序设计（第4版）》、<a target="_blank" rel="noopener" href="http://www.verycd.com/topics/2843130/">视频</a>；</li>
+<li>熟悉 MVC 架构，并试着学习一个 PHP 框架或者 Python 框架（可选）；</li>
+<li>了解 Bootstrap 的布局或者 CSS，可以参考：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=Bootstrap">SecWiki-Bootstrap</a>；</li>
+</ul>
+<h3 id="源码审计与漏洞分析"><a href="#源码审计与漏洞分析" class="headerlink" title="源码审计与漏洞分析"></a>源码审计与漏洞分析</h3><p>能独立分析脚本源码程序并发现安全问题。</p>
+<ul>
+<li>熟悉源码审计的动态和静态方法，并知道如何去分析程序，参见<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=%E5%AE%A1%E8%AE%A1">SecWiki-审计</a>；</li>
+<li>从 Wooyun 上寻找开源程序的漏洞进行分析并试着自己分析；</li>
+<li>了解 Web 漏洞的形成原因，然后通过关键字进行查找分析，参见<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/search?wd=%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1">SecWiki-代码审计</a>、<a target="_blank" rel="noopener" href="https://code.google.com/p/pasc2at/wiki/SimplifiedChinese">高级PHP应用程序漏洞审核技术</a>；</li>
+<li>研究 Web 漏洞形成原理和如何从源码层面避免该类漏洞，并整理成checklist。</li>
+</ul>
+<h3 id="安全体系设计与开发"><a href="#安全体系设计与开发" class="headerlink" title="安全体系设计与开发"></a>安全体系设计与开发</h3><p>能建立自己的安全体系，并能提出一些安全建议或者系统架构。</p>
+<ul>
+<li>开发一些实用的安全小工具并开源，体现个人实力；</li>
+<li>建立自己的安全体系，对公司安全有自己的一些认识和见解；</li>
+<li>提出或者加入大型安全系统的架构或者开发；</li>
+<li>看自己发展咯~</li>
+</ul>
+<h1 id="Web-安全研发工程师"><a href="#Web-安全研发工程师" class="headerlink" title="Web 安全研发工程师"></a>Web 安全研发工程师</h1><p>关键字：系统，开发，业务，调试</p>
+<h2 id="职位描述-2"><a href="#职位描述-2" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责互联网运营平台、业务安全平台等系统的建设和开发工作；</li>
+<li>对安全产品的易用性改进和Web研发技术优化；</li>
+<li>根据公司安全的需要开发安全辅助工具或平台；</li>
+<li>参与安全系统的需求分析、设计、编码等开发工作；</li>
+<li>维护公司现有的安全程序与系统。</li>
+</ul>
+<h2 id="职位要求-2"><a href="#职位要求-2" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>能熟练应用一门或几门以下的技术：PHP/Python/Shell/JavaScript/Ajax，熟练把握 LNMP 开发；</li>
+<li>熟悉MYSQL数据库开发、配置、维护、性能优化；</li>
+<li>优秀的数据库设计和优化能力，至少精通一种数据库应用，MySQL、Redis、mongoDB 加分；</li>
+<li>熟悉 Linux 下的开发，熟悉网络开发，具备一定的系统调优能力；</li>
+<li>了解常见安全攻击和漏洞及系统化的防护方案；</li>
+<li>必须拥有良好的职业道德，责任心，团队合作精神，代码风格；</li>
+<li>大访问量网站建设或数据库建设经验优先。</li>
+</ul>
+<h1 id="安全运维工程师"><a href="#安全运维工程师" class="headerlink" title="安全运维工程师"></a>安全运维工程师</h1><p>关键字：应急，加固，培训，产品</p>
+<h2 id="职位描述-3"><a href="#职位描述-3" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>服务器与网络基础设备的安全加固；</li>
+<li>安全事件排查与分析，配合定期编写安全分析报告，专注业内安全事件； </li>
+<li>跟踪最新漏洞信息，进行业务产品的安全检查； </li>
+<li>负责信息安全策略/流程的制定,安全培训/宣传及推广；</li>
+<li>负责Web漏洞和系统漏洞修复工作推进，跟踪解决情况，问题收集。</li>
+</ul>
+<h2 id="职位要求-3"><a href="#职位要求-3" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟悉主流的Web安全技术，包括 SQL 注入、XSS、CSRF 等 OWASP TOP 10 安全风险； </li>
+<li>熟悉 Linux/Windows 下系统和软件的安全配置与加固；</li>
+<li>熟悉常见的安全产品及原理，例如 IDS、IPS、防火墙等；</li>
+<li>掌握常见系统、应用的日志分析方法；</li>
+<li>熟练掌握 C/PHP/Perl/Python/Shell 等一或多种语言； </li>
+<li>具有安全事件挖掘、调查取证经验； </li>
+<li>网络基础扎实，熟悉 TCP/IP 协议，二层转发和三层路由的原理，动态路由协议，常用的应用层协议；</li>
+<li>较好的文档撰写能力、语言表达和与沟通能力。</li>
+</ul>
+<h1 id="安全测试工程师"><a href="#安全测试工程师" class="headerlink" title="安全测试工程师"></a>安全测试工程师</h1><p>关键字：测试，培训，审计，文档</p>
+<h2 id="职位描述-4"><a href="#职位描述-4" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责公司产品的安全测试、漏洞扫描等工作，保障产品安全质量；</li>
+<li>负责安全测试技术积累，提升安全测试能力和效率；</li>
+<li>跟踪和分析业界最新安全漏洞、发展趋势和解决方案，引入业界安全测试最佳实践； </li>
+<li>负责设计系统的安全测试框架和测试流程，负责制定安全开发规范；</li>
+<li>对研发人员、测试相关人员进行安全规范培训，提升规范的可实施性。</li>
+</ul>
+<h2 id="职位要求-4"><a href="#职位要求-4" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟悉常见安全攻防技术和安全漏洞，熟练使用常用渗透测试工具；</li>
+<li>熟悉PC客户端软件、手机客户端（Android、iOS）软件的测试流程和方法；</li>
+<li>熟悉常见的代码审计或白盒测试工具；</li>
+<li>熟练使用 C/C++/PHP/Java/JavaScript/Python 一到两种；</li>
+<li>具有良好的技术文档撰写能力，具有良好的沟通能力及协调能力；</li>
+<li>良好的职业道德，责任心，团队合作精神。</li>
+</ul>
+<h1 id="Windows-逆向工程师"><a href="#Windows-逆向工程师" class="headerlink" title="Windows 逆向工程师"></a>Windows 逆向工程师</h1><p>关键字：漏洞，病毒，调试，挖掘</p>
+<h2 id="职位描述-5"><a href="#职位描述-5" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>参与漏洞挖掘、分析和利用技术研究；</li>
+<li>分析当月高危漏洞原理和利用技巧，撰写相关技术总结文档；</li>
+<li>挖掘浏览器、Office、Adobe Reader、flash 等客户端软件以及网络协议常见漏洞；</li>
+<li>研发相应的漏洞挖掘和分析的一体化框架平台；</li>
+<li>恶意程序分析以及其他程序内部实现逻辑分析；</li>
+<li>对公司其他部门提供技术支持。</li>
+</ul>
+<h2 id="职位要求-5"><a href="#职位要求-5" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟悉 x86/x64 系列汇编语言、C/C++ 语言，能熟练读懂汇编代码；</li>
+<li>有较好的逆向功底，熟练使用 IDA、Windbg、Ollydbg、Immunity Debugger、Bindiff 等分析工具以及 Metasploit 等渗透测试工具；</li>
+<li>至少掌握一门编程语言，包括 C/C++/python/ruby/perl/javascript；</li>
+<li>熟悉浏览器、office、adobe 以及 flash 等软件内部工作原理以及相应软件漏洞分析与利用技术优先；</li>
+<li>熟悉操作系统的相关安全机制，掌握绕过漏洞缓解措施的基本方法；</li>
+<li>熟悉 Windows 系统安全，掌握 Windows 核心编程优先；</li>
+<li>熟悉漏洞挖掘和分析相关技术、工具以及平台，如 Fuzzing 测试，补丁比较、符号执行技术等。</li>
+<li>能够流畅的阅读漏洞方面的英文资料，具备较强的漏洞学习和理解能力；</li>
+<li>熟悉技术文档的写作、PPT 制作、具备基本的工作汇报能力；</li>
+<li>学习能力强、富有团队精神、有责任心和进取能力；</li>
+</ul>
+<h2 id="学习路线-2"><a href="#学习路线-2" class="headerlink" title="学习路线"></a>学习路线</h2><h3 id="漏洞相关概念"><a href="#漏洞相关概念" class="headerlink" title="漏洞相关概念"></a>漏洞相关概念</h3><p>熟悉基本概念和原理（二进制漏洞基本原理、漏洞类型、漏洞利用方法、常见漏洞挖掘、shellcode 编写）。</p>
+<ul>
+<li>通过关键字（栈溢出、堆溢出、整数溢出、<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=UAF">UAF</a>、double-free、<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=shellcode">shellcode</a>）进行Google/<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/">SecWiki</a>等了解基本概念；</li>
+<li>阅读《Q版本缓冲区溢出》《0day漏洞挖掘》等<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/index/type/binvul">书籍</a>，学习二进制漏洞形成的基本原理和基本的利用方法，并进行实践操作；</li>
+<li>学习<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/13">《加密与解密》</a>中部分章节，熟悉Windows系统的重要数据结构、函数传参方法以及PE文件结构等基础知识。</li>
+</ul>
+<h3 id="熟悉相关的工具和平台使用"><a href="#熟悉相关的工具和平台使用" class="headerlink" title="熟悉相关的工具和平台使用"></a>熟悉相关的工具和平台使用</h3><p>熟悉 IDA、WinDbg、Ollydbg、Immunity Debugger、Bindiff，Metasploit 等常见的漏洞分析调试和集成平台使用；</p>
+<ul>
+<li>了解这些工具的使用背景和用途，可以通过 Google/<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/">SecWiki</a> 等搜索了解。</li>
+<li>下载安装相应的工具和搭建相应的平台。</li>
+<li>学习这些工具的功能和基本使用方法，收集有用的工具插件（如<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=mona">mona</a>、idapython）。教程可以通过 Google 或者 <a target="_blank" rel="noopener" href="https://www.sec-wiki.com/">SecWiki</a> 上搜索。</li>
+<li>学习常见工具的插件和脚步编写方法，如 <a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Windbg">WinDbg</a> 插件编写、IDC 和 IDApython 脚步编写、od 脚本编写，具体可以 Google 相关教程。</li>
+<li>熟悉<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Metasploit">Metasploit</a>渗透工具的使用，重点熟悉漏洞模块选择、查看、配置利用以及 shellcode 导出配置等功能，并利用 Metasploit 进行实践。具体教程可以Google：如 Metasploit 教程</li>
+<li>待基本工具都熟悉后将相关工具做成一个工具箱。</li>
+</ul>
+<h3 id="漏洞样本分析"><a href="#漏洞样本分析" class="headerlink" title="漏洞样本分析"></a>漏洞样本分析</h3><p>掌握基本的漏洞原理和利用思路后开始分析分析各种类型的漏洞并撰写分析报告。</p>
+<ul>
+<li>通过搜索引擎各大漏洞披露平台(<a target="_blank" rel="noopener" href="http://exploit-db/">exploit-db</a>、<a target="_blank" rel="noopener" href="http://ww.cve.com/">CVE</a>、<a target="_blank" rel="noopener" href="http://www.binvul.com/">binvul</a>等)搜集历年爆出来的比较经典的各种类型的二进制漏洞进行整理归类，并同时搜集相应的漏洞分析教程。</li>
+<li>根据漏洞描述搭建相应的漏洞<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E8%B0%83%E8%AF%95">调试</a>分析环境，利用 Metasploit 生成样本来进行漏洞重现，并根据漏洞分析报告自己<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90">调试分析</a>。</li>
+<li>待调试分析完成并掌握了漏洞触发的原因和相应的利用方法后，认真总结，并撰写自己的调试分析报告。</li>
+<li>根据 Metasploit 中生成样本的 ruby 源码和调试过程的分析，自己尝试编写漏洞 <a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=exp">poc</a> 并进行验证。</li>
+<li>各个类型的漏洞分析 3 - 5 个，总结各种类型的漏洞的形成机理并及时进行归纳总结。</li>
+</ul>
+<h3 id="高级漏洞利用技术"><a href="#高级漏洞利用技术" class="headerlink" title="高级漏洞利用技术"></a>高级漏洞利用技术</h3><p>学习掌握现在的主流高级漏洞利用技术，了解操作系统以及编译器的各种漏洞利用缓解和保护措施以及相应的绕过方法。</p>
+<ul>
+<li>了解现在操作系统以及编译器的漏洞利用缓解和保护措施，如GS、DEP、ALSR、CFI等。</li>
+<li>学习掌握针对这些缓解保护措施的基本方法，如SEH利用、堆喷射、<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=ROP">ROP</a>导向编程等。</li>
+<li>学习掌握一些针对特定应用程序的高级利用技术：如<a target="_blank" rel="noopener" href="https://blog.fortinet.com/2014/06/16/advanced-exploit-techniques-attacking-the-ie-script-engine">IE脚步引擎高级利用技术</a>、<a target="_blank" rel="noopener" href="https://www.greyhathacker.net/?p=770">office漏洞利用绕过ALSR</a>、<a target="_blank" rel="noopener" href="https://www.greyhathacker.net/?p=911">office漏洞利用堆喷射</a>、<a target="_blank" rel="noopener" href="https://sites.google.com/site/zerodayresearch/smashing_the_heap_with_vector_Li.pdf.">Flash高级漏洞利用技术</a>。</li>
+<li>通过一些在线扫描网站平台如<a target="_blank" rel="noopener" href="https://malwr.com/">malwr</a>、<a target="_blank" rel="noopener" href="https://www.virustotal.com/">VirusTotal</a>、<a target="_blank" rel="noopener" href="http://malware.dontneedcoffee.com/">widespread kits</a>等搜集一些在真实环境中使用的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/topic/4">样本</a>（推荐通过阅读一些安全公司的分析报告并获取相关样本的MD5值然后搜索下载），分析这些在野外使用的样本中的各种高级漏洞利用技术并进行总结。</li>
+<li>关注一些安全峰会的分享议题（如<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=BlackHat">BlackHat</a>等），对其中涉及到漏洞利用的高级技术进行学习和研究。</li>
+</ul>
+<h3 id="漏洞挖掘平台使用"><a href="#漏洞挖掘平台使用" class="headerlink" title="漏洞挖掘平台使用"></a>漏洞挖掘平台使用</h3><p>掌握主流的漏洞挖掘方法Fuzz测试以及各个Fuzz测试平台的使用。</p>
+<ul>
+<li>熟悉<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Fuzz">Fuzz</a>测试的基本原理，了解主流的Fuzz测试平台，如Peach-fuzz，AFL等。</li>
+<li>搭建<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Peach">Peach</a>-fuzz测试框架，熟悉Peach-fuzz的使用范围，熟悉Peach-Fuzz的各个模块的基本工作原理，掌握Peach-pit<a target="_blank" rel="noopener" href="http://www.binvul.com/viewthread.php?tid=334">语法规则</a>。</li>
+<li>阅读peach-pit的模板，以简单的文档格式为基础，参照编写相应的Peach-pit文件并对目标软件进行Fuzz测试。</li>
+<li>了解AFL的基本工作原理，掌握<a target="_blank" rel="noopener" href="https://foxglovesecurity.com/2016/03/15/fuzzing-workflows-a-fuzz-job-from-start-to-finish/">AFL的基本使用方法</a>，下载安装Windows平台的<a target="_blank" rel="noopener" href="https://github.com/ivanfratric/winafl">winafl</a>，熟悉其使用，并利用其对Windows平台下的非开源软件进行Fuzz测试。</li>
+<li>在熟练使用以上Fuzz测试平台的基础上，阅读工具源码，对其工作原理进行更深层次的了解，并在此基础上根据自己需要开发定制化的工具。</li>
+<li>熟悉掌握其他Fuzz测试框架或者平台。</li>
+</ul>
+<h3 id="关注安全动态、安全社区与安全会议"><a href="#关注安全动态、安全社区与安全会议" class="headerlink" title="关注安全动态、安全社区与安全会议"></a>关注安全动态、安全社区与安全会议</h3><p>关注相关的安全社区和安全大牛，掌握行业最新的安全资讯和安全发展动态。</p>
+<ul>
+<li>收集国内外与安全相关的站点并及时整理制作浏览器书签，每天定期抽时间查看，了解行业的最新动态和新时间。如<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/">SecWiki-安全维基</a>、<a target="_blank" rel="noopener" href="http://http//www.freebuf.com/">Freebuf</a>、<a target="_blank" rel="noopener" href="http://bbs.pediy.com/">看雪论坛</a>、<a target="_blank" rel="noopener" href="http://www.binvul.com/">Binvul二进制安全</a>、<a target="_blank" rel="noopener" href="http://www.52pojie.cn/">吾爱破解</a>;<br>收集整理常见的漏洞披露平台制作成浏览器书签，如<a target="_blank" rel="noopener" href="http://exploit-db/">exploit-db</a>、<a target="_blank" rel="noopener" href="http://ww.cve.com/">CVE</a>、<a target="_blank" rel="noopener" href="http://protekresearchlab.com/">Protekresearchlab</a>，及时关注最新漏洞，对于感兴趣的或者重要的漏洞都去实际分析调试一下。</li>
+<li>通过Weibo、微信等平台关注国内一些<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/opml/index/tag/binvul">安全大牛的博客</a>或者一些知名的安全公账号，及时了解安全达人的最新分享以及安全研究进展。</li>
+<li>通过Twitter关注一些国外的安全界著名人士，，很多国外研究者都会定期在Twitter上发布其最新的研究成果，随时跟踪便可以了解国外的最新研究方向和研究现状。</li>
+<li>关注一些重要的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news?tag=conference">安全峰会</a>，如<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=BlackHat">BlackHat</a>、RSA等，收集相关感兴趣的议题，对其中相关的议题进行学习研究。</li>
+</ul>
+<h3 id="脚步编程和符号执行框架学习"><a href="#脚步编程和符号执行框架学习" class="headerlink" title="脚步编程和符号执行框架学习"></a>脚步编程和符号执行框架学习</h3><p>选择脚步语言Python、Perl、JavaScript中的一种，对语法进行熟悉，对常见库进行学习，推荐学习Python，Python库比较完善，可以大大提高工作效率。</p>
+<ul>
+<li>搭建相应的开发环境，根据自己的喜好选择相应的IDE，推荐<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Sublime">Sublime</a>等。</li>
+<li>选择一本合适的教程学习Python基础语法，如<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/index/type/program">《Python核心编程》</a>。</li>
+<li>Python的基本语法学习完后，可以针对性的学习一些Python应用于逆向工程的库，推荐学习《Python灰帽子》里面介绍了常见的用于逆向工程的Python库以及Python应用于immunity debugger和IDApython等方面的应用，利用这些库可以开发很多自动化的分析工具，节省分析时间。</li>
+<li>学习一些动态插桩分析工具，如intel开发的<a target="_blank" rel="noopener" href="https://software.intel.com/en-us/articles/pintool/">pin</a>,并利用pin插桩平台可以开发一些污点追踪分析的工具，同时可以在github上搜索与<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=pin+">pin有关的项目</a>，加入并学习。</li>
+<li>学习一些符号执行框架或者平台，符号执行在程序分析和漏洞挖掘上被认为是最有潜力的研究方向，符号执行已经有成熟的框架被用于程序程序分析、自动化漏洞挖掘与利用。推荐学习平台：<a target="_blank" rel="noopener" href="http://s2e.epfl.ch/">s2e</a>、<a target="_blank" rel="noopener" href="https://github.com/chyyuu/symexe/blob/master/klee_document/klee_analysis.md">klee</a>、<a target="_blank" rel="noopener" href="https://github.com/angr/angr/">angr</a>。</li>
+<li>搜集一些与符号执行相关的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news?tag=paper">学术论文</a>，进行学习。</li>
+</ul>
+<h3 id="漏洞自动化分析与挖掘安全工具的开发"><a href="#漏洞自动化分析与挖掘安全工具的开发" class="headerlink" title="漏洞自动化分析与挖掘安全工具的开发"></a>漏洞自动化分析与挖掘安全工具的开发</h3><p>随着人工智能的发展，安全领域的研究也将向着以机器代替人的方向发展，在今年举办的CGC挑战赛中，其主题”THE WORLD’S FIRST ALL-MACHINE HACKING TOURNAMENT”就体现了由机器来代替人进行网络攻防对抗的理念，开发自动化的工具也将是下一步进一步发展方向。</p>
+<ul>
+<li>在对各种漏洞类型成因有深入的研究和了解后，逐步对各个类型的漏洞建立相应的漏洞模型。</li>
+<li>综合利用符号执行以及机器学习等方法，结合建立的漏洞模型，开发相应的自动化漏洞挖掘原型系统，在人工尽量参与少的情况下自动化进行漏洞挖掘。</li>
+<li>深入分析漏洞触发的原因以及漏洞条件，结合符号执行的方法，建立一套针对漏洞自动化分析的平台，能够支持挖掘系统产出的异常样本进行可利用性评估以及利用生成等高级功能。</li>
+<li>深入分析漏洞利用的过程以及利用技巧，建立相应的攻击检测模型，并开发相应的检测系统，能够针对各种类型的漏洞攻击进行检测并报警。</li>
+</ul>
+<h1 id="系统研发工程师"><a href="#系统研发工程师" class="headerlink" title="系统研发工程师"></a>系统研发工程师</h1><p>关键词：系统，底层，开发，优化</p>
+<h2 id="职位描述-6"><a href="#职位描述-6" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>内部安全系统的相关架构设计与开发；</li>
+<li>保障生产环境系统层的安全；</li>
+<li>高性能服务系统开发与优化；</li>
+<li>前沿安全问题研究。</li>
+</ul>
+<h2 id="职位要求-6"><a href="#职位要求-6" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟练掌握Linux/Unix或Windows平台的各种开发技能；</li>
+<li>熟悉常用算法和数据结构，熟悉网络编程、多线程编程技术 ；</li>
+<li>熟悉Linux下的开发，网络安全、Linux系统安全；</li>
+<li>了解常见的应用层安全工具开发、了解APP安全；</li>
+<li>具备一定的系统调优能力，具有良好的分析和解决问题能力 ；</li>
+<li>善于学习和运用新知识， 对业界安全动态较为敏感；</li>
+<li>具有良好的沟通表达能力和团队协作能力。</li>
+</ul>
+<h1 id="Android安全工程师"><a href="#Android安全工程师" class="headerlink" title="Android安全工程师"></a>Android安全工程师</h1><p>关键字：移动，测试，应急，研究</p>
+<h2 id="职位描述-7"><a href="#职位描述-7" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责移动应用安全测试和安全事件应急响应；</li>
+<li>负责移动应用安全平台建设；</li>
+<li>负责信息安全策略/流程的制定，安全培训/宣传及推广；</li>
+<li>跟踪最新漏洞信息，进行业务产品的安全检查。</li>
+</ul>
+<h2 id="职位要求-7"><a href="#职位要求-7" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟悉Android开发环境，能够较为熟练的开发Android程序；</li>
+<li>了解ARM、Smali汇编语言；</li>
+<li>熟悉IDA、Gdb等调试分析工具；</li>
+<li>有Android漏洞挖掘、漏洞利用经验优先；</li>
+<li>最好熟悉Android/Linux底层框架，熟悉系统的工作原理和细节；</li>
+<li>最好能够深入研究Android系统底层，分析漏洞和潜在风险；</li>
+<li>最好能够跟踪国内外的Android安全动态，分享Android安全的最新技术。</li>
+</ul>
+<h2 id="学习路线-3"><a href="#学习路线-3" class="headerlink" title="学习路线"></a>学习路线</h2><h3 id="Android基础知识"><a href="#Android基础知识" class="headerlink" title="Android基础知识"></a>Android基础知识</h3><p>学习Android开发编程，了解其原理。</p>
+<ul>
+<li>熟悉Java,C和C++三种在Android系统中使用较多的语言，了解几种语言的特性。</li>
+<li>学习<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Android%E5%BC%80%E5%8F%91">Android开发</a>，推荐使用Android studio进行开发，也可以使用eclipse。完成一些小程序，学习Native开发，利用NDK完成一些native程序。在过程中了解Android系统的层次结构，四大组件等Android系统的基本知识。尽可能的了解Andorid系统的概貌。 </li>
+<li>在基础学习的过程中学习有效的使用<a target="_blank" rel="noopener" href="https://www.google.com/search?q=%E6%90%9C%E7%B4%A2%E6%8A%80%E5%B7%A7&ie=UTF-8">搜索引擎</a>，对不熟悉的属于进行了解学习。</li>
+</ul>
+<h3 id="逆向基础知识"><a href="#逆向基础知识" class="headerlink" title="逆向基础知识"></a>逆向基础知识</h3><p>学习逆向基础相关知识和工具、并试图动手实践。</p>
+<ul>
+<li>熟悉<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Android%E9%80%86%E5%90%91">Android逆向</a>工具的使用，如<a target="_blank" rel="noopener" href="https://github.com/pxb1988/dex2jar">dex2jar</a>，<a target="_blank" rel="noopener" href="http://www.droidsec.cn/android-%E5%8F%8D%E7%BC%96%E7%BB%8E%E5%B7%A5%E5%85%B7jeb%E7%AE%80%E4%BB%8B%E5%8F%8A%E4%B8%8B%E8%BD%BD/">JEB</a>，<a target="_blank" rel="noopener" href="http://www.pd521.com/thread-136-1-1.html">AndroidKiller</a>，<a target="_blank" rel="noopener" href="https://github.com/androguard/androguard">Androguard</a>等，SecWiki上收录的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news?tag=mobile">移动安全工具</a>也很多，并且有很多开源，尝试自己搜索并使用自己喜欢的。</li>
+<li>大致学习APK中包含的各文件格式，最好的方式是阅读Android系统解析APK的源码。也可以利用开源项目Androguard来学习。推荐<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/index/type/mobile">《Android软件安全与逆向分析》</a></li>
+<li>学习和熟悉<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=smali">smali</a>语言。</li>
+<li>尝试自己写小程序，并利用工具<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E9%80%86%E5%90%91&tag=mobile">逆向</a>，对比学习。</li>
+<li>尝试逆向一些小程序，分析其功能逻辑。</li>
+</ul>
+<h3 id="逆向进阶学习"><a href="#逆向进阶学习" class="headerlink" title="逆向进阶学习"></a>逆向进阶学习</h3><ul>
+<li>对ARM汇编、Smali语法、相关调试工具等进行学习。</li>
+<li>学习和熟悉<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=ARM">ARM</a>汇编指令；</li>
+<li>学习学习并熟悉<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=IDA">IDA</a>，<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=gdb">gdb</a>两种逆向工具的使用； </li>
+<li>学习Smali调试的方法，参考书籍<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book">《Android软件安全与逆向分析》</a>；</li>
+<li>学习使用IDA静态分析<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Native">Native</a>程序，自己写Native程序并<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?tag=mobile&kw=Android">逆向</a>，对比学习；</li>
+<li>使用IDA和gdb对Native程序进行<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E8%B0%83%E8%AF%95">调试</a>；</li>
+<li>分析和调试一些带有Native代码的APK；</li>
+<li>开始学习Android系统知识，推荐<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/40">《Android系统源代码情景分析》</a>；</li>
+</ul>
+<h3 id="逆向实战"><a href="#逆向实战" class="headerlink" title="逆向实战"></a>逆向实战</h3><p>病毒分析语脱壳学习</p>
+<ul>
+<li>找一些<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E7%97%85%E6%AF%92%E5%88%86%E6%9E%90">病毒</a>木马<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/opml/index/tag/mobile">分析博客</a>跟着博客内容的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/6504">教程</a>进行分析实践推荐用<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Ransomware">Ransomware</a>类和木马类进行学习</li>
+<li>找一些分析加壳程序的分析<a target="_blank" rel="noopener" href="https://www.google.com/search?q=android+%E8%84%B1%E5%A3%B3&ie=UTF-8">文章</a>进行手动<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E8%84%B1%E5%A3%B3">脱壳</a></li>
+</ul>
+<h3 id="漏洞分析与挖掘"><a href="#漏洞分析与挖掘" class="headerlink" title="漏洞分析与挖掘"></a>漏洞分析与挖掘</h3><p>学习漏洞类型和原理。</p>
+<ul>
+<li>学习常见的漏洞类型，例如<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E5%A0%86%E6%BA%A2%E5%87%BA">堆溢出</a>，<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=%E6%A0%88%E6%BA%A2%E5%87%BA">栈溢出</a>，<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=UAF">UAF</a>等，可以参考<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/index/type/binvul">SecWiki漏洞分析相关书籍</a>；</li>
+<li>关注<a target="_blank" rel="noopener" href="http://android.scap.org.cn/index.html">android security bulletin</a>，根据提供的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=diff">diff</a>分析漏洞成因；</li>
+<li>学习并调试以前的<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/news/search?wd=Android%E6%BC%8F%E6%B4%9E">经典漏洞</a>和<a target="_blank" rel="noopener" href="http://www.droidsec.cn/category/%E5%AE%89%E5%8D%93%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/">分析文章</a>；</li>
+<li>学习漏洞挖掘fuzzing思路，参考书籍<a target="_blank" rel="noopener" href="https://www.sec-wiki.com/book/25">《Android安全攻防权威指南》</a>；</li>
+</ul>
+<h1 id="风控安全工程师"><a href="#风控安全工程师" class="headerlink" title="风控安全工程师"></a>风控安全工程师</h1><p>关键字：风控，检测，防御，开发</p>
+<h2 id="职位描述-8"><a href="#职位描述-8" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责安全检测分析以及防御系统的研发；</li>
+<li>负责大数据分析、分布式计算平台研发；</li>
+<li>理解产品作弊生态，规划产品反作弊发展方向，并将方向拆解为可执行的项目；</li>
+<li>较强的数据分析能力，将数据规律抽象成机器可实现的策略，为解决问题把握方向。</li>
+</ul>
+<h2 id="职位要求-8"><a href="#职位要求-8" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>熟悉Python/Java/PHP中的一种开发语言；</li>
+<li>熟悉 Linux 系统以及 服务器端开发经验；</li>
+<li>熟悉分布式系统部署与开发；</li>
+<li>对数据有亲切感，主动性强，细心，思维敏捷；</li>
+<li>有安全相关系统研发经验者优先；</li>
+<li>有很强的逻辑分析能力，对发现和思考问题充满乐趣；</li>
+<li>有反作弊、安全、数据分析专业领域经验优先。</li>
+</ul>
+<h1 id="安全产品运营员"><a href="#安全产品运营员" class="headerlink" title="安全产品运营员"></a>安全产品运营员</h1><p>关键字：产品，宣传，统计，优化</p>
+<h2 id="职位描述-9"><a href="#职位描述-9" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责安全类产品运营、帐号安全保障、用户体验优化；</li>
+<li>负责建立并通过有效的运营，持续优化各项安全指标以及用户增长；</li>
+<li>负责用户安全教育，跟进解决用户的各类问题；</li>
+<li>负责产品数据的分析，进行上线后的及时优化；</li>
+<li>对产品整个生命周期策略，针对用户需求变化，制定产品运营战略和计划。</li>
+</ul>
+<h2 id="职位要求-9"><a href="#职位要求-9" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>有安全类产品设计或运营经验者优先；</li>
+<li>对网络安全相关知识有一定了解；</li>
+<li>能够对各项有效资源进行整合，善于协调跨部门合作，优秀的沟通技巧；</li>
+<li>对数据敏感，善于数据统计分析，逻辑清晰；</li>
+<li>高度的责任心和合作精神，良好的文字表达能力；</li>
+<li>工作积极、善于学习、细致耐心、勇于接受挑战。</li>
+</ul>
+<h1 id="安全服务工程师（乙方）"><a href="#安全服务工程师（乙方）" class="headerlink" title="安全服务工程师（乙方）"></a>安全服务工程师（乙方）</h1><p>关键字：实施，渗透，审计，规范</p>
+<h2 id="职位描述-10"><a href="#职位描述-10" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责安全服务项目中的实施部分，包括：漏洞扫描、渗透测试、安全基线检查、代码审计、应急响应等；</li>
+<li>爆发高危漏洞后时行漏洞的分析应急；</li>
+<li>对公司安全产品的后端支持；</li>
+<li>掌握专业文档编写技巧；</li>
+<li>关注行业态势和热点。</li>
+</ul>
+<h2 id="职位要求-10"><a href="#职位要求-10" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>有较强学习能力，能快速学习新的技术；</li>
+<li>熟悉风险评估、应急响应、渗透测试、安全加固等安全服务；</li>
+<li>熟悉常见黑客攻防方法；</li>
+<li>掌握一门编程语言；</li>
+<li>具有良好的语言表达能力、文档组织能力。</li>
+</ul>
+<h2 id="学习路线-4"><a href="#学习路线-4" class="headerlink" title="学习路线"></a>学习路线</h2><h3 id="安全概念和资讯"><a href="#安全概念和资讯" class="headerlink" title="安全概念和资讯"></a>安全概念和资讯</h3><p>前期安全知识的补充学习。</p>
+<ul>
+<li>熟悉基本的安全术语和概念（SQL注入、上传漏洞、XSS、CSRF、一句话木马、渗透测试、应急响应、风险评估、等级保护等）；</li>
+<li>阅读OWASP TOP 10 从漏洞分类和漏洞成因寻找安全漏洞的切入点 <a target="_blank" rel="noopener" href="https://www.owasp.org/index.php/Top_10_2013-Top_10">Link</a> ；</li>
+<li>阅读经典的网络安全相关书籍 <a target="_blank" rel="noopener" href="http://book.douban.com/doulist/894936/">Link</a> ；</li>
+<li>安全资讯来源：Secwiki、Reddit、Twitter、Weibo、Wooyun、Freebuf、91ri等。</li>
+</ul>
+<h3 id="安全工具使用"><a href="#安全工具使用" class="headerlink" title="安全工具使用"></a>安全工具使用</h3><p>熟悉常用的安全测试工具和自家的产品。</p>
+<ul>
+<li>综合漏洞扫描工具的安装使用：Nessus、X-scan、Nexpose等；</li>
+<li>Web漏洞扫描的工具的安装使用和漏洞验证：AppScan、AWVS、WebInspect等；</li>
+<li>辅助工具的安装和使用：Nmap、Burp Suite、Sqlmap、wireshark、iptables等；</li>
+<li>辅助脚本的收集和修改：各种漏洞利用的Exploit、定制化高的扫描脚本、字典等；</li>
+<li>自家安全设备策略部署和使用。</li>
+</ul>
+<h3 id="渗透测试"><a href="#渗透测试" class="headerlink" title="渗透测试"></a>渗透测试</h3><p>熟悉渗透测试报告的格式和内容。</p>
+<ul>
+<li>渗透测试流程：《渗透测试授权书》规定渗透时间和范围、《渗透测试免责书》描述渗透测试可能带来的危害、规定时间实施渗透测试，输出《渗透测试报告》，指导甲方进行漏洞修复；</li>
+<li>大多数情况下，渗透测试质量中技术能力占40%，报告书写占60%，必须熟练掌握各种word、exel基本功能；</li>
+<li>具体的技术细节、工具使用可参考老美的PTES渗透测试指南 <a target="_blank" rel="noopener" href="http://www.pentest-standard.org/index.php/PTES_Technical_Guidelines">Link</a>。</li>
+</ul>
+<h3 id="安全基线检查"><a href="#安全基线检查" class="headerlink" title="安全基线检查"></a>安全基线检查</h3><p>学习安全业务与系统操作。</p>
+<ul>
+<li>不同的客户，不同的业务系统，有不同的安全基线文档，大致分类无外乎几种：从账户、授权、补丁、日志、冗余端口和服务等层面对主机系统、中间件和数据库进行配置[检查]；</li>
+<li>阅读外网流出的各家厂商的安全基线检查内容，如：运营商-移动 <a target="_blank" rel="noopener" href="http://wenku.baidu.com/search?word=%EF%BF%BD%EF%BF%BD%C8%AB%EF%BF%BD%EF%BF%BD%EF%BF%BD%C3%BB%EF%BF%BD%EF%BF%BD%EF%BF%BD">Link</a> ；</li>
+<li>掌握不同版本的配置方法和配置项，可自行安装系统、中间件、数据库进行实操。</li>
+</ul>
+<h3 id="应急响应"><a href="#应急响应" class="headerlink" title="应急响应"></a>应急响应</h3><p>学习渗透实战，并了解应急响应流程。</p>
+<ul>
+<li>应急响应流程可分为两类：实时性应急响应和入侵后应急响应；</li>
+<li>实时性应急响应：大多为DDOS攻击，首要进行流量分析，若流量打满，能做的就是反查攻击IP，逆向渗透；若网络设备会话数被打满或者主机系统的CPU、内存、会话数被打满，可通过交换机做端口镜像，使用wireshark、tcpdump进行抓包，分析流量特征，确认攻击类型，在网络设备或安全设备上做相应阻断策略；</li>
+<li>攻击后应急响应：通过分析恶意文件和日志，查找入侵来源IP和入侵者所利用的漏洞，提出漏洞修补方案，并逆向追踪入侵者；</li>
+<li>应急响应对工程师的要求较为复杂，需多熟悉不同操作系统、应用、中间件、数据库特性，且能熟练使用编程语言或者vim等编辑器对较大的日志进行数据整理，还需要日常多多积累各种攻击特征和防护策略；</li>
+<li>多阅读网上已有的应急响应的文档，学习逆向分析思路。</li>
+</ul>
+<h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>学习代码审计流程和实战。</p>
+<ul>
+<li>熟悉代码审计工具的安装使用，可参考SecWiki上的文章 <a target="_blank" rel="noopener" href="http://www.sec-wiki.com/topic/41">Link</a> ；</li>
+<li>根据工具报告验证问题是否为误报，并跟踪分析；</li>
+<li>参看各大资讯平台、论坛、旧杂志的文章，学习白盒分析思路；</li>
+<li>Exploit编写。</li>
+</ul>
+<h3 id="安全边界建设"><a href="#安全边界建设" class="headerlink" title="安全边界建设"></a>安全边界建设</h3><p>学习安全边界检查工作的流程和内容。</p>
+<ul>
+<li>安全边界检查的工作重点可总结为：根据是各个信息区域否需要外网接入、是否需要访问内部核心网络等行为特点，将信息安全系统划分为边界接入域、网络基础设施域、计算机安全域、运维管理域，并对现有网络是否有按照该标准做相应的安全域划分，或判断其划分是否合理；</li>
+<li>可参考规范：IATF <a target="_blank" rel="noopener" href="http://www.doc88.com/p-662169539878.html">Link</a>。</li>
+</ul>
+<h3 id="安全规范"><a href="#安全规范" class="headerlink" title="安全规范"></a>安全规范</h3><p>学习国标和行业规范。</p>
+<ul>
+<li>除去技术细节了，尚有不少风险评估和等级保护测评的工作，直接读规范有助对项目全局的把控；<ul>
+<li>国标规范有： <ul>
+<li><a target="_blank" rel="noopener" href="http://wenku.baidu.com/link?url=ct9Kp8hScDuL5RgReMmyzbbupQXkB3JJnap-zaKxWRqkpZYcitqPn_mYlxjcXtTiVW-HLpxGi2F_zX3P6kdM57Ho3YA5fcLwsXOOVQBPj5i">《信息系统安全等级保护基本要求》</a>；</li>
+<li><a target="_blank" rel="noopener" href="http://www.doc88.com/p-518675849182.html">《信息安全风险评估规范》</a>；</li>
+</ul>
+</li>
+<li>行业规范有： <ul>
+<li><a target="_blank" rel="noopener" href="http://down.51cto.com/data/690206">《网银121号文》</a> ；</li>
+<li><a target="_blank" rel="noopener" href="http://dl.vmall.com/c05pwufa0x">《中国银联移动支付技术规范》</a>等等；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="技术支持工程师（乙方）"><a href="#技术支持工程师（乙方）" class="headerlink" title="技术支持工程师（乙方）"></a>技术支持工程师（乙方）</h1><p>关键字：售前，招标，培训，应急</p>
+<h2 id="职位描述-11"><a href="#职位描述-11" class="headerlink" title="职位描述"></a>职位描述</h2><ul>
+<li>负责客户的售前技术支持工作，包括分析挖掘客户需求，针对客户网络架构，设计合理的网络安全解决方案，设计完成产品演示与交流。</li>
+<li>配合销售人员，独立完成整个招投标过程。</li>
+<li>完成公司各类产品实施，部署上线。</li>
+<li>完成用户培训，完成项目售后维护，为客户提供必要的应急响应。</li>
+</ul>
+<h2 id="职位要求-11"><a href="#职位要求-11" class="headerlink" title="职位要求"></a>职位要求</h2><ul>
+<li>精通TCP/IP协议，熟悉网络交换原理和各类路由协议，可熟练调试路由交换设备。</li>
+<li>熟悉常见操作系统和数据库。</li>
+<li>熟悉公司各类安全产品特性与配置，完成产品部署上线。</li>
+<li>熟悉集成类项目管理，稳步推进项目开展。</li>
+<li>熟悉招投标流程，可独立完成标书制作与产品演示。</li>
+<li>良好的沟通能力。</li>
+</ul>
+<h2 id="学习路线-5"><a href="#学习路线-5" class="headerlink" title="学习路线"></a>学习路线</h2><h3 id="学习基本安全攻防概念"><a href="#学习基本安全攻防概念" class="headerlink" title="学习基本安全攻防概念"></a>学习基本安全攻防概念</h3><p>熟悉Web安全漏洞和网络攻击漏洞的方法。</p>
+<ul>
+<li>以OWASP TOP 10入手，了解Web安全漏洞成因与攻击方法（SQL注入、XSS、CSRF、Web2.0安全等），参考书籍：<a target="_blank" rel="noopener" href="https://www.owasp.org/index.php/Top_10_2013-Top_10">OWASP2013 Top 10 List</a>，<a target="_blank" rel="noopener" href="http://book.douban.com/subject/10546925/">白帽子讲Web安全</a>、<a target="_blank" rel="noopener" href="http://book.douban.com/subject/20451827/">Web前端黑客技术揭秘</a>；</li>
+<li>熟悉网络攻击漏洞成因与攻击方法（DDoS、缓冲区溢出、社会工程学等），参考书籍：<a target="_blank" rel="noopener" href="http://book.douban.com/subject/3035185/">0day安全：软件漏洞分析技术</a>、<a target="_blank" rel="noopener" href="http://book.douban.com/subject/25870994/">破坏之王：DDoS攻击与防范深度剖析</a>、<a target="_blank" rel="noopener" href="http://book.douban.com/subject/21340013/">黑客社会工程学攻击</a>；</li>
+<li>安全资讯来源：Secwiki、Reddit、Twitter、Weibo、Wooyun、Freebuf、91ri等。</li>
+</ul>
+<h3 id="掌握网络协议与路由交换"><a href="#掌握网络协议与路由交换" class="headerlink" title="掌握网络协议与路由交换"></a>掌握网络协议与路由交换</h3><p>熟悉网络相关技术知识，能动手解决实际问题。</p>
+<ul>
+<li>学习TCP/IP协议，参考书籍：<a target="_blank" rel="noopener" href="http://book.douban.com/subject/1088054/">TCP/IP详解 卷1：协议</a>；</li>
+<li>学习路由交换知识，参考CCNA、CCNP教材熟悉常见路由器、交换机配置方法与操作，参考书籍：<a target="_blank" rel="noopener" href="http://book.douban.com/subject/2968802/">CCNA学习指南</a>、<a target="_blank" rel="noopener" href="http://book.douban.com/subject/2208574/">CCNP BCMSN认证考试指南</a>；</li>
+</ul>
+<h3 id="安全工具使用-1"><a href="#安全工具使用-1" class="headerlink" title="安全工具使用"></a>安全工具使用</h3><p>熟悉相关安全工具的使用，在不同场景知道用什么工具。</p>
+<ul>
+<li>网络扫描工具的安装使用：X-Scan、SuperScan、Nmap等，通过SecWiki/Google进行关键字搜索；</li>
+<li>Web漏洞扫描的工具的安装使用和漏洞验证：AppScan、AWVS、WebInspect、Netsparker、sqlmap、Burp Suite等，通过SecWiki/Google进行关键字搜索；</li>
+<li>其他工具安装使用：Metasploit、Tcpdump、wireshark等，通过SecWiki/Google进行关键字搜索；</li>
+</ul>
+<h3 id="本公司产品配置与管理"><a href="#本公司产品配置与管理" class="headerlink" title="本公司产品配置与管理"></a>本公司产品配置与管理</h3><p>熟悉公司内部产品和竞争对手的相关产品。</p>
+<ul>
+<li>学习公司全产品线的各类安全产品配置与管理技巧：防火墙、IDS、IPS、漏洞扫描、SOC、VPN等，可参考公司内部手册；</li>
+<li>了解下国内外其它公司的同类产品，参考：<a target="_blank" rel="noopener" href="http://www.sec-wiki.com/news/3202">2014年最新国内外信息安全厂家及安全产品分类</a>；</li>
+</ul>
+<h3 id="安全规范与安全标准"><a href="#安全规范与安全标准" class="headerlink" title="安全规范与安全标准"></a>安全规范与安全标准</h3><p>学习国标和行业规范。</p>
+<ul>
+<li>国内标准：信息系统安全等级保护基本要求，参考：<a target="_blank" rel="noopener" href="http://wenku.baidu.com/view/53e0672f647d27284b735175.html">信息安全-信息系统安全等级保护基本要求</a>，分级保护BMB系列标准（因标准本身涉密，可参考网上各类分析资料）；</li>
+<li>国际标准：<a target="_blank" rel="noopener" href="http://wenku.baidu.com/view/fbd3bf8aa58da0116d174949.html">ISO 27001信息安全管理体系要求</a>，<a target="_blank" rel="noopener" href="http://book.douban.com/subject/3351983/">信息安全管理体系应用手册</a>，<a target="_blank" rel="noopener" href="http://wenku.baidu.com/view/9cd85477aaea998fcc220e5c.html">ISO 27002 信息安全控制实用规则</a>。</li>
+</ul>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Hack-Security-Engineer-Skills.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%BB%91%E5%AE%A2/" rel="tag">黑客</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Java-jar-war-ear.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            浅谈 jar、war、ear 包的作用与区别
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Essay-Interesting-Boy.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">有趣的男人自带烧钱属性</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

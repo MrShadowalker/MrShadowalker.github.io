@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="个人成长总结" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    个人成长总结 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Essay-Personal-Development"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  个人成长总结
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Essay-Personal-Development.html" class="article-date">
+  <time datetime="2021-07-15T09:18:25.000Z" itemprop="datePublished">2021-07-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E9%97%B2%E8%A8%80%E7%A2%8E%E8%AF%AD/">闲言碎语</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">13 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>准备面试以来，除了学习以外的个人成长总结。</p>
+<span id="more"></span>
+
+<h2 id="技术"><a href="#技术" class="headerlink" title="技术"></a>技术</h2><p>中间件</p>
+<p>架构设计</p>
+<p>设计模式</p>
+<h2 id="思想"><a href="#思想" class="headerlink" title="思想"></a>思想</h2><h3 id="抽象"><a href="#抽象" class="headerlink" title="抽象"></a>抽象</h3><p>寻找共性</p>
+<p>提升抽象层次</p>
+<p>构建金字塔</p>
+<p><strong>金字塔模型</strong></p>
+<p>结构化思考和表达</p>
+<p>自下而上思考，总结概括；自上而下表达，结论先行。</p>
+<p><strong>如何提升抽象思维能力</strong></p>
+<p>多阅读，少看视频和图像</p>
+<p>多总结，写作、表达，锻炼抽象思维和结构化能力</p>
+<p>领域建模训练</p>
+<h3 id="分治"><a href="#分治" class="headerlink" title="分治"></a>分治</h3><p>分而治之</p>
+<p>分：递归地将原问题分解成小问题</p>
+<p>治：逐个击破之后合并小问题的解，从而得到整个问题的解</p>
+<ol>
+<li>分解：将要解决的问题划分成若干规模较小的同类问题</li>
+<li>求解：当子问题划分得足够小时，用较简单的方法解决</li>
+<li>合并：按原问题的要求，将子问题的解逐层合并，构成原问题的解</li>
+</ol>
+<h4 id="编程中的分治"><a href="#编程中的分治" class="headerlink" title="编程中的分治"></a>编程中的分治</h4><ul>
+<li>相关算法</li>
+</ul>
+<ul>
+<li>函数分解</li>
+</ul>
+<p>坏味道：又臭又长的代码，将大函数分解为多个短小、易读、易维护的小函数</p>
+<p>原则：</p>
+<ol>
+<li>单一职责原则</li>
+<li>在使用组合函数模式时，要注意抽象层次一致性原则，不同抽象层次的内容放在一起会给人凌乱、逻辑不协调的感觉。</li>
+</ol>
+<ul>
+<li>写代码的两次创作</li>
+</ul>
+<ol>
+<li>第一遍实现功能，创造</li>
+<li>第二遍重构优化，创作</li>
+</ol>
+<ul>
+<li>分治相关设计模式</li>
+</ul>
+<p>管道模式，装饰者模式，责任链模式……</p>
+<ul>
+<li>分层设计</li>
+</ul>
+<p>分层设计是架构体系设计中最常见和重要的一种结构。</p>
+<p>分层设计最大的好处就是分离关注。就可以通过分层隔离简化一个复杂的问题，让每一层只对上一层负责，从而使每一层的职责变得相对简单。</p>
+<ul>
+<li>横切和竖切</li>
+</ul>
+<p>数据库设计，分库分表分区</p>
+<h2 id="技术人的素养"><a href="#技术人的素养" class="headerlink" title="技术人的素养"></a>技术人的素养</h2><h3 id="不教条"><a href="#不教条" class="headerlink" title="不教条"></a>不教条</h3><p>控制系统复杂度，但凡能提高代码可读性、可扩展性和可维护性的方法，都是值得考虑的，并不一定要拘泥于某种特定的开发过程或者编程范式。</p>
+<p>IDP：强行拆模块，导致开发复杂度提升，关键是本来也没有先做规范，导致后续开发进一步陷入混乱。</p>
+<p>当然，首先要学会基本的原则，然后才能知道什么时候去打破规则。在遵守规范和原则的基础上适时打破规则来满足目标。</p>
+<h3 id="不炫技"><a href="#不炫技" class="headerlink" title="不炫技"></a>不炫技</h3><p>不能为了炫技而过度设计或强行使用。存在瓶颈的时候为了解决问题才要适当引入合适的解决方案。</p>
+<h3 id="批判性思维"><a href="#批判性思维" class="headerlink" title="批判性思维"></a>批判性思维</h3><p>批判性思维是一种谨慎运用推理去断定一个断言是否为真的能力。它要求个人保持思考的自主性和逻辑的严密性，不被动地全盘接受，也不刻意地带着偏见去驳斥一个观点。</p>
+<h3 id="成长型思维"><a href="#成长型思维" class="headerlink" title="成长型思维"></a>成长型思维</h3><p>成长的过程中不可能是一帆风顺的，肯定会有痛苦、有阻力、有挫折。</p>
+<p>面对逆境，应该怎么做？</p>
+<p>有些人也许不堪重负，就此沉沦；有些人可以越挫越勇，把每次失败都当成学习的机会。</p>
+<p>成长型思维和固定型思维会极大影响人们面对逆境的处理方式。</p>
+<p>我们获得的成功并不是完全由能力和天赋决定的，更多受到我们再追求目标的过程中展现的思维模式的影响。</p>
+<table>
+<thead>
+<tr>
+<th>成长型思维</th>
+<th>固定型思维</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>我的态度和汗水决定了一切</td>
+<td>我的聪明才智决定了一切</td>
+</tr>
+<tr>
+<td>我可以学会任何我想学的东西</td>
+<td>我擅长某些事，不擅长另外一些事</td>
+</tr>
+<tr>
+<td>我想要挑战我自己</td>
+<td>我不想要尝试我可能不擅长的东西</td>
+</tr>
+<tr>
+<td>当我失败的时候，我学会很多东西</td>
+<td>如果我失败了，我就无地自容</td>
+</tr>
+<tr>
+<td>我希望你表扬我很努力</td>
+<td>我希望你表扬我很聪明</td>
+</tr>
+<tr>
+<td>如果别人成功了，我会受到别人的启发</td>
+<td>如果别人成功了，他会威胁到我</td>
+</tr>
+</tbody></table>
+<p>成长型思维和固定型思维体现了应对成功与失败、成绩与挑战时的两种基本心态。认为才智和努力哪个更重要、能力能否通过努力改变，决定了你是否会满足于既有成果，还是会积极探索新知。通过了解自己的思维模式并做出改变，人们能以最简单的方式培养对学习的热情，以及在任何领域内取得成功都需要的抗压力。</p>
+<p>具有成长型思维的人相信自己可以通过学习来提升自我，相信学习和成长的力量，相信努力可以改变智力和能力。会用更加理性的态度看待一时的成败得失，内心坚定地相信成长和学习的力量。工作或生活中面临挑战时，不会轻言放弃，而是会积极主动地去学习，去寻找解决方案。即使最终还是失败了，也不要一蹶不振，而是把失败当成学习的动力和机会。</p>
+<h3 id="结构化思维"><a href="#结构化思维" class="headerlink" title="结构化思维"></a>结构化思维</h3><p>逻辑+套路</p>
+<p><strong>逻辑</strong></p>
+<ul>
+<li>演绎顺序</li>
+</ul>
+<p>大前提、小前提、结论</p>
+<ul>
+<li>时间/步骤顺序</li>
+</ul>
+<p>第一、第二、第三，首先、再者、然后，大多数时间顺序也是因果顺序</p>
+<ul>
+<li>空间/结构顺序</li>
+</ul>
+<p>前端、后端、数据库，东方、南方、西方、北方，化整为零，相互独立，完全穷尽</p>
+<ul>
+<li>程度/重要性顺序</li>
+</ul>
+<p>最重要、次重要、不重要</p>
+<p><strong>套路</strong></p>
+<p>解决问题的方法论、路径和经验</p>
+<p>5W2H：why、who、when、where、what、how、how much</p>
+<p>逻辑是一种能力，而套路是方法论、经验；</p>
+<p>逻辑属于道，而方法论属于术。</p>
+<h3 id="如何融入新团队"><a href="#如何融入新团队" class="headerlink" title="如何融入新团队"></a>如何融入新团队</h3><p>结构化拆解问题：团队/项目/企业——业务、技术、人</p>
+<p>业务：产品形态，业务流程，走访客户</p>
+<p>技术：系统架构，领域模型，代码结构</p>
+<p>人：组织结构，人员角色，勤沟通</p>
+<h3 id="工具化思维"><a href="#工具化思维" class="headerlink" title="工具化思维"></a>工具化思维</h3><p>适当的懒比低效的勤奋更具智慧，懒惰的对立面除了勤奋也可能是硬干、苦干、傻干，可能是一种徒劳、低效、大可不必的努力，只会说明做事情过于急切，欠缺思考。人们很容易混淆行动与进展、忙碌与多产的概念。</p>
+<p>在有效的工作中，最重要的是学习和思考，而人在思考的时候通常看上去不会很忙。</p>
+<p>智慧懒是一种工具化思维，是磨刀不误砍柴工的智慧。</p>
+<p>程序员与其他行业的最大区别是不仅使用工具，还能创造工具。</p>
+<p>对于整天非常忙，忙到没有时间思考的人，真心建议停下来，思考一下：我是否存在知识盲区（先探索完整个地图，再选择交通工具，然后规划路线，最后一路顺风）？我的方法有没有问题？是不是有更“偷懒”的方式可以帮助我提升效率？</p>
+<h3 id="好奇心"><a href="#好奇心" class="headerlink" title="好奇心"></a>好奇心</h3><h3 id="记笔记，写总结"><a href="#记笔记，写总结" class="headerlink" title="记笔记，写总结"></a>记笔记，写总结</h3><h3 id="有目标，有野心"><a href="#有目标，有野心" class="headerlink" title="有目标，有野心"></a>有目标，有野心</h3><h3 id="选择的自由"><a href="#选择的自由" class="headerlink" title="选择的自由"></a>选择的自由</h3><h3 id="平和的心态"><a href="#平和的心态" class="headerlink" title="平和的心态"></a>平和的心态</h3><p>动机至善，了无私心；用无为的心，做有为的事。</p>
+<p>无为：平和的心态，活在当下的智慧，宠辱不惊</p>
+<h3 id="精进"><a href="#精进" class="headerlink" title="精进"></a>精进</h3><p>每天进步一点点，慢就是快</p>
+<h2 id="Leader-amp-Manager"><a href="#Leader-amp-Manager" class="headerlink" title="Leader &amp; Manager"></a>Leader &amp; Manager</h2><p>manager 是管理事务，是控制和权威；</p>
+<p>leader 是领导人心，是引领和激发。</p>
+<p>我们不需要这么多“高高在上”“指点江山”的技术 manager，而是需要更多能真正深入系统里面，深入代码细节，给团队带来提升和改变的技术 leader。</p>
+<h3 id="技术氛围"><a href="#技术氛围" class="headerlink" title="技术氛围"></a>技术氛围</h3><ul>
+<li><p>代码好坏味道</p>
+</li>
+<li><p>技术分享</p>
+</li>
+<li><p>代码评审</p>
+</li>
+<li><p>读书会</p>
+</li>
+</ul>
+<h3 id="目标管理"><a href="#目标管理" class="headerlink" title="目标管理"></a>目标管理</h3><ul>
+<li><p>KPI or OKR</p>
+</li>
+<li><p>SMART 原则</p>
+</li>
+</ul>
+<p>S：specific，明确性</p>
+<p>M：measurable，衡量性</p>
+<p>A：attainable，实现性</p>
+<p>R：relevant，相关性</p>
+<p>T：time bound，时限性</p>
+<h3 id="技术规划"><a href="#技术规划" class="headerlink" title="技术规划"></a>技术规划</h3><ul>
+<li>当前问题/痛点</li>
+<li>业务领域</li>
+<li>技术领域</li>
+<li>团队特色</li>
+</ul>
+<h2 id="工作"><a href="#工作" class="headerlink" title="工作"></a>工作</h2><h2 id="生活"><a href="#生活" class="headerlink" title="生活"></a>生活</h2><h1 id="工程师精进原则"><a href="#工程师精进原则" class="headerlink" title="工程师精进原则"></a>工程师精进原则</h1><p><a target="_blank" rel="noopener" href="https://tech.meituan.com/2018/08/16/10-principles-for-engineers.html">https://tech.meituan.com/2018/08/16/10-principles-for-engineers.html</a></p>
+<h2 id="Owner-意识"><a href="#Owner-意识" class="headerlink" title="Owner 意识"></a>Owner 意识</h2><ul>
+<li>认真负责是工作的底线。</li>
+<li>积极主动是“Owner意识”更高一级的要求。</li>
+</ul>
+<h2 id="时间观念"><a href="#时间观念" class="headerlink" title="时间观念"></a>时间观念</h2><p>做事有计划，工作分主次。</p>
+<h2 id="以终为始"><a href="#以终为始" class="headerlink" title="以终为始"></a>以终为始</h2><p>先想清楚目标，然后努力实现。</p>
+<p>要根据问题设定目标，再进行优化。</p>
+<p>带着目标去学习。</p>
+<h2 id="闭环思维"><a href="#闭环思维" class="headerlink" title="闭环思维"></a>闭环思维</h2><p>一个人是否靠谱，就看他能否做到凡事有交代，件件有着落，事事有回音。<strong>它强调的是一种即时反馈闭环，</strong>如果别人给我们分配了一个任务，不管完成的结果如何，一定要在规定的时间内给出明确的反馈。</p>
+<p><strong>真正的闭环，要求我们对工作中的事情都能够养成良好的思维习惯，沟通要有结论，通知要有反馈，To Do要有验收。</strong></p>
+<p><strong>“闭环思维”还要求能够定期主动进行阶段性的反馈。</strong></p>
+<h2 id="保持敬畏"><a href="#保持敬畏" class="headerlink" title="保持敬畏"></a>保持敬畏</h2><p><strong>当我们进入到一个新的团队，请先暂时忘掉之前的习惯，要尽快学习团队既有的规范，并且让自己与团队保持一致。</strong></p>
+<p><strong>让规范与约定与时俱进，也是另一种形式的敬畏。</strong></p>
+<h2 id="事不过二"><a href="#事不过二" class="headerlink" title="事不过二"></a>事不过二</h2><p><strong>所有的评审、问题讨论、错误，不要超过两次。</strong></p>
+<h2 id="设计优先"><a href="#设计优先" class="headerlink" title="设计优先"></a>设计优先</h2><p>软件架构的目标，是为了让构建与维护系统的所需人力资源最小化。</p>
+<p><strong>架构设计，并不仅仅关系到系统的质量，还关乎团队的效能问题。</strong></p>
+<p><strong>无数事实证明，忽略了前期设计，往往会导致后续开发周期被大幅拉长，给项目带来了很大的Delay风险。而且最可怕的是，不当的设计会给项目带来巨大的后期维护成本，我们不得不腾出时间，专门进行项目的优化与重构。</strong></p>
+<p><strong>“设计优先”这一原则，要求写别人看得懂的设计</strong>。在设计过程中，要以需求为出发点，通过合理的抽象把问题简化，讲清楚各个模块之间的关系，再详细分述模块的实现细节。做完设计之后，可以发给比较资深的RD或者PM审阅一下，根据他们的反馈再进行完善。好的设计，一定是逻辑清晰易懂、细节落地可执行的。</p>
+<h2 id="P-PC-平衡"><a href="#P-PC-平衡" class="headerlink" title="P/PC 平衡"></a>P/PC 平衡</h2><p><strong>产出与产能必须平衡，才能达到真正的高效能</strong>。</p>
+<p>从系统的角度看，每一个系统都是通过持续不断地叠加功能来实现其产出，而系统的产能是通过系统架构的可扩展性、稳定性等一系列特性来表征。为了达到产出与产能的平衡，需要在不断支持业务需求的过程中，持续进行技术架构层面的优化。如果一味地做业务需求，经过一定的时间，系统会越来越慢，最终影响业务的稳定性；反之，一个没有任何业务产出的系统，最终会消亡。</p>
+<p>再从RD的角度来看这个问题，RD通过做需求来给公司创造价值，实现自己的产出。而RD的产能是指技术能力、软素质、身体健康状况，有这些资本后，我们才能进行持续的产出。在日常工作中，我发现很多RD往往只重视产出。他们也在很努力地做项目，但是每一个项目所使用的方法，还是沿用自己先前一贯的思路。最终，不仅项目做得一般，还会抱怨自己得不到任何成长。这就是P/PC不平衡的体现。<strong>如果能在做项目的过程中，通过学习总结持续提升自己的技术能力和软素质，并将其应用于项目实施交付中，相信一定会取得双赢的结果。</strong></p>
+<h2 id="善于提问"><a href="#善于提问" class="headerlink" title="善于提问"></a>善于提问</h2><p><strong>“善于提问”，首先要勤于提问</strong>。<strong>只有在争辩中，才可能诞生最好的主意和最好的决定</strong>。</p>
+<p><strong>“善于提问”，还要懂得如何提问</strong>。为什么同样是参加设计评审，有的同学就能提出很好的问题，而有的同学却提不出任何问题？除了知识储备、专业技能、经验等方面的差异外，还有一点很重要：批判性思维。</p>
+<p>批判性思维主张通过批判性思考达到理性思维，即对事物本质的认知和掌握。关于如何进行批判性思维，大家可以参考一些经典的图书如《批判性思维》、《学会提问》等。在工作中面临一项决策时，会有各种各样的意见摆在你面前，所以我们必须要学会使用批判性思维来进行分析，每个人的论据是否可靠，论证是否合理，是否有隐含的立场。同样，在阅读一篇技术博客的时候，也要使用批判性的思维，多问几个为什么，作者得出的结论是否合理？论据是否充分？只有这样，才能不断地获取真正的知识。</p>
+<h2 id="空杯心态"><a href="#空杯心态" class="headerlink" title="空杯心态"></a>空杯心态</h2><p><strong>保持“空杯心态”这一原则要求我们时刻进行自我检视与反省</strong>。</p>
+<h2 id="工作中如何做好技术积累"><a href="#工作中如何做好技术积累" class="headerlink" title="工作中如何做好技术积累"></a>工作中如何做好技术积累</h2><p><a target="_blank" rel="noopener" href="https://tech.meituan.com/2018/04/16/study-vs-work.html">https://tech.meituan.com/2018/04/16/study-vs-work.html</a></p>
+<h1 id="如何晋升蚂蚁-P8"><a href="#如何晋升蚂蚁-P8" class="headerlink" title="如何晋升蚂蚁 P8"></a>如何晋升蚂蚁 P8</h1><h2 id="程序员四大原则"><a href="#程序员四大原则" class="headerlink" title="程序员四大原则"></a>程序员四大原则</h2><h3 id="加速原则"><a href="#加速原则" class="headerlink" title="加速原则"></a>加速原则</h3><p>能加快工作的一切事物。</p>
+<p>快捷键，工具，能提升效率的工作和沟通模式。</p>
+<p>研究原理和其他的插件之后，手撕热部署源码，并且在组内分享，节省了大量的测试部署时间的成本消耗。</p>
+<h3 id="专注原则"><a href="#专注原则" class="headerlink" title="专注原则"></a>专注原则</h3><p>专注可以很大程度上提高工作效率。</p>
+<p>隔离干扰，提前上班（专注于编码一小时，完成 60%的编码工作，正常工作时间用来做沟通和自我提升，复盘、总结、整理），避免能分散自己注意力的东西（手机、浏览器）</p>
+<h3 id="自动化原则"><a href="#自动化原则" class="headerlink" title="自动化原则"></a>自动化原则</h3><p>把能自动化的一切都去人力去手工。</p>
+<p>依然热部署</p>
+<p>订阅</p>
+<h3 id="规范性原则"><a href="#规范性原则" class="headerlink" title="规范性原则"></a>规范性原则</h3><p>规范很重要，减少不一致。降低理解和沟通的成本。</p>
+<p>主动做一些输出，例如开发规范、技术分享、设计模式、领域驱动等。</p>
+<h2 id="几项能力"><a href="#几项能力" class="headerlink" title="几项能力"></a>几项能力</h2><ul>
+<li><p>承担责任，但不为团队背不该背的锅</p>
+</li>
+<li><p>任何事情首先从自己身上找原因，该认怂就认怂，问题尽量控制在一定范围内，避免扩大和升级</p>
+</li>
+<li><p>综合能力，技术、业务、项目管理都要懂</p>
+</li>
+<li><p>一叶知秋的洞察力</p>
+</li>
+<li><p>自省，善待质疑自己和与自己争论的人</p>
+</li>
+<li><p>带领团队一起提升，大家一起强了，其实才会轻松</p>
+</li>
+<li><p>同理心</p>
+</li>
+<li><p>情绪管理</p>
+</li>
+<li><p>文档能力</p>
+</li>
+</ul>
+<p>文档是第一生产力，通俗易懂，结构化，简化/强化沟通。</p>
+<ul>
+<li>算法能力</li>
+</ul>
+<p>除了技术的提升，思维提升也是受益良多。</p>
+<ul>
+<li><p>解决问题的效率</p>
+</li>
+<li><p>表达能力</p>
+</li>
+</ul>
+<p>表达能力决定了所做的技术的影响范围，决定了影响力，决定了威信，决定了价值。</p>
+<p>基于格局、思维、技巧。</p>
+<ul>
+<li><p>优雅和美观的抽象能力</p>
+</li>
+<li><p>读书，总结</p>
+</li>
+<li><p>裸编程能力</p>
+</li>
+<li><p>掌握底层系统原理</p>
+</li>
+<li><p>追求代码世界的简约</p>
+</li>
+<li><p>保持谦逊，对一切充满敬畏</p>
+</li>
+</ul>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Essay-Personal-Development.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/" rel="tag">个人成长</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%80%9D%E7%BB%B4/" rel="tag">思维</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Java-Interview-Menu.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            巅峰之旅（二）Java 灵魂拷问汇总
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Java-How-to-Learn-Java.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">巅峰之旅（一）如何学习 Java</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

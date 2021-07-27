@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
+   
+  <meta name="description" content="Valar Morghulis" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    秒杀系列（二）如何优雅地异步下订单 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Java-SecKill-Asynchronous"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  秒杀系列（二）如何优雅地异步下订单
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Java-SecKill-Asynchronous.html" class="article-date">
+  <time datetime="2021-07-26T07:24:40.000Z" itemprop="datePublished">2021-07-26</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">12 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="简单的订单异步处理实现"><a href="#简单的订单异步处理实现" class="headerlink" title="简单的订单异步处理实现"></a>简单的订单异步处理实现</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>前面几篇文章，我们从 <strong>「限流角度，缓存角度」</strong> 来优化了用户下单的速度，减少了服务器和数据库的压力。这些处理对于一个秒杀系统都是非常重要的，并且效果立竿见影，那还有什么操作也能有立竿见影的效果呢？答案是对于下单的异步处理。</p>
+<p>在秒杀系统用户进行抢购的过程中，由于在同一时间会有大量请求涌入服务器，如果每个请求都立即访问数据库进行扣减库存+写入订单的操作，对数据库的压力是巨大的。</p>
+<p>如何减轻数据库的压力呢，<strong>「我们将每一条秒杀的请求存入消息队列（例如RabbitMQ）中，放入消息队列后，给用户返回类似“抢购请求发送成功”的结果。而在消息队列中，我们将收到的下订单请求一个个的写入数据库中」</strong>，比起多线程同步修改数据库的操作，大大缓解了数据库的连接压力，最主要的好处就表现在数据库连接的减少：</p>
+<ul>
+<li>同步方式：大量请求快速占满数据库框架开启的数据库连接池，同时修改数据库，导致数据库读写性能骤减。</li>
+<li>异步方式：一条条消息以顺序的方式写入数据库，连接数几乎不变（当然，也取决于消息队列消费者的数量）。</li>
+</ul>
+<p><strong>「这种实现可以理解为是一中流量削峰：让数据库按照他的处理能力，从消息队列中拿取消息进行处理。」</strong></p>
+<span id="more"></span>
+
+<p>结合之前的四篇秒杀系统文章，这样整个流程图我们就实现了：</p>
+<p><img src="Java-SecKill-Asynchronous/%E7%A7%92%E6%9D%80%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="img"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p>我们在源码仓库里，新增一个 Controller 对外接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 下单接口：异步处理订单</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(value = &quot;/createUserOrderWithMq&quot;, method = &#123;RequestMethod.GET&#125;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createUserOrderWithMq</span><span class="params">(<span class="meta">@RequestParam(value = &quot;sid&quot;)</span> Integer sid,</span></span></span><br><span class="line"><span class="params"><span class="function">                              <span class="meta">@RequestParam(value = &quot;userId&quot;)</span> Integer userId)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 检查缓存中该用户是否已经下单过</span></span><br><span class="line">        Boolean hasOrder = orderService.checkUserOrderInfoInCache(sid, userId);</span><br><span class="line">        <span class="keyword">if</span> (hasOrder != <span class="keyword">null</span> &amp;&amp; hasOrder) &#123;</span><br><span class="line">            log.info(<span class="string">&quot;该用户已经抢购过&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;你已经抢购过了，不要太贪心.....&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 没有下单过，检查缓存中商品是否还有库存</span></span><br><span class="line">        log.info(<span class="string">&quot;没有抢购过，检查缓存中商品是否还有库存&quot;</span>);</span><br><span class="line">        Integer count = stockService.getStockCount(sid);</span><br><span class="line">        <span class="keyword">if</span> (count == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;秒杀请求失败，库存不足.....&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 有库存，则将用户id和商品id封装为消息体传给消息队列处理</span></span><br><span class="line">        <span class="comment">// 注意这里的有库存和已经下单都是缓存中的结论，存在不可靠性，在消息队列中会查表再次验证</span></span><br><span class="line">        log.info(<span class="string">&quot;有库存：[&#123;&#125;]&quot;</span>, count);</span><br><span class="line">        JSONObject jsonObject = <span class="keyword">new</span> JSONObject();</span><br><span class="line">        jsonObject.put(<span class="string">&quot;sid&quot;</span>, sid);</span><br><span class="line">        jsonObject.put(<span class="string">&quot;userId&quot;</span>, userId);</span><br><span class="line">        sendToOrderQueue(jsonObject.toJSONString());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;秒杀请求提交成功&quot;</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;下单接口：异步处理订单异常：&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;秒杀请求失败，服务器正忙.....&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>createUserOrderWithMq 接口整体流程如下：</p>
+<ul>
+<li>检查缓存中该用户是否已经下单过：在消息队列下单成功后写入 Redis 一条用户 id 和商品 id 绑定的数据</li>
+<li>没有下单过，检查缓存中商品是否还有库存</li>
+<li>缓存中如果有库存，则将用户 id 和商品 id 封装为消息体 <strong>「传给消息队列处理」</strong></li>
+<li>注意：这里的 <strong>「有库存和已经下单」</strong> 都是缓存中的结论，存在不可靠性，在消息队列中会查表再次验证， <strong>「作为兜底逻辑」</strong></li>
+</ul>
+<p>消息队列是如何接收消息的呢？我们新建一个消息队列，采用第四篇文中使用过的 RabbitMQ，我再稍微贴一下整个创建 RabbitMQ 的流程吧：</p>
+<ol>
+<li>pom.xml 新增 RabbitMq 的依赖：</li>
+</ol>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-amqp<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>写一个 RabbitMqConfig：</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RabbitMqConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Queue <span class="title">orderQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Queue(<span class="string">&quot;orderQueue&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>添加一个消费者：</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@RabbitListener(queues = &quot;orderQueue&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OrderMqReceiver</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> log log = logFactory.getlog(OrderMqReceiver.class);</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StockService stockService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> OrderService orderService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RabbitHandler</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(String message)</span> </span>&#123;</span><br><span class="line">        log.info(<span class="string">&quot;OrderMqReceiver收到消息开始用户下单流程: &quot;</span> + message);</span><br><span class="line">        JSONObject jsonObject = JSONObject.parseObject(message);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            orderService.createOrderByMq(jsonObject.getInteger(<span class="string">&quot;sid&quot;</span>),jsonObject.getInteger(<span class="string">&quot;userId&quot;</span>));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            log.error(<span class="string">&quot;消息处理异常：&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>真正的下单的操作，在 Service 中完成，我们在 orderService 中新建 createOrderByMq 方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">createOrderByMq</span><span class="params">(Integer sid, Integer userId)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    Stock stock;</span><br><span class="line">    <span class="comment">// 校验库存（不要学我在trycatch中做逻辑处理，这样是不优雅的。这里这样处理是为了兼容之前的秒杀系统文章）</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        stock = checkStock(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.info(<span class="string">&quot;库存不足！&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 乐观锁更新库存</span></span><br><span class="line">    <span class="keyword">boolean</span> updateStock = saleStockOptimistic(stock);</span><br><span class="line">    <span class="keyword">if</span> (!updateStock) &#123;</span><br><span class="line">        log.warn(<span class="string">&quot;扣减库存失败，库存已经为0&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    log.info(<span class="string">&quot;扣减库存成功，剩余库存：[&#123;&#125;]&quot;</span>, stock.getCount() - stock.getSale() - <span class="number">1</span>);</span><br><span class="line">    stockService.delStockCountCache(sid);</span><br><span class="line">    log.info(<span class="string">&quot;删除库存缓存&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建订单</span></span><br><span class="line">    log.info(<span class="string">&quot;写入订单至数据库&quot;</span>);</span><br><span class="line">    createOrderWithUserInfoInDB(stock, userId);</span><br><span class="line">    log.info(<span class="string">&quot;写入订单至缓存供查询&quot;</span>);</span><br><span class="line">    createOrderWithUserInfoInCache(stock, userId);</span><br><span class="line">    log.info(<span class="string">&quot;下单完成&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>真正的下单的操作流程为：</p>
+<ul>
+<li>校验数据库库存</li>
+<li>乐观锁更新库存（其他之前讲到的锁也可以啦）</li>
+<li>写入订单至数据库</li>
+<li><strong>「写入订单和用户信息至缓存供查询」</strong>：写入后，在外层接口便可以通过判断redis中是否存在用户和商品的抢购信息，来直接给用户返回“你已经抢购过”的消息。</li>
+</ul>
+<p><strong>「在 Redis 中记录商品和用户的关系，使用了 set 集合，key 是商品 id，而 value 则是用户 id 的集合，当然这样有一些不合理之处：」</strong></p>
+<ul>
+<li>这种结构默认了一个用户只能抢购一次这个商品</li>
+<li>使用 set 集合，在用户过多后，每次检查需要遍历 set，用户过多有性能问题</li>
+</ul>
+<p>大家知道需要做这种操作就好，具体如何在生产环境的 Redis 中存储这种关系，大家可以深入优化下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Boolean <span class="title">checkUserOrderInfoInCache</span><span class="params">(Integer sid, Integer userId)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    String key = CacheKey.USER_HAS_ORDER.getKey() + <span class="string">&quot;_&quot;</span> + sid;</span><br><span class="line">    log.info(<span class="string">&quot;检查用户Id：[&#123;&#125;] 是否抢购过商品Id：[&#123;&#125;] 检查Key：[&#123;&#125;]&quot;</span>, userId, sid, key);</span><br><span class="line">    <span class="keyword">return</span> stringRedisTemplate.opsForSet().isMember(key, userId.toString());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>「整个上述实现只考虑最精简的流程，不把前几篇文章的限流，验证用户等加入进来，并且默认考虑的是每个用户抢购一个商品就不再允许抢购，我的想法是保证每篇文章的独立性和代码的任务最小化，至于最后的整合我相信大佬们自己可以做到。」</strong></p>
+<h1 id="非异步与异步下单接口的性能对比"><a href="#非异步与异步下单接口的性能对比" class="headerlink" title="非异步与异步下单接口的性能对比"></a>非异步与异步下单接口的性能对比</h1><p>接下来就是喜闻乐见的<strong>「非正规」</strong>性能测试环节，我们来对异步处理和非异步处理做一个性能对比。</p>
+<p>首先，为了测试方便，我把用户购买限制先取消掉，不然我用 JMeter（JMeter 并发测试的使用方式参考 <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzU1NTA0NTEwMg==&mid=2247484174&idx=1&sn=235af7ead49a7d33e7fab52e05d5021f&lang=zh_CN&scene=21#wechat_redirect">秒杀系统第一篇文章</a> ）还要来模拟多个用户 id，太麻烦了，不是我们的重点。我们把上面的 Controller 接口这一部分注释掉：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 检查缓存中该用户是否已经下单过</span></span><br><span class="line">Boolean hasOrder = orderService.checkUserOrderInfoInCache(sid, userId);</span><br><span class="line"><span class="keyword">if</span> (hasOrder != <span class="keyword">null</span> &amp;&amp; hasOrder) &#123;</span><br><span class="line">    log.info(<span class="string">&quot;该用户已经抢购过&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;你已经抢购过了，不要太贪心.....&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样我们可以用 JMeter 模拟抢购的情况了。</p>
+<p><strong>「我们先玩票大的！」</strong> 在我这个 1c4g1m 带宽的云数据库上，<strong>「设置商品数量 5000 个，同时并发访问 10000 次」</strong>。</p>
+<p>服务器先跑起来，访问接口是<code>http://localhost:8080/createUserOrderWithMq?sid=1&amp;userId=1</code></p>
+<p>启动！</p>
+<p>10000 个线程并发，直接把 1M 带宽小水管云数据库打穿了！</p>
+<p><img src="Java-SecKill-Asynchronous/%E9%AB%98%E5%B9%B6%E5%8F%91%E4%BD%8E%E9%85%8D%E4%BA%91%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B4%A9%E6%BA%83.png" alt="图片"></p>
+<p>对不起对不起，打扰了，我们还是老实一点，不要对这么低配置的数据库有不切实际的幻想。</p>
+<p>我们改成 1000 个线程并发，商品库存为 500 个，<strong>「使用常规的非异步下单接口」</strong>：</p>
+<p><img src="Java-SecKill-Asynchronous/%E4%BD%BF%E7%94%A8%E5%B8%B8%E8%A7%84%E7%9A%84%E9%9D%9E%E5%BC%82%E6%AD%A5%E4%B8%8B%E5%8D%95%E6%8E%A5%E5%8F%A3.png" alt="图片"></p>
+<p>对比 1000 个线程并发，<strong>「使用异步订单接口」</strong>：</p>
+<p><img src="Java-SecKill-Asynchronous/%E4%BD%BF%E7%94%A8%E5%BC%82%E6%AD%A5%E8%AE%A2%E5%8D%95%E6%8E%A5%E5%8F%A3.png" alt="图片"></p>
+<p><strong>「可以看到，非异步的情况下，吞吐量是 37 个请求/秒，而异步情况下，我们的接只是做了两个事情，检查缓存中库存+发消息给消息队列，所以吞吐量为 600 个请求/秒。」</strong></p>
+<p>在发送完请求后，消息队列中立刻开始处理消息：</p>
+<p><img src="Java-SecKill-Asynchronous/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E5%A4%84%E7%90%86%E6%B6%88%E6%81%AF.png" alt="img"></p>
+<p><img src="../../../workSpace/secKill/secKill-doc/%E5%A6%82%E4%BD%95%E4%BC%98%E9%9B%85%E7%9A%84%E5%AE%9E%E7%8E%B0%E8%AE%A2%E5%8D%95%E5%BC%82%E6%AD%A5%E5%A4%84%E7%90%86.assets/640-20210221145615297" alt="图片"></p>
+<p>我截图了在 500 个库存刚刚好消耗完的时候的日志，可以看到，一旦库存没有了，消息队列就完成不了扣减库存的操作，就不会将订单写入数据库，也不会向缓存中记录用户已经购买了该商品的消息。</p>
+<p><img src="Java-SecKill-Asynchronous/%E5%BA%93%E5%AD%98%E5%8D%96%E5%AE%8C%E6%97%B6%E5%89%8D%E5%90%8E%E6%96%87%E6%97%A5%E5%BF%97.png" alt="图片"></p>
+<h1 id="更加优雅的实现"><a href="#更加优雅的实现" class="headerlink" title="更加优雅的实现"></a>更加优雅的实现</h1><p>那么问题来了，我们实现了上面的异步处理后，用户那边得到的结果是怎么样的呢？</p>
+<p>用户点击了提交订单，收到了消息：您的订单已经提交成功。然后用户啥也没看见，也没有订单号，用户开始慌了，点到了自己的个人中心——已付款。发现居然没有订单！（因为可能还在队列中处理）</p>
+<p>这样的话，用户可能马上就要开始投诉了！太不人性化了，我们不能只为了开发方便，舍弃了用户体验！</p>
+<p>所以我们要改进一下，如何改进呢？其实很简单：</p>
+<ul>
+<li>让前端在提交订单后，显示一个“排队中”，<strong>「就像我们在小米官网抢小米手机那样」</strong></li>
+<li>同时，前端不断请求检查用户和商品是否已经有订单的接口，如果得到订单已经处理完成的消息，页面跳转抢购成功。</li>
+</ul>
+<p>实现起来，我们只要在后端加一个独立的接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 检查缓存中用户是否已经生成订单</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(value = &quot;/checkOrderByUserIdInCache&quot;, method = &#123;RequestMethod.GET&#125;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">checkOrderByUserIdInCache</span><span class="params">(<span class="meta">@RequestParam(value = &quot;sid&quot;)</span> Integer sid,</span></span></span><br><span class="line"><span class="params"><span class="function">                              <span class="meta">@RequestParam(value = &quot;userId&quot;)</span> Integer userId)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 检查缓存中该用户是否已经下单过</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Boolean hasOrder = orderService.checkUserOrderInfoInCache(sid, userId);</span><br><span class="line">        <span class="keyword">if</span> (hasOrder != <span class="keyword">null</span> &amp;&amp; hasOrder) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;恭喜您，已经抢购成功！&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;检查订单异常：&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;很抱歉，你的订单尚未生成，继续排队吧您嘞。&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们来试验一下，首先我们请求两次下单的接口，大家用 Postman 或者浏览器就好：</p>
+<p><a target="_blank" rel="noopener" href="http://localhost:8080/createUserOrderWithMq?sid=1&amp;userId=1">http://localhost:8080/createUserOrderWithMq?sid=1&amp;userId=1</a></p>
+<p><img src="Java-SecKill-Asynchronous/%E4%B8%A4%E6%AC%A1%E8%AF%B7%E6%B1%82%E8%BF%94%E5%9B%9E%E6%8A%A2%E8%B4%AD%E8%BF%87.png" alt="图片"></p>
+<p>可以看到，第一次请求，下单成功了，第二次请求，则会返回已经抢购过。</p>
+<p>因为这时候 Redis 已经写入了该用户下过订单的数据：</p>
+<figure class="highlight zsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; smembers seckill_v1_user_has_order_1</span><br><span class="line">(empty list or <span class="built_in">set</span>)</span><br><span class="line">127.0.0.1:6379&gt; smembers seckill_v1_user_has_order_1</span><br><span class="line">1) <span class="string">&quot;1&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>我们为了模拟消息队列处理茫茫多请求的行为，我们在下单的service方法中，让线程休息10秒：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">createOrderByMq</span><span class="params">(Integer sid, Integer userId)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 模拟多个用户同时抢购，导致消息队列排队等候10秒</span></span><br><span class="line">    Thread.sleep(<span class="number">10000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//完成下面的下单流程（省略）</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后我们清除订单信息，开始下单：</p>
+<p><a target="_blank" rel="noopener" href="http://localhost:8080/createUserOrderWithMq?sid=1&amp;userId=1">http://localhost:8080/createUserOrderWithMq?sid=1&amp;userId=1</a></p>
+<p><img src="Java-SecKill-Asynchronous/%E6%B8%85%E9%99%A4%E8%AE%A2%E5%8D%95%E4%BF%A1%E6%81%AF%E5%90%8E%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%AF%B7%E6%B1%82.png" alt="图片"></p>
+<p>第一次请求，返回信息如上图。</p>
+<p>紧接着前端显示排队中的时候，请求检查是否已经生成订单的接口，接口返回”继续排队“：</p>
+<p><img src="Java-SecKill-Asynchronous/%E6%A3%80%E6%9F%A5%E6%98%AF%E5%90%A6%E5%B7%B2%E7%BB%8F%E7%94%9F%E6%88%90%E8%AE%A2%E5%8D%95.png" alt="图片"></p>
+<p>一直刷刷刷接口，10 秒之后，接口返回”恭喜您，抢购成功“，如下图：</p>
+<p><img src="Java-SecKill-Asynchronous/%E6%8A%A2%E8%B4%AD%E6%88%90%E5%8A%9F.png" alt="图片"></p>
+<p>整个流程就走完了。</p>
+<h1 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h1><p>这篇文章介绍了如何在保证用户体验的情况下完成订单异步处理的流程。内容其实不多，深度没有前一篇那么难理解。（我拖更也有一部分原因是因为我觉得上一篇的深度我很难随随便便达到，就不敢随意写文章，有压力。）</p>
+<p>希望大家喜欢，目前来看，整个秒杀下订单的主流程我们全部介绍完了。当然里面很多东西都非常基础，比如数据库设计我一直停留在那几个破字段，比如订单的编号，其实不可能用主键 id 来做等等。</p>
+<p><strong>「所以之后文章的重点会更加关注某些特定的方面」</strong>，比如：</p>
+<ul>
+<li>分布式订单唯一编号的生成</li>
+<li>网关层面的接口缓存</li>
+<li>…</li>
+</ul>
+<p>当然，其他内容的文章也会不断积累总结啦。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-SecKill-Asynchronous.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/Java-SecKill-Prevent-Oversold.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">秒杀系列（一）防止超卖</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2021
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+    
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+
+</html>

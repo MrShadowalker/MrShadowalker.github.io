@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Shadow.Net</title>
+  
+  <subtitle>生活家 程序猿 摄影狮</subtitle>
+  <link href="http://chenzihao.me/atom.xml" rel="self"/>
+  
+  <link href="http://chenzihao.me/"/>
+  <updated>2021-07-26T07:24:40.000Z</updated>
+  <id>http://chenzihao.me/</id>
+  
+  <author>
+    <name>Shadowalker</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>秒杀系列（二）如何优雅地异步下订单</title>
+    <link href="http://chenzihao.me/articles/Java-SecKill-Asynchronous.html"/>
+    <id>http://chenzihao.me/articles/Java-SecKill-Asynchronous.html</id>
+    <published>2021-07-26T07:24:40.000Z</published>
+    <updated>2021-07-26T07:24:40.000Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;简单的订单异步处理实现&quot;&gt;&lt;a href=&quot;#简单的订单异步处理实现&quot; class=&quot;headerlink&quot; title=&quot;简单的订单异步处理实现&quot;&gt;&lt;/a&gt;简单的订单异步处理实现&lt;/h1&gt;&lt;h2 id=&quot;介绍&quot;&gt;&lt;a href=&quot;#介绍&quot; class=&quot;headerlink&quot; title=&quot;介绍&quot;&gt;&lt;/a&gt;介绍&lt;/h2&gt;&lt;p&gt;前面几篇文章，我们从 &lt;strong&gt;「限流角度，缓存角度」&lt;/strong&gt; 来优化了用户下单的速度，减少了服务器和数据库的压力。这些处理对于一个秒杀系统都是非常重要的，并且效果立竿见影，那还有什么操作也能有立竿见影的效果呢？答案是对于下单的异步处理。&lt;/p&gt;
+&lt;p&gt;在秒杀系统用户进行抢购的过程中，由于在同一时间会有大量请求涌入服务器，如果每个请求都立即访问数据库进行扣减库存+写入订单的操作，对数据库的压力是巨大的。&lt;/p&gt;
+&lt;p&gt;如何减轻数据库的压力呢，&lt;strong&gt;「我们将每一条秒杀的请求存入消息队列（例如RabbitMQ）中，放入消息队列后，给用户返回类似“抢购请求发送成功”的结果。而在消息队列中，我们将收到的下订单请求一个个的写入数据库中」&lt;/strong&gt;，比起多线程同步修改数据库的操作，大大缓解了数据库的连接压力，最主要的好处就表现在数据库连接的减少：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;同步方式：大量请求快速占满数据库框架开启的数据库连接池，同时修改数据库，导致数据库读写性能骤减。&lt;/li&gt;
+&lt;li&gt;异步方式：一条条消息以顺序的方式写入数据库，连接数几乎不变（当然，也取决于消息队列消费者的数量）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;「这种实现可以理解为是一中流量削峰：让数据库按照他的处理能力，从消息队列中拿取消息进行处理。」&lt;/strong&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="高并发" scheme="http://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
+    
+    <category term="分布式" scheme="http://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>秒杀系列（一）防止超卖</title>
+    <link href="http://chenzihao.me/articles/Java-SecKill-Prevent-Oversold.html"/>
+    <id>http://chenzihao.me/articles/Java-SecKill-Prevent-Oversold.html</id>
+    <published>2021-07-26T03:03:30.000Z</published>
+    <updated>2021-07-26T03:03:30.000Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;秒杀系统&quot;&gt;&lt;a href=&quot;#秒杀系统&quot; class=&quot;headerlink&quot; title=&quot;秒杀系统&quot;&gt;&lt;/a&gt;秒杀系统&lt;/h1&gt;&lt;p&gt;秒杀系统相信网上已经介绍了很多了，我也不想粘贴很多定义过来了。&lt;/p&gt;
+&lt;p&gt;废话少说，秒杀系统主要应用在商品抢购的场景，比如：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;电商抢购限量商品&lt;/li&gt;
+&lt;li&gt;卖周董演唱会的门票&lt;/li&gt;
+&lt;li&gt;火车票抢座&lt;/li&gt;
+&lt;li&gt;……&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;秒杀系统抽象来说就是以下几个步骤：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;用户选定商品下单&lt;/li&gt;
+&lt;li&gt;校验库存&lt;/li&gt;
+&lt;li&gt;扣库存&lt;/li&gt;
+&lt;li&gt;创建用户订单&lt;/li&gt;
+&lt;li&gt;用户支付等后续步骤&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;听起来就是个用户买商品的流程而已嘛！确实，所以我们为啥要说它是个专门的系统呢？&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="高并发" scheme="http://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
+    
+    <category term="分布式" scheme="http://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>秒杀系列（零）高并发设计</title>
+    <link href="http://chenzihao.me/articles/Java-SecKill-Distributed-Design.html"/>
+    <id>http://chenzihao.me/articles/Java-SecKill-Distributed-Design.html</id>
+    <published>2021-07-26T03:02:55.000Z</published>
+    <updated>2021-07-26T03:02:55.000Z</updated>
+    
+    
+    <summary type="html">秒杀系列开篇文章，整理分布式微服务设计中，面对高并发场景的一系列潜在问题和处理思路。</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="高并发" scheme="http://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
+    
+    <category term="分布式" scheme="http://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+    <category term="数据一致性" scheme="http://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>秒杀系列（三）数据库与缓存双写问题的思考</title>
+    <link href="http://chenzihao.me/articles/Java-SecKill-DB-Cache-Inconsistent.html"/>
+    <id>http://chenzihao.me/articles/Java-SecKill-DB-Cache-Inconsistent.html</id>
+    <published>2021-07-26T02:49:14.000Z</published>
+    <updated>2021-07-26T02:49:14.000Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;缓存热点数据&quot;&gt;&lt;a href=&quot;#缓存热点数据&quot; class=&quot;headerlink&quot; title=&quot;缓存热点数据&quot;&gt;&lt;/a&gt;缓存热点数据&lt;/h1&gt;&lt;p&gt;在秒杀实际的业务中，一定有很多需要做缓存的场景，比如售卖的商品，包括名称、详情等。访问量很大的数据，可以算是“热点”数据了，尤其是一些读取量远大于写入量的数据，更应该被缓存，而不应该让请求打到数据库上。&lt;/p&gt;</summary>
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Java 幂等设计</title>
+    <link href="http://chenzihao.me/articles/Java-Idempotent-Design.html"/>
+    <id>http://chenzihao.me/articles/Java-Idempotent-Design.html</id>
+    <published>2021-07-26T01:39:55.000Z</published>
+    <updated>2021-07-26T01:39:55.000Z</updated>
+    
+    
+    <summary type="html">Java 幂等设计，很重要的一项基本功和意识。</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="高并发" scheme="http://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>HSF 应用开发</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-HSF-Operation.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-HSF-Operation.html</id>
+    <published>2021-07-22T07:23:17.000Z</published>
+    <updated>2021-07-22T07:23:17.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;本篇介绍 HSF 框架的开发应用。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+    <category term="阿里" scheme="http://chenzihao.me/tags/%E9%98%BF%E9%87%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>HSF 框架简介</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-HSF-Introduction.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-HSF-Introduction.html</id>
+    <published>2021-07-22T07:12:57.000Z</published>
+    <updated>2021-07-22T07:12:57.000Z</updated>
+    
+    
+    <summary type="html">阿里内部使用的框架 HSF。</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+    <category term="阿里" scheme="http://chenzihao.me/tags/%E9%98%BF%E9%87%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>EDAS 服务治理</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-EDAS-Service-Governance.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-EDAS-Service-Governance.html</id>
+    <published>2021-07-22T00:52:42.000Z</published>
+    <updated>2021-07-22T00:52:42.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;服务治理是 EDAS 的重要功能之一。在 EDAS 中，用户可以对 Spring Cloud、Dubbo、HSF 和多语言服务应用进行治理，包括服务查询、调用链查询、离群实例摘除和服务鉴权等。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>EDAS ECS 应用托管</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-EDAS-ECS.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-EDAS-ECS.html</id>
+    <published>2021-07-20T09:14:34.000Z</published>
+    <updated>2021-07-20T09:14:34.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;您可以将 Java 应用托管到 EDAS 的 ECS 集群或混合云 ECS 集群。EDAS 为托管的应用提供了生命周期管理、CI/CD、监控、运维等一系列功能。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>EDAS K8s 应用托管</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-EDAS-K8s.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-EDAS-K8s.html</id>
+    <published>2021-07-20T00:52:32.000Z</published>
+    <updated>2021-07-20T00:52:32.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;EDAS 支持以容器的形式托管应用到阿里云 Kubernetes 集群或混合云集群（其他云域或 IDC 内自建 Kubernetes 集群），用户无需理解容器服务底层细节，便可以低门槛拥抱容器技术，最大化地利用资源并完成应用在容器里的全生命周期管理，以及监控、运维等服务。&lt;/p&gt;
+&lt;p&gt;本文介绍 K8s 环境支持的应用类型和应用托管功能。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>企业级分布式应用服务 EDAS 应用</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-EDAS-Operation.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-EDAS-Operation.html</id>
+    <published>2021-07-20T00:18:33.000Z</published>
+    <updated>2021-07-20T00:18:33.000Z</updated>
+    
+    
+    <summary type="html">EDAS 操作手册</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Java 基础（二）异常体系</title>
+    <link href="http://chenzihao.me/articles/Java-Basics-Exception.html"/>
+    <id>http://chenzihao.me/articles/Java-Basics-Exception.html</id>
+    <published>2021-07-19T22:20:50.000Z</published>
+    <updated>2021-07-19T22:20:50.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;Java 异常体系和常见异常，一篇搞定！&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="面试" scheme="http://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+    <category term="异常" scheme="http://chenzihao.me/tags/%E5%BC%82%E5%B8%B8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>企业级分布式应用服务 EDAS 简介</title>
+    <link href="http://chenzihao.me/articles/Java-Framework-EDAS-Introduction.html"/>
+    <id>http://chenzihao.me/articles/Java-Framework-EDAS-Introduction.html</id>
+    <published>2021-07-19T06:33:37.000Z</published>
+    <updated>2021-07-19T06:33:37.000Z</updated>
+    
+    
+    <summary type="html">&lt;p&gt;企业级分布式应用服务 EDAS（Enterprise Distributed Application Service）是一个应用托管和微服务管理的 PaaS 平台，提供应用开发、部署、监控、运维等全栈式解决方案，支持 Spring Cloud、Dubbo 等微服务运行环境，助力应用轻松上云。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="框架" scheme="http://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
+    
+    <category term="阿里" scheme="http://chenzihao.me/tags/%E9%98%BF%E9%87%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Java 基础（一）Java 关键字</title>
+    <link href="http://chenzihao.me/articles/Java-Basics-Keywords.html"/>
+    <id>http://chenzihao.me/articles/Java-Basics-Keywords.html</id>
+    <published>2021-07-17T04:25:14.000Z</published>
+    <updated>2021-07-17T04:25:14.000Z</updated>
+    
+    
+    <summary type="html">Java 关键字一篇搞定</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="面试" scheme="http://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>巅峰之旅（二）Java 灵魂拷问汇总</title>
+    <link href="http://chenzihao.me/articles/Java-Interview-Menu.html"/>
+    <id>http://chenzihao.me/articles/Java-Interview-Menu.html</id>
+    <published>2021-07-17T04:07:07.000Z</published>
+    <updated>2021-07-17T04:07:07.000Z</updated>
+    
+    
+    <summary type="html">Java 大厂面试实录的汇总目录。</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="面试" scheme="http://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>个人成长总结</title>
+    <link href="http://chenzihao.me/articles/Essay-Personal-Development.html"/>
+    <id>http://chenzihao.me/articles/Essay-Personal-Development.html</id>
+    <published>2021-07-15T09:18:25.000Z</published>
+    <updated>2021-07-15T09:18:25.000Z</updated>
+    
+    
+    <summary type="html">个人成长总结</summary>
+    
+    
+    
+    <category term="闲言碎语" scheme="http://chenzihao.me/categories/%E9%97%B2%E8%A8%80%E7%A2%8E%E8%AF%AD/"/>
+    
+    
+    <category term="个人成长" scheme="http://chenzihao.me/tags/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/"/>
+    
+    <category term="思维" scheme="http://chenzihao.me/tags/%E6%80%9D%E7%BB%B4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>巅峰之旅（一）如何学习 Java</title>
+    <link href="http://chenzihao.me/articles/Java-How-to-Learn-Java.html"/>
+    <id>http://chenzihao.me/articles/Java-How-to-Learn-Java.html</id>
+    <published>2021-07-15T07:58:56.000Z</published>
+    <updated>2021-07-15T07:58:56.000Z</updated>
+    
+    
+    <summary type="html">Java 学习之旅</summary>
+    
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/categories/Java/"/>
+    
+    
+    <category term="Java" scheme="http://chenzihao.me/tags/Java/"/>
+    
+    <category term="面试" scheme="http://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>区块链系列——密码学与安全技术</title>
+    <link href="http://chenzihao.me/articles/Blockchain-Cryptography-and-Network-Security.html"/>
+    <id>http://chenzihao.me/articles/Blockchain-Cryptography-and-Network-Security.html</id>
+    <published>2021-07-15T06:28:27.000Z</published>
+    <updated>2021-07-15T06:28:27.000Z</updated>
+    
+    
+    <summary type="html">描述</summary>
+    
+    
+    
+    <category term="区块链" scheme="http://chenzihao.me/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/"/>
+    
+    
+    <category term="Blockchain" scheme="http://chenzihao.me/tags/Blockchain/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>区块链系列——分布式核心问题</title>
+    <link href="http://chenzihao.me/articles/Blockchain-Distributed-issues.html"/>
+    <id>http://chenzihao.me/articles/Blockchain-Distributed-issues.html</id>
+    <published>2021-07-15T06:27:30.000Z</published>
+    <updated>2021-07-15T06:27:30.000Z</updated>
+    
+    
+    <summary type="html">描述</summary>
+    
+    
+    
+    <category term="区块链" scheme="http://chenzihao.me/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/"/>
+    
+    
+    <category term="Blockchain" scheme="http://chenzihao.me/tags/Blockchain/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>如何打造宇宙最强 Macbook</title>
+    <link href="http://chenzihao.me/articles/Tool-best-Mac.html"/>
+    <id>http://chenzihao.me/articles/Tool-best-Mac.html</id>
+    <published>2021-07-14T08:27:28.000Z</published>
+    <updated>2021-07-14T08:27:28.000Z</updated>
+    
+    
+    <summary type="html">描述</summary>
+    
+    
+    
+    <category term="编程开发" scheme="http://chenzihao.me/categories/%E7%BC%96%E7%A8%8B%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="工具" scheme="http://chenzihao.me/tags/%E5%B7%A5%E5%85%B7/"/>
+    
+    <category term="教程" scheme="http://chenzihao.me/tags/%E6%95%99%E7%A8%8B/"/>
+    
+    <category term="Mac" scheme="http://chenzihao.me/tags/Mac/"/>
+    
+  </entry>
+  
+</feed>
