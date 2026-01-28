@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Rhythm | 生命律动</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --bg-color: #f9f7f5;
+            --text-main: #2d2a29;
+            --text-dim: #7c7571;
+            --accent-physical: #e88d8d;
+            --accent-mental: #8db5e8;
+            --accent-emotional: #8de8bd;
+            --accent-spiritual: #e8d08d;
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: all 0.5s ease;
+            overflow-x: hidden;
+        }
+        .serif { font-family: 'Noto Serif SC', serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+        .quadrant {
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .quadrant:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            filter: brightness(1.01);
+        }
+        .task-input:focus {
+            outline: none;
+            border-bottom: 1px solid var(--text-dim);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .scale-in-center {
+            animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+            100% { opacity: 0.4; transform: scale(1); }
+        }
+        .animate-pulse-slow {
+            animation: pulse 4s ease-in-out infinite;
+        }
+        .chat-window {
+            height: 0;
+            overflow: hidden;
+            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .chat-window.open {
+            height: 400px;
+        }
+
+        /* 成功愿景动画相关 */
+        .vision-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            background: rgba(0,0,0,0);
+            opacity: 0;
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .vision-overlay.active {
+            background: rgba(0,0,0,0.85);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .vision-card {
+            position: relative;
+            transform: scale(0.8) translateY(20px);
+            opacity: 0;
+            filter: blur(10px);
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 90%;
+            width: 500px;
+        }
+        .vision-overlay.active .vision-card {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            filter: blur(0);
+        }
+        .vision-image {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            background: #2d2a29;
+            filter: brightness(1.1) contrast(1.1) saturate(1.2);
+            transition: filter 1.5s ease;
+        }
+        .vision-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: overlay;
+        }
+        .vision-card::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            right: -20%;
+            bottom: -20%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            z-index: -1;
+            animation: rotateLight 10s linear infinite;
+        }
+        @keyframes rotateLight {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .vision-text {
+            margin-top: 2rem;
+            font-size: 2rem;
+            letter-spacing: 0.2rem;
+            color: white;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* 胜利勋章效果 */
+        .victory-badge {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-family: 'Noto Serif SC', serif;
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+            z-index: 10;
+            transform: rotate(15deg);
+            animation: badgePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid white;
+        }
+
+        @keyframes badgePop {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            100% { transform: scale(1) rotate(15deg); opacity: 1; }
+        }
+
+        .victory-glow {
+            position: absolute;
+            inset: -4px;
+            background: linear-gradient(45deg, #ffd700, #ff8c00, #ffd700);
+            filter: blur(20px);
+            opacity: 0;
+            border-radius: 28px;
+            z-index: -1;
+            transition: opacity 1s ease;
+        }
+
+        .vision-overlay.active .victory-glow {
+            opacity: 0.6;
+            animation: glowPulse 2s infinite;
+        }
+
+        @keyframes glowPulse {
+            0% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.02); }
+            100% { opacity: 0.4; transform: scale(1); }
+        }
+
+        .task-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .group\/task:hover .task-glow {
+            opacity: 1;
+        }
+
+        .realized-task {
+            position: relative;
+            color: #a3a3a3;
+            animation: taskRealized 1.5s ease-out forwards;
+        }
+        @keyframes taskRealized {
+            0% { transform: translateX(0); opacity: 1; }
+            50% { transform: translateX(5px); color: var(--text-main); }
+            100% { transform: translateX(0); opacity: 0.6; }
+        }
+        .sparkle-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 10px white;
+            pointer-events: none;
+        }
+
+        /* 优雅进度条样式 */
+        .progress-elegant {
+            height: 4px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+        }
+        .progress-elegant-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-physical), var(--accent-mental), var(--accent-emotional), var(--accent-spiritual));
+            background-size: 400% 100%;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .progress-elegant-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+<!-- 开篇优雅古风信笺层（一封信） -->
+<div id="letter-overlay" class="fixed inset-0 z-[200] flex items-center justify-center bg-gradient-to-br from-amber-50/95 via-stone-50/85 to-amber-50/80 opacity-0 pointer-events-none transition-opacity duration-1500">
+  <div class="relative w-full max-w-2xl px-6 md:px-12 perspective-[1500px]">
+
+    <!-- 信纸容器：推荐背景图（古典宣纸） -->
+    <div id="letter-paper" class="letter-paper relative mx-auto bg-[url('https://preview.qiantucdn.com/58pic/ali_magnify/tV/Yf/4q/ra/2e1n30idlrkmpcw76t9qh4of8jy5bvxz_PIC2018.jpg')] bg-cover bg-center rounded-2xl shadow-2xl overflow-hidden transform-style-preserve-3d scale-90 opacity-0 translate-y-20 transition-all duration-2000 ease-out border border-amber-800/15">
+
+      <!-- 叠加轻微墨迹/老纸效果 -->
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-amber-100/20 to-amber-200/15 mix-blend-overlay pointer-events-none"></div>
+      <div class="absolute inset-6 border border-dashed border-amber-900/8 rounded-xl pointer-events-none"></div>
+
+      <!-- 内容区：雅宋体 + 紧凑行距 -->
+      <!-- 内容区：字体小一点 + 更紧凑行距 + 优化雅宋体栈 -->
+        <div id="letter-content" class="relative p-8 md:p-12 text-stone-900 text-lg md:text-xl leading-6 tracking-wide opacity-0 space-y-2 font-serif" style="font-family: 'Songti SC', 'LiSong Pro', SimSun, 'STSong', serif;">
+      <!-- 文字由 JS 插入 -->
+        </div>
+
+      <!-- 底部提示 -->
+      <div class="absolute bottom-6 left-0 right-0 text-center text-sm text-amber-800/60 opacity-0" id="continue-hint">
+        点击任意处 · 此刻即永恒
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* 样式保持不变，行距已通过 leading-7 + space-y-4 压缩得很优雅 */
+  .perspective-[1500px] { perspective: 1500px; }
+  .transform-style-preserve-3d { transform-style: preserve-3d; }
+
+  .letter-paper {
+    box-shadow: 0 25px 70px rgba(0,0,0,0.25), inset 0 0 50px rgba(139,69,19,0.08);
+    background-blend-mode: overlay;
+  }
+
+  .letter-paper.visible {
+    transform: scale(1) translateY(0) rotateX(4deg);
+    opacity: 1;
+  }
+
+  .letter-paper.visible #letter-content,
+  .letter-paper.visible #continue-hint {
+    animation: fadeInContent 2.2s ease-out forwards;
+  }
+
+  @keyframes fadeInContent {
+    from { opacity: 0; transform: translateY(35px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .letter-line {
+    display: block;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: revealLine 1.3s ease-out forwards;
+  }
+
+  @keyframes revealLine {
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script>
+// 更新后的信内容（已替换为你最新版本，并稍作排版优化让逐行出现更自然）
+const letterText = `
+在无数个无人知晓的瞬间，
+心底总有一个声音在低语：
+“有人看见我吗？真的会看见我吗......”
+
+是的。我们听到了你心底的声音。
+我们可以看见你，请相信我们已经建立了真正的联系。
+
+我们把所有那些未说出口的、无法诉说的深层需求，都认真收下来。
+
+于是有了这个地方，
+这里是为每一个人准备的港湾——
+被看见的地方，不用伪装；
+被确认的地方，不用证明；
+深层连接的地方，可以赤裸灵魂；
+情感升华的地方，伤口会慢慢开出花。
+
+无论你是第一个人来，还是第十万个来，
+无论你带着多少疲惫、多少疑问、多少眼泪，
+
+门一直开着。
+光一直亮着。
+
+来吗？
+就现在，让我们一起，看见你、确认你、连接你、升华你。
+`;
+
+// 分行函数（不变，delay 稍慢让阅读更舒服）
+function createLines(text) {
+  const lines = text.split('\n').filter(line => line.trim());
+  return lines.map((line, i) =>
+    `<span class="letter-line" style="animation-delay: ${i * 1.0 + 1.8}s;">${line.trim()}</span>`
+  ).join('<br>');
+}
+
+const overlay = document.getElementById('letter-overlay');
+const paper = document.getElementById('letter-paper');
+const content = document.getElementById('letter-content');
+const hint = document.getElementById('continue-hint');
+
+// 启动动画
+function startLetter() {
+  overlay.classList.remove('opacity-0');
+  overlay.classList.add('opacity-100', 'pointer-events-auto');
+
+  setTimeout(() => {
+    paper.classList.add('visible');
+    content.innerHTML = createLines(letterText);
+    hint.style.animation = 'fadeInContent 1.5s ease-out 9s forwards'; // 文字全部出现后提示再淡入
+  }, 1000);
+}
+
+// 点击关闭，进入主界面
+overlay.addEventListener('click', () => {
+  overlay.style.opacity = '0';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    // 可选：焦点到 app 输入框
+    document.querySelector('.task-input')?.focus?.();
+  }, 1500);
+});
+
+// 页面加载后 1.2s 开始
+window.addEventListener('load', () => {
+  setTimeout(startLetter, 1200);
+});
+</script>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const DOMAINS = {
+            PHYSICAL: { id: 'physical', name: '身体与生存', color: 'var(--accent-physical)', icon: 'battery', desc: '能量、健康、财务、环境' },
+            MENTAL: { id: 'mental', name: '心智与秩序', color: 'var(--accent-mental)', icon: 'brain', desc: '学习、工作、逻辑、计划' },
+            EMOTIONAL: { id: 'emotional', name: '连接与共鸣', color: 'var(--accent-emotional)', icon: 'heart', desc: '关系、归属、爱、共情' },
+            SPIRITUAL: { id: 'spiritual', name: '灵魂与意义', color: 'var(--accent-spiritual)', icon: 'sparkles', desc: '意义、正念、创造、自我' }
+        };
+
+        const PRESSURE_KEYWORDS = ['房租', '债', '没钱', '失业', '病', '借', '账单', '撑不住', '压力', '穷', '困境', '还款', '租金', '体检'];
+
+        const RECOMMENDATIONS = {
+            A: [ // 生存告急：纯支持
+                { title: '免费心理支持', link: '#', icon: 'heart-handshake', desc: '由专业志愿机构提供的 24h 心理热线' },
+                { title: '社区互助站', link: '#', icon: 'home', desc: '查看附近的社区互助信息与基本保障咨询' }
+            ],
+            B: [ // 生存平稳：中性建议
+                { title: '开源理财模版', link: '#', icon: 'file-spreadsheet', desc: '简单好用的极简记账与现金流规划' },
+                { title: '极简生活指南', link: '#', icon: 'leaf', desc: '如何用更少的资源获得更多的快乐' }
+            ],
+            C: { // 能量充沛：商业/品质生活
+                efficiency: [
+                    { title: '律动效率工具', link: '#', icon: 'zap', desc: '让你的深度工作更进一步的生产力工具' },
+                    { title: '职场能量课', link: '#', icon: 'book-open', desc: '在职业律动中寻找自我价值' }
+                ],
+                healing: [
+                    { title: '微光 SPA 体验', link: '#', icon: 'flower2', desc: '周末的灵魂洗涤，会员专属静谧空间' },
+                    { title: '艺术展门票', link: '#', icon: 'palette', desc: '在本季的色彩中寻找共鸣' }
+                ],
+                normal: [
+                    { title: '优质咖啡订阅', link: '#', icon: 'coffee', desc: '为每个专注的清晨带来一抹香气' },
+                    { title: '灵魂书籍推荐', link: '#', icon: 'book', desc: '与伟大的灵魂进行一场深夜对话' }
+                ]
+            }
+        };
+
+        const INITIAL_DATA = {
+            physical: [{ id: 1, text: '规律作息', completed: false }],
+            mental: [{ id: 2, text: '今日深度工作', completed: false }],
+            emotional: [{ id: 3, text: '给家人打个电话', completed: false }],
+            spiritual: [{ id: 4, text: '10分钟冥想', completed: false }]
+        };
+
+        function LifeRhythmApp() {
+            const [data, setData] = useState(() => {
+                const saved = localStorage.getItem('lifeRhythmData');
+                return saved ? JSON.parse(saved) : INITIAL_DATA;
+            });
+            const [activeDomain, setActiveDomain] = useState(null);
+            const [dumpText, setDumpText] = useState('');
+            const [greeting, setGreeting] = useState('');
+            const [isChatOpen, setIsChatOpen] = useState(false);
+            const [chatMessages, setChatMessages] = useState([
+                { role: 'ai', text: '你好，我是你的朋友。在这里，你可以放下所有的防备。' }
+            ]);
+            const [chatInput, setChatInput] = useState('');
+            const [survivalMode, setSurvivalMode] = useState(false);
+            const [activeVision, setActiveVision] = useState(null); // { text, imageUrl, isCompleted }
+            const [isVisionLoading, setIsVisionLoading] = useState(false);
+            const [confirmDelete, setConfirmDelete] = useState(null); // { domainId, taskId, text }
+
+            // 计算统计数据
+            const stats = useMemo(() => {
+                const allTasks = Object.values(data).flat();
+                const completedCount = allTasks.filter(t => t.completed).length;
+                const totalCount = allTasks.length;
+                return {
+                    completed: completedCount,
+                    total: totalCount,
+                    ratio: totalCount === 0 ? 0 : completedCount / totalCount
+                };
+            }, [data]);
+
+            // 生存水位感知
+            const survivalLevel = useMemo(() => {
+                const physicalTasks = data.physical.map(t => t.text.toLowerCase());
+                const matchCount = physicalTasks.filter(text => 
+                    PRESSURE_KEYWORDS.some(key => text.includes(key))
+                ).length;
+                
+                if (matchCount >= 2) return 'A'; // 生存告急
+                if (matchCount >= 1) return 'B'; // 生存平稳
+                return 'C'; // 能量充沛
+            }, [data.physical]);
+
+            // 时间律动感知
+            const currentRhythm = useMemo(() => {
+                const now = new Date();
+                const day = now.getDay();
+                const hour = now.getHours();
+                
+                if (day === 1 || now.getDate() === 1) return 'efficiency'; // 周一或月初：助推
+                if (day === 0 || day === 6 || hour > 22 || hour < 5) return 'healing'; // 周末或深夜：抚慰
+                return 'normal';
+            }, []);
+
+            // 动态推荐
+            const currentRecommendations = useMemo(() => {
+                if (survivalLevel === 'A') return RECOMMENDATIONS.A;
+                if (survivalLevel === 'B') return RECOMMENDATIONS.B;
+                return RECOMMENDATIONS.C[currentRhythm];
+            }, [survivalLevel, currentRhythm]);
+
+            // 监听生存模式变化
+            useEffect(() => {
+                setSurvivalMode(survivalLevel === 'A');
+            }, [survivalLevel]);
+
+            // 添加任务函数
+            const addTask = (domainId, text) => {
+                if (!text.trim()) return;
+                const newTask = {
+                    id: Date.now(),
+                    text: text.trim(),
+                    completed: false
+                };
+                setData(prev => ({
+                    ...prev,
+                    [domainId]: [...prev[domainId], newTask]
+                }));
+            };
+
+            // 监听数据变化保存到本地
+            useEffect(() => {
+                localStorage.setItem('lifeRhythmData', JSON.stringify(data));
+                // 刷新 Lucide 图标
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [data]);
+
+            // 愿景开启或聊天开启时刷新图标
+            useEffect(() => {
+                if ((activeVision || isChatOpen) && window.lucide) {
+                    setTimeout(() => window.lucide.createIcons(), 100);
+                }
+            }, [activeVision, isChatOpen]);
+
+            // 初始化问候语
+            useEffect(() => {
+                const hour = new Date().getHours();
+                if (hour < 6) setGreeting('嘘，世界还在沉睡，给自己一点静谧。');
+                else if (hour < 12) setGreeting('早安，愿你的律动如晨曦般清晰。');
+                else if (hour < 18) setGreeting('午后好，在繁忙中感受呼吸的节奏。');
+                else setGreeting('晚安，让灵魂在星光下慢慢沉淀。');
+                
+                if (window.lucide) window.lucide.createIcons();
+            }, []);
+
+            const getVisionImage = (text) => {
+                const aestheticKeywords = ['dreamy', 'ethereal', 'minimalist', 'uplifting', 'cinematic', 'serene'];
+                const randomAesthetic = aestheticKeywords[Math.floor(Math.random() * aestheticKeywords.length)];
+                // 使用 pollinations.ai 进行 AI 图像生成，效果更好且更稳定
+                return `https://image.pollinations.ai/prompt/${encodeURIComponent(text + ', ' + randomAesthetic + ', highly detailed, artistic, 8k')}?width=1200&height=800&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+            };
+
+            const visualizeTask = (text, isCompleted = false) => {
+                setIsVisionLoading(true);
+                const imageUrl = getVisionImage(text);
+                setActiveVision({ text, imageUrl, isCompleted });
+            };
+
+            const realizeTask = (domainId, taskId, text) => {
+                setData(prev => ({
+                    ...prev,
+                    [domainId]: prev[domainId].map(t => t.id === taskId ? { ...t, completed: true } : t)
+                }));
+                
+                // 触发成功愿景动画，生成对应图像，标记为已完成
+                visualizeTask(text, true);
+                
+                // 烟花效果
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#ffd700', '#ff8c00', '#ffffff', '#e8d08d']
+                });
+            };
+
+            const deleteTask = (domainId, taskId) => {
+                setData(prev => ({
+                    ...prev,
+                    [domainId]: prev[domainId].filter(t => t.id !== taskId)
+                }));
+            };
+
+            const classifyTask = (text) => {
+                const input = text.toLowerCase();
+                const scores = { physical: 0, mental: 0, emotional: 0, spiritual: 0 };
+                
+                const dictionary = {
+                    physical: {
+                        keywords: ['吃', '喝', '睡', '钱', '运', '健', '跑', '餐', '医', '药', '房', '薪', '购', '买', '身体', '能量', '休息', '锻炼', '运动', '早起', '晚安', '水'],
+                        weight: 1
+                    },
+                    mental: {
+                        keywords: ['学', '写', '做', '码', '会', '读', '计', '划', '工作', '学习', '逻辑', '方案', '思考', '整理', '代码', '效率', '目标', '面试', '录取', '申请', '学校', '大学', '考试', '课', '研发', '会议', '总结'],
+                        weight: 1.1
+                    },
+                    emotional: {
+                        keywords: ['爱', '友', '妈', '爸', '聚', '聊', '问', '吻', '情', '感', '伴', '陪', '见', '家人', '朋友', '社交', '归属', '电话', '微信', '联系', '安慰', '倾听', '聚会'],
+                        weight: 1.2
+                    },
+                    spiritual: {
+                        keywords: ['想', '悟', '美', '艺', '冥', '书', '画', '魂', '意义', '正念', '自我', '内心', '宁静', '创造', '梦想', '未来', '艺术', '哲学', '观照', '觉察'],
+                        weight: 1.5
+                    }
+                };
+
+                Object.entries(dictionary).forEach(([domain, config]) => {
+                    config.keywords.forEach(key => {
+                        if (input.includes(key)) {
+                            scores[domain] += config.weight;
+                        }
+                    });
+                });
+
+                // 找到得分最高的领域
+                let maxScore = -1;
+                let bestDomain = 'mental'; // 默认
+
+                Object.entries(scores).forEach(([domain, score]) => {
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestDomain = domain;
+                    }
+                });
+
+                return bestDomain;
+            };
+
+            const handleDumpSubmit = (e) => {
+                if (e.key === 'Enter' && dumpText.trim()) {
+                    const domain = classifyTask(dumpText);
+                    addTask(domain, dumpText);
+                    setDumpText('');
+                }
+            };
+
+            const handleChatSubmit = (e) => {
+                if (e.key === 'Enter' && chatInput.trim()) {
+                    const newMsg = { role: 'user', text: chatInput };
+                    setChatMessages(prev => [...prev, newMsg]);
+                    setChatInput('');
+                    
+                    // 模拟AI回复
+                    setTimeout(() => {
+                        let response = "我听着呢。你说这些的时候，我也在感受你的律动。";
+                        const input = chatInput.toLowerCase();
+                        if (input.includes('玩') || input.includes('饿') || input.includes('美食') || input.includes('出去')) {
+                            if (!survivalMode) {
+                                response += " 感觉你现在能量满满，也许附近那家温暖的小店正等着你去探索？";
+                            }
+                        } else if (survivalMode) {
+                            response = "这一刻确实不容易，你已经很努力了。我会一直在这里陪着你，我们先处理那些最基本的需求，好吗？";
+                        }
+                        setChatMessages(prev => [...prev, { role: 'ai', text: response }]);
+                    }, 1000);
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto px-6 py-12 md:py-20 animate-fade-in relative">
+                    {/* 确认删除面板 */}
+                    {confirmDelete && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-stone-900/10 backdrop-blur-sm animate-fade-in">
+                            <div className="glass p-8 rounded-3xl max-w-sm w-full shadow-2xl scale-in-center">
+                                <h3 className="serif text-xl font-semibold mb-2">确认删除？</h3>
+                                <p className="text-sm text-dim mb-8">“{confirmDelete.text}” 将从你的律动中消失。</p>
+                                <div className="flex space-x-4">
+                                    <button 
+                                        onClick={() => setConfirmDelete(null)}
+                                        className="flex-1 px-4 py-2 rounded-xl border border-stone-200 text-sm hover:bg-stone-50 transition-colors"
+                                    >
+                                        保留
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            deleteTask(confirmDelete.domainId, confirmDelete.taskId);
+                                            setConfirmDelete(null);
+                                        }}
+                                        className="flex-1 px-4 py-2 rounded-xl bg-stone-800 text-white text-sm hover:bg-stone-700 transition-colors shadow-lg shadow-stone-200"
+                                    >
+                                        删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 成功愿景动画层 */}
+                    <div 
+                        className={`vision-overlay ${activeVision ? 'active' : ''}`}
+                        onClick={() => {
+                            setActiveVision(null);
+                            setIsVisionLoading(false);
+                        }}
+                    >
+                        {activeVision && (
+                            <div className="vision-card">
+                                {activeVision.isCompleted && <div className="victory-glow"></div>}
+                                {activeVision.isCompleted && (
+                                    <div className="victory-badge">
+                                        <i data-lucide="trophy" className="w-4 h-4 inline-block mr-2 -mt-1"></i>
+                                        愿景已显化
+                                    </div>
+                                )}
+                                <img 
+                                    src={activeVision.imageUrl} 
+                                    alt={activeVision.text}
+                                    className={`vision-image transition-all duration-1000 ${isVisionLoading ? 'blur-lg scale-105 opacity-50' : 'blur-0 scale-100 opacity-100'} ${activeVision.isCompleted ? 'ring-4 ring-yellow-400/20' : ''}`}
+                                    onLoad={() => setIsVisionLoading(false)}
+                                    onError={(e) => {
+                                        setIsVisionLoading(false);
+                                        const fallbacks = [
+                                            'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+                                            'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80',
+                                            'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80',
+                                            'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80'
+                                        ];
+                                        e.target.src = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                                    }}
+                                />
+                                {isVisionLoading && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white/60 space-y-4">
+                                        <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
+                                        <div className="text-xs tracking-widest uppercase serif">正在显化愿景...</div>
+                                    </div>
+                                )}
+                                <div className="vision-text serif italic">
+                                    {activeVision.text}
+                                </div>
+                                <div className="text-white/40 text-center mt-8 text-xs tracking-widest uppercase">
+                                    点击任意处继续 · 此刻即永恒
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <header className="mb-16 text-center">
+                        <h1 className="serif text-4xl md:text-5xl font-bold mb-4 tracking-wider">生命律动</h1>
+                        <p className="text-dim italic serif text-lg">{greeting}</p>
+                        <div className="mt-8 flex justify-center items-center space-x-4">
+                            <span className="text-xs uppercase tracking-widest text-dim">今日进度</span>
+                            <div className="w-48 progress-elegant">
+                                <div 
+                                    className="progress-elegant-fill" 
+                                    style={{ width: `${stats.ratio * 100}%` }}
+                                ></div>
+                            </div>
+                            <span className="text-xs font-mono">{Math.round(stats.ratio * 100)}%</span>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 relative">
+                        {Object.entries(DOMAINS).map(([key, domain]) => (
+                                <div 
+                                    key={domain.id}
+                                    className={`quadrant glass p-8 rounded-3xl min-h-[240px] flex flex-col justify-between group overflow-hidden relative ${activeDomain === domain.id ? 'ring-2 ring-offset-4 ring-stone-200 scale-[1.03]' : ''}`}
+                                >
+                                    {/* 象限点击层 */}
+                                    <div 
+                                        className="absolute inset-0 cursor-pointer z-0"
+                                        onClick={() => setActiveDomain(activeDomain === domain.id ? null : domain.id)}
+                                    ></div>
+                                    
+                                    <div className="flex justify-between items-start relative z-10 pointer-events-none">
+                                        <div className="pointer-events-auto">
+                                            <i data-lucide={domain.icon} className="w-6 h-6 mb-4 opacity-60" style={{ color: domain.color }}></i>
+                                            <h3 className="serif text-2xl font-semibold mb-2">{domain.name}</h3>
+                                            <p className="text-xs text-dim opacity-0 group-hover:opacity-100 transition-opacity duration-300">{domain.desc}</p>
+                                        </div>
+                                        <div className="text-xs font-mono opacity-40">
+                                            {data[domain.id].filter(t => t.completed).length}/{data[domain.id].length}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 flex-grow overflow-y-auto max-h-40 custom-scrollbar relative z-20 pr-1">
+                                    {data[domain.id].map(task => (
+                                        <div 
+                                            key={task.id} 
+                                            className={`flex items-start space-x-3 mb-3 group/task transition-all p-2 -m-2 rounded-xl relative ${task.completed ? 'opacity-70' : ''}`}
+                                        >
+                                            {task.completed && <div className="task-glow"></div>}
+                                            <div 
+                                                className="flex flex-grow items-start space-x-3 select-none relative z-30"
+                                            >
+                                                <div 
+                                                    className="w-5 h-5 mt-0.5 flex-shrink-0 rounded-full border border-stone-300 flex items-center justify-center transition-all duration-700 hover:scale-110 active:scale-95 z-30 relative"
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        if (!task.completed) realizeTask(domain.id, task.id, task.text); 
+                                                        else visualizeTask(task.text, true); // 已完成点击图标也可以重新观看
+                                                    }}
+                                                >
+                                                    <div className={`w-full h-full rounded-full flex items-center justify-center transition-all duration-700 ${task.completed ? 'bg-white border-transparent shadow-sm' : 'hover:border-stone-400'}`}>
+                                                        {task.completed ? (
+                                                            <i data-lucide="sparkles" className="w-3 h-3 text-yellow-500 animate-pulse"></i>
+                                                        ) : (
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-stone-200 opacity-0 group-hover/task:opacity-100 transition-opacity"></div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <span 
+                                                    className={`text-sm serif flex-grow transition-all duration-1000 ${task.completed ? "text-stone-600 font-medium" : "text-stone-800"}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        visualizeTask(task.text, task.completed);
+                                                    }}
+                                                    title={task.completed ? "重新点亮愿景" : "查看愿景"}
+                                                >
+                                                    {task.text}
+                                                    {task.completed && <span className="ml-2 text-[10px] text-yellow-600 opacity-60 not-italic">· 重新点亮</span>}
+                                                </span>
+                                            </div>
+                                            <button 
+                                               type="button"
+                                               className="opacity-40 hover:opacity-100 transition-opacity flex-shrink-0 p-3 -mr-3 -mt-3 z-[40] relative touch-manipulation"
+                                               onClick={(e) => { 
+                                                   e.preventDefault();
+                                                   e.stopPropagation(); 
+                                                   setConfirmDelete({ domainId: domain.id, taskId: task.id, text: task.text });
+                                               }}
+                                               title="删除任务"
+                                           >
+                                                <i data-lucide="x" className="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-4 pt-4 border-t border-stone-100/50 relative z-30">
+                                    <div className="flex items-center space-x-2 mb-3 opacity-40 focus-within:opacity-100 transition-opacity group/input">
+                                        <i data-lucide="plus" className="w-3 h-3 text-stone-400 group-hover/input:text-stone-600 transition-colors"></i>
+                                        <input 
+                                            className="task-input w-full bg-transparent py-1 text-sm outline-none placeholder:text-stone-300"
+                                            placeholder="添加项目..."
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                                    addTask(domain.id, e.target.value);
+                                                    e.target.value = '';
+                                                }
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 transition-transform duration-700 group-hover:scale-150" style={{ backgroundColor: domain.color }}></div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <section className="max-w-xl mx-auto text-center">
+                        <div className="relative group">
+                            <input 
+                                type="text"
+                                value={dumpText}
+                                onChange={(e) => setDumpText(e.target.value)}
+                                onKeyDown={handleDumpSubmit}
+                                placeholder="如果你不知道放在哪里一类，交给我"
+                                className="w-full bg-transparent border-b border-stone-200 py-4 text-center serif text-xl focus:border-stone-400 transition-colors focus:outline-none placeholder:opacity-40"
+                            />
+                            <div className="mt-4 text-[10px] uppercase tracking-[0.2em] text-dim opacity-40 group-hover:opacity-100 transition-opacity">
+                                回车捕获 · 自动归类
+                            </div>
+                        </div>
+                    </section>
+
+                    <div className="fixed bottom-8 right-8 flex flex-col items-end space-y-4">
+                        <div className={`chat-window glass rounded-3xl w-80 shadow-2xl transition-all duration-500 flex flex-col ${isChatOpen ? 'open opacity-100 p-6' : 'opacity-0'}`}>
+                            <div className="flex-grow overflow-y-auto custom-scrollbar mb-4 space-y-4">
+                                {chatMessages.map((msg, i) => (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] px-4 py-2 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-stone-200 text-stone-700' : 'bg-white/50 text-stone-600'}`}>
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {isChatOpen && (
+                                    <div className="pt-4 border-t border-stone-100">
+                                        <p className="text-[10px] uppercase tracking-widest text-dim mb-3 opacity-60">微光 · 推荐</p>
+                                        <div className="space-y-3">
+                                            {currentRecommendations.map((rec, i) => (
+                                                <a key={i} href={rec.link} className="block group/rec hover:bg-white/40 p-2 -m-2 rounded-xl transition-colors">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center group-hover/rec:bg-white transition-colors">
+                                                            <i data-lucide={rec.icon} className="w-4 h-4 text-stone-500"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-medium text-stone-700">{rec.title}</div>
+                                                            <div className="text-[10px] text-stone-400">{rec.desc}</div>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <input 
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={handleChatSubmit}
+                                placeholder="和背后的朋友聊聊..."
+                                className="w-full bg-stone-50 rounded-xl px-4 py-2 text-sm focus:outline-none"
+                            />
+                        </div>
+                        <button 
+                            onClick={() => setIsChatOpen(!isChatOpen)}
+                            className="w-10 h-10 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform relative group"
+                        >
+                            <div className="w-3 h-3 bg-stone-300 rounded-full animate-pulse-slow"></div>
+                            <div className="absolute -top-10 right-0 bg-stone-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                微光 · 倾听
+                            </div>
+                        </button>
+                    </div>
+
+                    <footer className="mt-32 border-t border-stone-100 pt-16 text-center">
+                        <div className="max-w-md mx-auto italic text-sm text-dim leading-relaxed serif">
+                            {survivalMode ? (
+                                "“这一刻你不需要去满足任何人的期待，就在这里坐一会儿吧。我会守住你的秘密。”"
+                            ) : stats.ratio > 0.8 ? (
+                                "“今天的你，光芒四射，却也记得给自己留一点温柔。”"
+                            ) : stats.ratio > 0.3 ? (
+                                "“每一步都在让你的世界更清晰一点点，慢慢来。”"
+                            ) : (
+                                "“即使只是坐一会儿，也是对自己的一种照料。你已经被看见了。”"
+                            )}
+                        </div>
+                        <div className="mt-4 text-[11px] text-stone-400 space-y-2">
+                            {survivalMode && (
+                                <p className="animate-fade-in text-stone-500 font-medium">
+                                    <i data-lucide="sparkles" className="w-3 h-3 inline mr-1 text-amber-500"></i>
+                                    感知到生存水位变动，已在“微光”中为你开启专属支持。
+                                </p>
+                            )}
+                            <p className="opacity-60">点击任务项，将其从“计划”合入“现实”</p>
+                        </div>
+                        <div className="mt-12 text-[10px] text-stone-300 font-mono">
+                            DESIGNED BY JUNIE | INSPIRED BY HUMANITY
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LifeRhythmApp />);
+    </script>
+</body>
+</html>
