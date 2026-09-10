@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
+  <meta name="description" content="从镜像构建到用户入口，讨论怎样确认新版本真正生效。" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    服务启动了，然后呢？一次发布应该怎样验收 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+
+  <link rel="shortcut icon" href="/favicon.ico" />
+
+
+<link rel="stylesheet" href="/dist/main.css">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0];
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+<body>
+  <div id="app">
+
+
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Engineering-Release-Readback"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+
+    <header class="article-header">
+
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  服务启动了，然后呢？一次发布应该怎样验收
+</h1>
+
+
+    </header>
+
+    <div class="article-meta">
+      <a href="/articles/Engineering-Release-Readback.html" class="article-date">
+  <time datetime="2026-09-09T01:20:00.000Z" itemprop="datePublished">2026-09-09</time>
+</a>
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/">工程实践</a>
+  </div>
+
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">4 分钟</span>
+        </span>
+    </span>
+</div>
+
+    </div>
+
+    <div class="tocbot"></div>
+
+
+
+
+
+    <div class="article-entry" itemprop="articleBody">
+
+  <p>镜像打好了，容器启动了，健康检查也是绿色。打开用户入口，看到的却还是旧版本。</p>
+<p>这不一定是代码没更新。可能新实例还没接流量，可能入口指向另一组服务，也可能应用加载的配置仍然来自旧文件。</p>
+<p>服务内部的成功信号很重要，但它们需要与用户真正经过的路径连接起来。</p>
+<span id="more"></span>
+
+<h2 id="发布不是一个瞬间"><a href="#发布不是一个瞬间" class="headerlink" title="发布不是一个瞬间"></a>发布不是一个瞬间</h2><p>可以把一次发布拆成几个容易检查的事实：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>可以证明什么</th>
+<th>还需要检查什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>构建成功</td>
+<td>某份代码能生成产物</td>
+<td>产物是否对应目标提交</td>
+</tr>
+<tr>
+<td>实例启动</td>
+<td>新实例可以运行</td>
+<td>是否加载了预期配置</td>
+</tr>
+<tr>
+<td>流量切换</td>
+<td>入口开始指向新实例</td>
+<td>用户请求是否实际到达</td>
+</tr>
+<tr>
+<td>入口验证</td>
+<td>真实路径返回预期结果</td>
+<td>关键业务流程是否完成</td>
+</tr>
+<tr>
+<td>业务验收</td>
+<td>目标用户完成了任务</td>
+<td>是否满足持续运行要求</td>
+</tr>
+</tbody></table>
+<p>小项目不一定需要复杂平台，但需要知道自己现在证明到了哪一步。</p>
+<h2 id="给运行中的版本留一个标识"><a href="#给运行中的版本留一个标识" class="headerlink" title="给运行中的版本留一个标识"></a>给运行中的版本留一个标识</h2><p>提交号有用，但只知道代码版本还不够。对于知识问答应用，答案也可能受提示词、知识快照和模型配置影响。</p>
+<p>可以在受控诊断接口或内部日志中记录：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;build_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-build-20260909&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;commit&quot;</span><span class="punctuation">:</span> <span class="string">&quot;example-commit&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;config_revision&quot;</span><span class="punctuation">:</span> <span class="string">&quot;config-r3&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;prompt_revision&quot;</span><span class="punctuation">:</span> <span class="string">&quot;qa-r7&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;knowledge_snapshot&quot;</span><span class="punctuation">:</span> <span class="string">&quot;knowledge-r12&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这些值应当来自实际加载的产物和配置。把“准备部署的版本号”硬编码进健康检查，会让检查失去意义。标识里也不应包含凭证、配置正文或内部资料内容。</p>
+<p>缓存同样需要版本边界。如果知识快照已经更新，而答案缓存仍复用旧结果，就算流量切换正确，用户也可能持续看到旧答案。</p>
+<h2 id="从用户入口发一次有意义的请求"><a href="#从用户入口发一次有意义的请求" class="headerlink" title="从用户入口发一次有意义的请求"></a>从用户入口发一次有意义的请求</h2><p>直接访问服务端口可以排查实例问题，但无法覆盖反向代理、认证、路由和缓存。</p>
+<p>发布后，可以从正式入口选择一个稳定的代表性问题或操作，检查输入、身份、响应、版本标识以及对应日志。对于多副本服务，还要结合部署控制面的实例状态确认切换进度；连续请求几次并不能证明所有副本都已更新。</p>
+<p>如果请求会产生订单、邮件或其他副作用，应使用已有的测试机制或经过授权的可撤销样本。不要为了验证一次发布制造真实业务噪声。</p>
+<h2 id="回滚也需要验证"><a href="#回滚也需要验证" class="headerlink" title="回滚也需要验证"></a>回滚也需要验证</h2><p>“重新启动旧镜像”并不总是完整回滚。数据库结构可能已经改变，缓存里可能保存了新格式的数据，消息队列里也可能存在旧版本不认识的事件。</p>
+<p>因此，发布前要看清楚这次修改涉及哪些状态。只有代码变化时，回滚可能比较直接；涉及数据格式或外部写入时，需要额外的兼容设计和恢复步骤。</p>
+<p>对于 AI 应用，可以把模型配置、提示词和知识快照作为有版本的组合记录。回滚后再次读取运行状态，再从用户入口验证关键问题，确认恢复的是原本预期的行为。</p>
+<h2 id="留下别人可以复核的证据"><a href="#留下别人可以复核的证据" class="headerlink" title="留下别人可以复核的证据"></a>留下别人可以复核的证据</h2><p>一次简洁的发布记录可以包含：</p>
+<ul>
+<li>发布的产物标识，以及本次行为变化。</li>
+<li>生效入口、实际运行版本和验证时间。</li>
+<li>代表性检查的输入与结果，必要时保留去敏后的请求编号。</li>
+<li>已完成的验收、尚未覆盖的场景，以及回滚位置。</li>
+</ul>
+<p>不要把“测试通过”写成没有范围的一句话。可以明确写“已通过本地回归，尚未切换线上”，或“线上已生效，关键流程通过，仍待真实用户确认”。</p>
+<p>这样的表达不会削弱工作成果，反而能让接手的人知道接下来应该看哪里。</p>
+<h2 id="把这件事缩小到个人博客"><a href="#把这件事缩小到个人博客" class="headerlink" title="把这件事缩小到个人博客"></a>把这件事缩小到个人博客</h2><p>个人博客也有同样的问题：Markdown 写好了，不代表页面生成正确；页面生成正确，不代表域名已经展示新内容。</p>
+<p>最小做法是先本地预览，再核对发布目录中的文章、资源和链接；推送后访问正式域名，检查标题和一段本次新增的正文。必要时查看响应缓存信息，确认自己读到的版本。</p>
+<p>不管系统大小，最后那次从真实入口出发的检查，都在回答同一个问题：用户现在使用到的，是否就是这次准备交付的东西。</p>
+
+      <!-- reward -->
+
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- copyright -->
+
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+
+        </li>
+      </ul>
+    </div>
+
+    <footer class="article-footer">
+
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Engineering-Release-Readback.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag">可观测性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%83%A8%E7%BD%B2/" rel="tag">部署</a></li></ul>
+
+    </footer>
+  </div>
+
+
+  <nav class="article-nav">
+
+      <a href="/articles/Java-Interview-to-Engineering.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+
+            把 Java 面试笔记串成一条工程主线
+
+        </div>
+      </a>
+
+
+      <a href="/articles/AI-QA-Evaluation.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">给 AI 问答做测试：先把错误分清楚</div>
+      </a>
+
+  </nav>
+
+
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+
+
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+
+
+
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+
+      </li>
+    </ul>
+    <ul>
+      <li>
+
+
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+      </li>
+    </ul>
+    <ul>
+
+    </ul>
+    <ul>
+
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+
+  <ul class="nav nav-main">
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+
+
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+
+
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe.
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides.
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
+
+</html>

@@ -6,42 +6,42 @@
 
 <head>
   <meta charset="utf-8" />
-   
-  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
-   
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
   <meta name="description" content="描述" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     区块链系列——分布式核心问题 |  Shadow.Net
   </title>
   <meta name="generator" content="hexo-theme-ayer">
-  
+
   <link rel="shortcut icon" href="/favicon.ico" />
-  
-  
+
+
 <link rel="stylesheet" href="/dist/main.css">
 
-  
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
 
-  
+
 <link rel="stylesheet" href="/css/custom.css">
 
-  
-  
+
+
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
 
-  
-  
 
-  
+
+
+
 <script>
 var _hmt = _hmt || [];
 (function() {
 	var hm = document.createElement("script");
 	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
-	var s = document.getElementsByTagName("script")[0]; 
+	var s = document.getElementsByTagName("script")[0];
 	s.parentNode.insertBefore(hm, s);
 })();
 </script>
@@ -50,15 +50,13 @@ var _hmt = _hmt || [];
 <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
 </head>
 
-</html>
-
 <body>
   <div id="app">
-    
-      
+
+
       <canvas width="1777" height="841"
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
-      
+
     <main class="content on">
       <section class="outer">
   <article
@@ -69,24 +67,24 @@ var _hmt = _hmt || [];
   data-scroll-reveal
 >
   <div class="article-inner">
-    
+
     <header class="article-header">
-       
+
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
   区块链系列——分布式核心问题
 </h1>
- 
+
 
     </header>
-     
+
     <div class="article-meta">
       <a href="/articles/Blockchain-Distributed-issues.html" class="article-date">
   <time datetime="2021-07-15T06:27:30.000Z" itemprop="datePublished">2021-07-15</time>
-</a> 
+</a>
   <div class="article-category">
     <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a>
   </div>
-  
+
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
@@ -105,17 +103,17 @@ var _hmt = _hmt || [];
         </span>
     </span>
 </div>
- 
+
     </div>
-      
+
     <div class="tocbot"></div>
 
 
 
 
-  
+
     <div class="article-entry" itemprop="articleBody">
-       
+
   <h1 id="分布式核心问题"><a href="#分布式核心问题" class="headerlink" title="分布式核心问题"></a>分布式核心问题</h1><p>随着摩尔定律遇到瓶颈，越来越多情况下要依靠分布式架构，才能实现海量数据处理能力和可扩展计算能力。</p>
 <p>区块链系统，首先是一个分布式系统。传统单节点结构演变到分布式系统，碰到的首要问题就是一致性的保障。很显然，如果分布式集群无法保证处理结果保持一致的话，那人和建立于其上的业务系统都无法正常工作。</p>
 <p>此处将介绍分布式系统领域的核心问题，包括一致性、共识的定义，基本的原理和算法，另外介绍一些评估分布式系统可靠性的指标。</p>
@@ -140,7 +138,7 @@ var _hmt = _hmt || [];
 <p>一般来说，把出现故障（crash 或 fail-stop，即不响应）但不会伪造信息的情况成为“非拜占庭错误”（non-Byzantine Fault）或“故障错误”（Crash Fault）；伪造信息恶意响应的情况称为“拜占庭错误”（Byzantine Fault），对应节点为拜占庭节点。</p>
 <h3 id="常见算法"><a href="#常见算法" class="headerlink" title="常见算法"></a>常见算法</h3><p>根据解决的是非拜占庭错误情况还是拜占庭错误情况，共识算法可以分为 Crash Fault Tolerance（CFT）类算法和 Byzantine Fault Tolerance（BFT）类算法。</p>
 <p>针对常见的非拜占庭错误情况，已经存在一些经典的解决算法，包括 Paxos、Raft 及其变种等。这类容错算法往往性能比较好，处理较快，容忍不超过一半的故障节点。</p>
-<p>对于要能容忍拜占庭错误的情况，一般包括 PBFT（Practical Byzantine Fault Tolerance）为代表的确定性系列算法、PoW 为代表的概率算法等。对于确定性算法，一旦达成对某个结果的共识就不可逆转，即共识是最终结果；对于概率类算法，共识结果则是临时的，随着时间推移或某种强化，共识结果被推翻的概率越来越小，成为事实上的最终结果。拜占庭类容错算法往往性能较差，容忍不超过1/3的故障节点。</p>
+<p>对于要能容忍拜占庭错误的情况，一般包括 PBFT（Practical Byzantine Fault Tolerance）为代表的确定性系列算法、PoW 为代表的概率算法等。对于确定性算法，一旦达成对某个结果的共识就不可逆转，即共识是最终结果；对于概率类算法，共识结果则是临时的，随着时间推移或某种强化，共识结果被推翻的概率越来越小，成为事实上的最终结果。拜占庭类容错算法往往性能较差，容忍不超过1&#x2F;3的故障节点。</p>
 <p>此外，XFT（Cross Fault Tolerance）等最近提出的改进算法可以提供类似 CFT 的处理响应速度，并能在大多数节点正常工作时提供 BFT 保障。</p>
 <h3 id="理论界限"><a href="#理论界限" class="headerlink" title="理论界限"></a>理论界限</h3><p><strong>FLP 不可能原理：即便在网络通信可靠情况下，可扩展的分布式系统的共识问题，其通用解法的理论下限是——没有下限（无解）。</strong></p>
 <h2 id="FLP-不可能原理"><a href="#FLP-不可能原理" class="headerlink" title="FLP 不可能原理"></a>FLP 不可能原理</h2><h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>在网络可靠，但允许节点失效（即便只有一个）的最小化异步模型系统中，不存在一个可以解决一致性问题的确定性共识算法。</p>
@@ -264,17 +262,17 @@ var _hmt = _hmt || [];
 <h3 id="两将军问题"><a href="#两将军问题" class="headerlink" title="两将军问题"></a>两将军问题</h3><p>在拜占庭将军问题之前，就已经存在两将军问题（Two Generals Paradox）：两个将军要通过信使来达成进攻还是撤退的约定，但信使可能迷路或被敌军阻拦（消息丢失或伪造），如何达成一致？根据 FLP 不可能原理，这个问题无通用解。</p>
 <h3 id="拜占庭问题"><a href="#拜占庭问题" class="headerlink" title="拜占庭问题"></a>拜占庭问题</h3><p>拜占庭问题又叫拜占庭将军问题（Byzantine Generals Problem），是 Leslie Lamport 等科学家于 1982 年提出用来解释一致性问题的一个虚构模型。拜占庭是古代东罗马帝国的首都，由于地域宽广，守卫边境的多个将军（系统中的多个节点）需要通过信使来传递消息，达成某些一致的决定。但由于将军中可能存在叛徒（系统中节点出错），这些叛徒将努力向不同的将军发送不同的消息，试图干扰共识的达成。拜占庭问题即为在此情况下，如何让忠诚的将军们能达成行动的一致。</p>
 <p>论文中指出，对于拜占庭问题来说，假如节点总数为N，叛变将军数为F，则当 N ≥ 3F+1 时，问题才有解，由 BFT 算法进行保证。</p>
-<p>例如，N = 3，F = 1 时。</p>
+<p>例如，N &#x3D; 3，F &#x3D; 1 时。</p>
 <p>提案人不是叛变者，提案人发送一个提案出来，叛变者可以宣称收到的是相反的命令。则对于第三个人（忠诚者）收到两个相反的消息，无法判断谁是叛变者，则系统无法达到一致。</p>
 <p>提案人是叛变者，发送两个相反的提案分别给另外两人，另外两人都收到两个相反的消息，无法判断究竟谁是叛变者，则系统无法达到一致。</p>
 <p>更一般的，当提案人不是叛变者，提案人提出提案信息 1，则对于合作者来看，系统中会有 N-F 份确定的信息 1，和 F 份不确定的信息（可能为 0 或 1，假设叛变者会尽量干扰一致的达成），N - F &gt; F，即 N &gt; 2F 情况下才能达成一致。</p>
-<p>当提案人是叛变者，会尽量发送相反的提案给 N - F 个合作者，从收到1的合作者看来，系统中会存在（N - F）/ 2 个信息 1，以及（N - F）/ 2 个信息 0；从收到 0 的合作者看来，系统中会存在（N - F）/ 2 个信息 0，以及（N - F）/ 2 个信息 1；另外存在 F - 1 个不确定的信息。合作者要想达成一致，必须进一步对所获得的消息进行判定，询问其他人某个被怀疑对象的消息值，并通过取多数来作为被怀疑者的信息值。这个过程可以进一步递归下去。</p>
-<p>Leslie Lamport 等人在论文《Reaching agreement in the presence of faults》中证明，当叛变者不超过 1/3 时，存在有效的拜占庭容错算法（最坏需要 F+1 轮交互）。反之，如果叛变者过多，超过 1/3，则无法保证一定能达到一致结果。</p>
-<p>那么，当存在多于 1/3 的叛变者时，有没有可能存在解决方案呢？</p>
+<p>当提案人是叛变者，会尽量发送相反的提案给 N - F 个合作者，从收到1的合作者看来，系统中会存在（N - F）&#x2F; 2 个信息 1，以及（N - F）&#x2F; 2 个信息 0；从收到 0 的合作者看来，系统中会存在（N - F）&#x2F; 2 个信息 0，以及（N - F）&#x2F; 2 个信息 1；另外存在 F - 1 个不确定的信息。合作者要想达成一致，必须进一步对所获得的消息进行判定，询问其他人某个被怀疑对象的消息值，并通过取多数来作为被怀疑者的信息值。这个过程可以进一步递归下去。</p>
+<p>Leslie Lamport 等人在论文《Reaching agreement in the presence of faults》中证明，当叛变者不超过 1&#x2F;3 时，存在有效的拜占庭容错算法（最坏需要 F+1 轮交互）。反之，如果叛变者过多，超过 1&#x2F;3，则无法保证一定能达到一致结果。</p>
+<p>那么，当存在多于 1&#x2F;3 的叛变者时，有没有可能存在解决方案呢？</p>
 <p>设想 F 个叛变者和 L 个忠诚者，叛变者故意使坏，可以给出错误的结果，也可以不响应。某个时候 F 个叛变者都不响应，则 L 个忠诚者取多数即能得到正确结果。当 F 个叛变者都给出一个恶意的提案，并且 L 个忠诚者中有 F 个离线时，剩下的 L-F 个忠诚者此时无法分别是否混入了叛变者，仍然要确保取多数能得到正确结果，因此，L - F &gt; F，即 L &gt; 2F 或 N - F &gt; 2F，所以系统整体规模 N 要大于 3F。</p>
 <p>能确保达成一致的拜占庭系统节点数至少为 4，此时最多允许出现 1 个坏的节点。</p>
 <h3 id="拜占庭容错算法"><a href="#拜占庭容错算法" class="headerlink" title="拜占庭容错算法"></a>拜占庭容错算法</h3><p>拜占庭容错算法（Byzantine Fault Tolerant，BFT）是面向拜占庭问题的容错算法，解决的是在网络通信可靠但节点可能故障情况下如何达成共识。拜占庭容错算法最早的讨论在 1980 年 Leslie Lamport 等人发表的论文《Polynomial Algorithms for Byzantine Agreement》，之后出现了大量的改进工作。长期以来，拜占庭问题的解决方案都存在复杂度过高的问题，直到PBFT算法的提出。</p>
-<p>1999 年，Castro 和 Liskov 于论文《Practical Byzantine Fault Tolerance and Proactive Recovery》中提出的 Practical Byzantine Fault Tolerant（PBFT）算法，基于前人工作进行了优化，首次将拜占庭容错算法复杂度从指数级降低到了多项式级，目前已得到广泛应用。其可以在失效节点不超过总数 1/3 的情况下同时保证 Safety 和 Liveness。</p>
+<p>1999 年，Castro 和 Liskov 于论文《Practical Byzantine Fault Tolerance and Proactive Recovery》中提出的 Practical Byzantine Fault Tolerant（PBFT）算法，基于前人工作进行了优化，首次将拜占庭容错算法复杂度从指数级降低到了多项式级，目前已得到广泛应用。其可以在失效节点不超过总数 1&#x2F;3 的情况下同时保证 Safety 和 Liveness。</p>
 <p>PBFT算法采用密码学相关技术（RSA 签名算法、消息验证编码和摘要）确保消息传递过程无法被篡改和破坏。</p>
 <p>算法的基本过程如下：</p>
 <ul>
@@ -300,7 +298,7 @@ var _hmt = _hmt || [];
 <p>通常情况下，服务的可用性可以用服务承诺（Service Level Agreement，SLA）、服务指标（Service Level Indicator，SLI）、服务目标（Service Level Objective，SLO）等方面进行衡量。</p>
 <h3 id="几个9的指标"><a href="#几个9的指标" class="headerlink" title="几个9的指标"></a>几个9的指标</h3><p>很多领域里谈到服务的高可靠性，都喜欢用几个 9 的指标来进行衡量。几个 9，其实是概率意义上粗略反映了系统能提供服务的可靠性指标，最初是电信领域提出的概念。</p>
 <p>下表给出同指标下每年允许服务出现不可用时间的参考值。 </p>
-<p><img src="Blockchain-Distributed-issues/%E5%8F%AF%E9%9D%A0%E6%80%A7%E6%8C%87%E6%A0%87.jpg" alt="同指标下，每年允许服务出现不可用时间的参考值"></p>
+<p><img src="/articles/Blockchain-Distributed-issues/%E5%8F%AF%E9%9D%A0%E6%80%A7%E6%8C%87%E6%A0%87.jpg" alt="同指标下，每年允许服务出现不可用时间的参考值"></p>
 <p>一般来说，单点的服务器系统至少应能满足两个 9；普通企业信息系统三个 9 就肯定足够了（大家可以统计下自己企业内因系统维护每年要停多少时间），系统能达到四个 9 已经是领先水平了（参考 AWS 等云计算平台）。电信级的应用一般需要能达到五个 9，这已经很厉害了，一年里面最多允许出现五分钟左右的服务不可用。六个 9 以及以上的系统，就更加少见了，要实现往往意味着极高的代价。</p>
 <h3 id="两个核心时间"><a href="#两个核心时间" class="headerlink" title="两个核心时间"></a>两个核心时间</h3><p>一般地，描述系统出现故障的可能性和故障出现后的恢复能力，有两个基础的指标：MTBF 和 MTTR</p>
 <ul>
@@ -312,39 +310,39 @@ var _hmt = _hmt || [];
 <p>MTBF 衡量了系统发生故障的频率，如果一个系统的MTBF很短，则往往意味着该系统可用性低；而 MTTR 则反映了系统碰到故障后服务的恢复能力，如果系统的 MTTR 过长，则说明系统一旦发生故障，需要较长时间才能恢复服务。</p>
 <p>一个高可用的系统应该是具有尽量长的 MTBF 和尽量短的 MTTR。</p>
 <h3 id="提高可靠性"><a href="#提高可靠性" class="headerlink" title="提高可靠性"></a>提高可靠性</h3><p>如何提升系统的可靠性呢？有两个基本思路：一是让系统中的单个组件都变得更可靠；二是干脆消灭单点。</p>
-<p>IT 从业人员大都有类似的经验，普通笔记本电脑，基本上是过一阵可能就要重启一下；而运行 Linux/Unix 系统的专用服务器，则可能连续运行几个月甚至几年时间都不出问题。另外，普通的家用路由器，跟生产级别路由器相比，更容易出现运行故障。这些都是单个组件可靠性不同导致的例子，可以通过简单升级单点的软硬件来改善可靠性。</p>
+<p>IT 从业人员大都有类似的经验，普通笔记本电脑，基本上是过一阵可能就要重启一下；而运行 Linux&#x2F;Unix 系统的专用服务器，则可能连续运行几个月甚至几年时间都不出问题。另外，普通的家用路由器，跟生产级别路由器相比，更容易出现运行故障。这些都是单个组件可靠性不同导致的例子，可以通过简单升级单点的软硬件来改善可靠性。</p>
 <p>然而，依靠单点实现的可靠性毕竟是有限的。要想进一步地提升，那就只好消灭单点，通过主从、多活等模式让多个节点集体完成原先单点的工作。这可以从概率意义上改善服务对外的整体可靠性，这也是分布式系统的一个重要用途。</p>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>分布式系统是计算机科学中十分重要的一个研究领域。随着现代计算机集群规模的不断增长，所处理的数据量越来越大，同时对于性能、可靠性的要求越来越高，分布式系统相关技术已经变得越来越重要，起到的作用也越来越关键。</p>
 <p>分布式系统中如何保证共识是个经典的技术问题，无论在学术上还是工程上都存在很高的研究价值。令人遗憾地是，理想的（各项指标均最优）解决方案并不存在。在现实各种约束条件下，往往需要通过牺牲掉某些需求，来设计出满足特定场景的协议。通过本文的学习，读者可以体会到在工程应用中的类似设计技巧。</p>
 <p>实际上，工程领域中不少问题都不存在一劳永逸的通用解法；而实用的解决思路是，合理地在实际需求和条件限制之间进行灵活的取舍。</p>
- 
+
       <!-- reward -->
-      
+
       <div id="reword-out">
         <div id="reward-btn">
           打赏
         </div>
       </div>
-      
+
     </div>
-    
+
 
     <!-- copyright -->
-    
+
     <div class="declare">
       <ul class="post-copyright">
         <li>
           <i class="ri-copyright-line"></i>
           <strong>版权声明： </strong>
-          
+
           本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
-          
+
         </li>
       </ul>
     </div>
-    
+
     <footer class="article-footer">
-       
+
 <div class="share-btn">
       <span class="share-sns share-outer">
         <i class="ri-share-forward-line"></i>
@@ -353,7 +351,7 @@ var _hmt = _hmt || [];
       <div class="share-wrap">
         <i class="arrow"></i>
         <div class="share-icons">
-          
+
           <a class="weibo share-sns" href="javascript:;" data-type="weibo">
             <i class="ri-weibo-fill"></i>
           </a>
@@ -369,7 +367,7 @@ var _hmt = _hmt || [];
           <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
             <i class="icon icon-qzone"></i>
           </a> -->
-          
+
           <a class="facebook share-sns" href="javascript:;" data-type="facebook">
             <i class="ri-facebook-circle-fill"></i>
           </a>
@@ -387,37 +385,37 @@ var _hmt = _hmt || [];
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Blockchain-Distributed-issues.html" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Blockchain-Distributed-issues.html" alt="微信分享二维码">
     </div>
 </div>
 
-<div id="share-mask"></div>  
+<div id="share-mask"></div>
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Blockchain/" rel="tag">Blockchain</a></li></ul>
 
     </footer>
   </div>
 
-   
+
   <nav class="article-nav">
-    
+
       <a href="/articles/Blockchain-Cryptography-and-Network-Security.html" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
-          
+
             区块链系列——密码学与安全技术
-          
+
         </div>
       </a>
-    
-    
+
+
       <a href="/articles/Tool-best-Mac.html" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
         <div class="article-nav-title">如何打造宇宙最强 Macbook</div>
       </a>
-    
+
   </nav>
 
-   
+
 <!-- valine评论 -->
 <div id="vcomments-box">
   <div id="vcomments"></div>
@@ -465,8 +463,8 @@ var _hmt = _hmt || [];
   }
 </style>
 
- 
-     
+
+
 </article>
 
 </section>
@@ -475,45 +473,45 @@ var _hmt = _hmt || [];
     <ul>
       <li>
         Copyrights &copy;
-        2017-2021
+        2017-2026
         <i class="ri-heart-fill heart_icon"></i> Shadowalker
       </li>
     </ul>
     <ul>
       <li>
-        
-        
-        
+
+
+
         由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
         <span class="division">|</span>
         主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
+
       </li>
     </ul>
     <ul>
       <li>
-        
-        
+
+
         <span>
   <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
   <span class="division">|</span>
   <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
 </span>
-        
+
       </li>
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
       <li>
         <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
-        
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
       </li>
     </ul>
   </div>
@@ -532,52 +530,52 @@ var _hmt = _hmt || [];
     <aside class="sidebar on">
       <button class="navbar-toggle"></button>
 <nav class="navbar">
-  
+
   <div class="logo">
     <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
   </div>
-  
+
   <ul class="nav nav-main">
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/">主页</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/archives">归档</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/categories">分类</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/schedule">计划</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/about">关于</a>
     </li>
-    
+
   </ul>
 </nav>
 <nav class="navbar navbar-bottom">
   <ul class="nav">
     <li class="nav-item">
-      
+
       <a class="nav-item-link nav-item-search"  title="搜索">
         <i class="ri-search-line"></i>
       </a>
-      
-      
+
+
     </li>
   </ul>
 </nav>
@@ -601,22 +599,22 @@ var _hmt = _hmt || [];
   <span class="close"><i class="ri-close-line"></i></span>
   <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
-    
+
     <div class="reward-item">
       <img class="reward-img" src="/images/aliPay.jpeg">
       <span class="reward-type">支付宝</span>
     </div>
-    
-    
+
+
     <div class="reward-item">
       <img class="reward-img" src="/images/wechatPay.png">
       <span class="reward-type">微信</span>
     </div>
-    
+
   </div>
 </div>
-    
-<script src="/js/jquery-2.0.3.min.js"></script>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
 
 
 <script src="/js/lazyload.min.js"></script>
@@ -651,14 +649,14 @@ var _hmt = _hmt || [];
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
-    <!-- Background of PhotoSwipe. 
+    <!-- Background of PhotoSwipe.
          It's a separate element as animating opacity is faster than rgba(). -->
     <div class="pswp__bg"></div>
 
     <!-- Slides wrapper with overflow:hidden. -->
     <div class="pswp__scroll-wrap">
 
-        <!-- Container that holds slides. 
+        <!-- Container that holds slides.
             PhotoSwipe keeps only 3 of them in the DOM to save memory.
             Don't modify these 3 pswp__item elements, data is added later on. -->
         <div class="pswp__container">
@@ -774,7 +772,7 @@ var _hmt = _hmt || [];
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <script>
   var ayerConfig = {
     mathjax: true
@@ -804,7 +802,7 @@ var _hmt = _hmt || [];
 
 <link rel="stylesheet" href="/css/clipboard.css">
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="/js/clipboard-2.0.11.min.js"></script>
 <script>
   function wait(callback, seconds) {
     var timelag = null;
@@ -831,7 +829,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-checkbox-circle-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPIED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-checkbox-circle-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -847,7 +845,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-time-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPY FAILED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-time-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -867,8 +865,10 @@ var _hmt = _hmt || [];
 
 
 
-    
+
   </div>
-<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
 
 </html>

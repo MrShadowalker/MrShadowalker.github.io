@@ -6,42 +6,42 @@
 
 <head>
   <meta charset="utf-8" />
-   
-  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
-   
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
   <meta name="description" content="描述" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     区块链系列——密码学与安全技术 |  Shadow.Net
   </title>
   <meta name="generator" content="hexo-theme-ayer">
-  
+
   <link rel="shortcut icon" href="/favicon.ico" />
-  
-  
+
+
 <link rel="stylesheet" href="/dist/main.css">
 
-  
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
 
-  
+
 <link rel="stylesheet" href="/css/custom.css">
 
-  
-  
+
+
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
 
-  
-  
 
-  
+
+
+
 <script>
 var _hmt = _hmt || [];
 (function() {
 	var hm = document.createElement("script");
 	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
-	var s = document.getElementsByTagName("script")[0]; 
+	var s = document.getElementsByTagName("script")[0];
 	s.parentNode.insertBefore(hm, s);
 })();
 </script>
@@ -50,15 +50,13 @@ var _hmt = _hmt || [];
 <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
 </head>
 
-</html>
-
 <body>
   <div id="app">
-    
-      
+
+
       <canvas width="1777" height="841"
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
-      
+
     <main class="content on">
       <section class="outer">
   <article
@@ -69,24 +67,24 @@ var _hmt = _hmt || [];
   data-scroll-reveal
 >
   <div class="article-inner">
-    
+
     <header class="article-header">
-       
+
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
   区块链系列——密码学与安全技术
 </h1>
- 
+
 
     </header>
-     
+
     <div class="article-meta">
       <a href="/articles/Blockchain-Cryptography-and-Network-Security.html" class="article-date">
   <time datetime="2021-07-15T06:28:27.000Z" itemprop="datePublished">2021-07-15</time>
-</a> 
+</a>
   <div class="article-category">
     <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a>
   </div>
-  
+
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
@@ -105,17 +103,17 @@ var _hmt = _hmt || [];
         </span>
     </span>
 </div>
- 
+
     </div>
-      
+
     <div class="tocbot"></div>
 
 
 
 
-  
+
     <div class="article-entry" itemprop="articleBody">
-       
+
   <h1 id="密码学与安全技术"><a href="#密码学与安全技术" class="headerlink" title="密码学与安全技术"></a>密码学与安全技术</h1><p>工程领域从来没有黑科技；密码学不仅是工程。</p>
 <p>密码学相关的安全技术在整个信息技术领域的重要地位无需多言。如果没有现代密码学和信息安全的研究成果，人类社会根本无法进入信息时代。区块链技术大量依赖了密码学和安全技术的研究成果。</p>
 <p>实际上，密码学和安全领域所涉及的知识体系十分繁杂，本章将介绍密码学领域中跟区块链相关的一些基础知识，包括Hash算法与数字摘要、加密算法、数字签名、数字证书、PKI 体系、Merkle 树、布隆过滤器、同态加密等。读者通过阅读本章可以了解如何使用这些技术保护信息的机密性、完整性、认证性和不可抵赖性。</p>
@@ -161,10 +159,10 @@ var _hmt = _hmt || [];
 <p>然而，由于有时用户设置口令的强度不够，只是一些常见的简单字符串，如 password、123456 等。有人专门搜集了这些常见口令，计算对应的 Hash 值，制作成字典。这样通过 Hash 值可以快速反查到原始口令。这一类型以空间换时间的攻击方法包括字典攻击和彩虹表攻击（只保存一条 Hash 链的首尾值，相对字典攻击可以节省存储空间）等。</p>
 <p>为了防范这一类攻击，一般采用加盐（salt）的方法。保存的不是口令明文的 Hash 值，而是口令明文再加上一段随机字符串（即“盐”）之后的 Hash 值。Hash 结果和“盐”分别存放在不同的地方，这样只要不是两者同时泄露，攻击者就很难破解了。</p>
 <h2 id="加密算法"><a href="#加密算法" class="headerlink" title="加密算法"></a>加密算法</h2><p>加解密算法是密码学的核心技术，从设计理念上可以分为两大基本类型，如下表所示。 </p>
-<p><img src="Blockchain-Cryptography-and-Network-Security/%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95%E5%AF%B9%E6%AF%94.png" alt="加解密算法的类型">
+<p><img src="/articles/Blockchain-Cryptography-and-Network-Security/%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95%E5%AF%B9%E6%AF%94.png" alt="加解密算法的类型">
 　 </p>
 <h3 id="加解密系统基本组成"><a href="#加解密系统基本组成" class="headerlink" title="加解密系统基本组成"></a>加解密系统基本组成</h3><p>现代加解密系统的典型组件一般包括：加解密算法、加密密钥、解密密钥。其中，加解密算法自身是固定不变的，并且一般是公开可见的；密钥则是最关键的信息，需要安全地保存起来，甚至通过特殊硬件进行保护。一般来说，对同一种算法，密钥需要按照特定算法每次加密前随机生成，长度越长，则加密强度越大。加解密的基本过程如下图所示。 </p>
-<p><img src="Blockchain-Cryptography-and-Network-Security/%E5%8A%A0%E8%A7%A3%E5%AF%86%E5%9F%BA%E6%9C%AC%E8%BF%87%E7%A8%8B.png" alt="加解密基本过程"></p>
+<p><img src="/articles/Blockchain-Cryptography-and-Network-Security/%E5%8A%A0%E8%A7%A3%E5%AF%86%E5%9F%BA%E6%9C%AC%E8%BF%87%E7%A8%8B.png" alt="加解密基本过程"></p>
 <p>加密过程中，通过加密算法和加密密钥，对明文进行加密，获得密文。</p>
 <p>解密过程中，通过解密算法和解密密钥，对密文进行解密，获得明文。</p>
 <p>根据加解密过程中所使用的密钥是否相同，算法可以分为对称加密（symmetric cryptography，又称公共密钥加密，common-key cryptography）和非对称加密（asymmetric cryptography，又称公钥加密，public-key cryptography）。两种模式适用于不同的需求，恰好形成互补。某些时候可以组合使用，形成混合加密机制。</p>
@@ -212,23 +210,23 @@ var _hmt = _hmt || [];
 <h3 id="混合加密机制"><a href="#混合加密机制" class="headerlink" title="混合加密机制"></a>混合加密机制</h3><p>混合加密机制同时结合了对称加密和非对称加密的优点。</p>
 <p>先用计算复杂度高的非对称加密协商出一个临时的对称加密密钥（也称为会话密钥，一般相对所加密内容来说要短得多），然后双方再通过对称加密算法对传递的大量数据进行快速的加解密处理。</p>
 <p>典型的应用案例是现在大家常用的 HTTPS 协议。HTTPS 协议正在替换掉传统的不安全的 HTTP 协议，成为最普遍的 Web 通信协议。</p>
-<p>HTTPS 在传统的 HTTP 层和 TCP 层之间通过引入 Transport Layer Security/Secure Socket Layer（TLS/SSL）加密层来实现可靠的传输。</p>
+<p>HTTPS 在传统的 HTTP 层和 TCP 层之间通过引入 Transport Layer Security&#x2F;Secure Socket Layer（TLS&#x2F;SSL）加密层来实现可靠的传输。</p>
 <p>SSL 协议最早是 Netscape 于 1994 年设计出来实现早期 HTTPS 的方案，SSL 3.0 及之前版本存在漏洞，被认为不够安全。TLS 协议是 IETF 基于 SSL 协议提出的安全标准，目前最新的版本为 1.2（2008年发布）。推荐使用的版本号至少为 TLS 1.0，对应到 SSL 3.1版本。除了 Web 服务外，TLS 协议也广泛应用于 Email、实时消息、音视频通话等领域。</p>
 <p>采用 HTTPS 建立安全连接（TLS握手协商过程）的基本步骤如下（可参见图5-2）：</p>
-<p><img src="Blockchain-Cryptography-and-Network-Security/TLS%E6%8F%A1%E6%89%8B%E5%8D%8F%E5%95%86%E8%BF%87%E7%A8%8B.png" alt="TLS握手协商过程"></p>
+<p><img src="/articles/Blockchain-Cryptography-and-Network-Security/TLS%E6%8F%A1%E6%89%8B%E5%8D%8F%E5%95%86%E8%BF%87%E7%A8%8B.png" alt="TLS握手协商过程"></p>
 <p>客户端浏览器发送信息到服务器，包括随机数 R1、支持的加密算法类型、协议版本、压缩算法等。注意该过程为明文。<br>服务端返回信息，包括随机数 R2、选定加密算法类型、协议版本以及服务器证书。注意该过程为明文。<br>浏览器检查带有该网站公钥的证书。该证书需要由第三方CA来签发，浏览器和操作系统会预置权威 CA 的根证书。如果证书被篡改作假（中间人攻击），很容易通过 CA 的证书验证出来。<br>如果证书没问题，则客户端用服务端证书中的公钥加密随机数 R3（又叫 Pre-MasterSecret），发送给服务器。此时，只有客户端和服务器都拥有 R1、R2 和 R3 信息，基于随机数 R1、R2 和 R3，双方通过伪随机数函数来生成共同的对称会话密钥 MasterSecret。<br>后续客户端和服务端的通信都通过对称加密算法（如AES）进行保护。<br>可以看出，该过程的主要功能是在防止中间人窃听和篡改的前提下完成会话密钥的协商。为了保障前向安全性（perfect forward secrecy），TLS 对每个会话连接都可以生成不同的密钥，避免某次会话密钥泄露之后影响了其他会话连接的安全性。需要注意，TLS 协商过程支持加密算法方案较多，要合理地选择安全强度高的算法，如 DHE-RSA、ECDHE-RSA 和 ECDHE-ECDSA。</p>
 <p>示例中对称密钥的协商过程采用了 RSA 非对称加密算法，实践中也可以通过 Diffie–Hellman 协议来完成。</p>
 <h3 id="离散对数与-Diffie–Hellman-密钥交换协议"><a href="#离散对数与-Diffie–Hellman-密钥交换协议" class="headerlink" title="离散对数与 Diffie–Hellman 密钥交换协议"></a>离散对数与 Diffie–Hellman 密钥交换协议</h3><p>Diffie–Hellman（DH）密钥交换协议是一个经典的协议，最早发表于 1976 年，应用十分广泛。使用该协议可以在不安全信道完成对称密钥的协商，以便后续通信采用对称加密。</p>
-<p>DH 协议的设计基于离散对数问题（Discrete Logarithm Problem，DLP）。离散对数问题是指对于一个很大的素数 p，已知 g 为 p 的模循环群的原根，给定任意 x，求解 X = g^x mod p 是可以很快获取的。但在已知 p、g 和 X 的前提下，逆向求解 x 目前没有多项式时间实现的算法。该问题同时也是 ECC 类加密算法的基础。</p>
+<p>DH 协议的设计基于离散对数问题（Discrete Logarithm Problem，DLP）。离散对数问题是指对于一个很大的素数 p，已知 g 为 p 的模循环群的原根，给定任意 x，求解 X &#x3D; g^x mod p 是可以很快获取的。但在已知 p、g 和 X 的前提下，逆向求解 x 目前没有多项式时间实现的算法。该问题同时也是 ECC 类加密算法的基础。</p>
 <p>DH 协议的基本交换过程如下：</p>
 <ul>
 <li>Alice 和 Bob 两个人协商密钥，先公开商定 p，g；</li>
-<li>Alice 自行选取私密的整数x，计算 X = g^x mod p，发送 X 给 Bob；</li>
-<li>Bob 自行选取私密的整数 y，计算 Y = g^y mod p，发送 Y给 Alice；</li>
-<li>Alice 根据 x 和 Y，求解共同密钥 Z_A = Y^x mod p；</li>
-<li>Bob 根据 X 和 y，求解共同密钥 Z_B = X^y mod p。</li>
+<li>Alice 自行选取私密的整数x，计算 X &#x3D; g^x mod p，发送 X 给 Bob；</li>
+<li>Bob 自行选取私密的整数 y，计算 Y &#x3D; g^y mod p，发送 Y给 Alice；</li>
+<li>Alice 根据 x 和 Y，求解共同密钥 Z_A &#x3D; Y^x mod p；</li>
+<li>Bob 根据 X 和 y，求解共同密钥 Z_B &#x3D; X^y mod p。</li>
 </ul>
-<p>实际上，Alice 和 Bob 计算出来的结果将完全相同，因为在 mod p 的前提下，Y^x = (g^y)^x = g^(xy) = (g^x)^y = X^y。而信道监听者在已知 p、g、X、Y 的前提下，无法求得 Z。</p>
+<p>实际上，Alice 和 Bob 计算出来的结果将完全相同，因为在 mod p 的前提下，Y^x &#x3D; (g^y)^x &#x3D; g^(xy) &#x3D; (g^x)^y &#x3D; X^y。而信道监听者在已知 p、g、X、Y 的前提下，无法求得 Z。</p>
 <h2 id="消息认证码与数字签名"><a href="#消息认证码与数字签名" class="headerlink" title="消息认证码与数字签名"></a>消息认证码与数字签名</h2><p>消息认证码和数字签名技术通过对消息的摘要进行加密，可用于消息防篡改和身份证明问题。</p>
 <h3 id="消息认证码"><a href="#消息认证码" class="headerlink" title="消息认证码"></a>消息认证码</h3><p>消息认证码全称是“基于 Hash 的消息认证码”（Hash-based Message Authentication Code，HMAC）。消息验证码基于对称加密，可以用于对消息完整性（integrity）进行保护。</p>
 <p>基本过程为：对某个消息利用提前共享的对称密钥和 Hash 算法进行加密处理，得到 HMAC 值。该 HMAC 值持有方可以证明自己拥有共享的对称密钥，并且也可以利用 HMAC 确保消息内容未被篡改。</p>
@@ -265,11 +263,11 @@ var _hmt = _hmt || [];
 </li>
 <li><p>签名算法（Signature Algorithm）：数字签名所采用的算法，如 SHA256WithRSAEncryption 或 ecdsa-with-SHA256；</p>
 </li>
-<li><p>颁发者（Issuer）：颁发证书单位的标识信息，如“C=CN，ST=Beijing，L=Beijing，O=org.example.com，CN=ca.org.example.com”；</p>
+<li><p>颁发者（Issuer）：颁发证书单位的标识信息，如“C&#x3D;CN，ST&#x3D;Beijing，L&#x3D;Beijing，O&#x3D;org.example.com，CN&#x3D;ca.org.example.com”；</p>
 </li>
 <li><p>有效期（Validity）：证书的有效期限，包括起止时间；</p>
 </li>
-<li><p>主体（Subject）：证书拥有者的标识信息（Distinguished Name），如“C=CN，ST=Beijing，L=Beijing，CN=person.org.example.com”；</p>
+<li><p>主体（Subject）：证书拥有者的标识信息（Distinguished Name），如“C&#x3D;CN，ST&#x3D;Beijing，L&#x3D;Beijing，CN&#x3D;person.org.example.com”；</p>
 </li>
 <li><p>主体的公钥信息（Subject Public Key Info）：所保护的公钥相关的信息；</p>
 </li>
@@ -284,22 +282,22 @@ var _hmt = _hmt || [];
 <li><p>扩展（Extensions，可选）：可选的一些扩展。v3 中可能包括：</p>
 </li>
 </ul>
-<figure class="highlight gauss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">· Subject <span class="built_in">Key</span> Identifier：实体的密钥标识符，区分实体的多对密钥；</span><br><span class="line"></span><br><span class="line">· Basic Constraints：一般指明是否属于 CA；</span><br><span class="line"></span><br><span class="line">· Authority <span class="built_in">Key</span> Identifier：证书颁发者的公钥标识符；</span><br><span class="line"></span><br><span class="line">· CRL Distribution Points：撤销文件的发布地址；</span><br><span class="line"></span><br><span class="line">· <span class="built_in">Key</span> Usage：证书的用途或功能信息。</span><br></pre></td></tr></table></figure>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">· <span class="title class_">Subject</span> <span class="title class_">Key</span> <span class="title class_">Identifier</span>：实体的密钥标识符，区分实体的多对密钥；</span><br><span class="line"></span><br><span class="line">· <span class="title class_">Basic</span> <span class="title class_">Constraints</span>：一般指明是否属于 CA；</span><br><span class="line"></span><br><span class="line">· <span class="title class_">Authority</span> <span class="title class_">Key</span> <span class="title class_">Identifier</span>：证书颁发者的公钥标识符；</span><br><span class="line"></span><br><span class="line">· CRL <span class="title class_">Distribution</span> <span class="title class_">Points</span>：撤销文件的发布地址；</span><br><span class="line"></span><br><span class="line">· <span class="title class_">Key</span> <span class="title class_">Usage</span>：证书的用途或功能信息。</span><br></pre></td></tr></table></figure>
 
 <p>此外，证书的颁发者还需要对证书内容利用自己的公钥添加签名，以防止别人对证书内容进行篡改。</p>
 <h3 id="证书格式"><a href="#证书格式" class="headerlink" title="证书格式"></a>证书格式</h3><p>X.509 规范中一般推荐使用 PEM（Privacy Enhanced Mail）格式来存储证书相关的文件。证书文件的文件名后缀一般为 .crt 或 .cer，对应私钥文件的文件名后缀一般为 .key，证书请求文件的文件名后缀为 .csr。有时候也统一用 .pem 作为文件名后缀。</p>
 <p>PEM 格式采用文本方式进行存储，一般包括首尾标记和内容块，内容块采用 Base64 进行编码。</p>
-<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">-----<span class="keyword">BEGIN</span> CERTIFICATE-----</span><br><span class="line">MIICMzCCAdmgAwIBAgIQIhMiRzqkCljq3ZXnsl6EijAKBggqhkjOPQQDAjBmMQsw</span><br><span class="line">CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy</span><br><span class="line">YW5jaXNjbzEUMBIGA1UEChMLZXhhbXBsZS5jb20xFDASBgNVBAMTC2V4YW1wbGUu</span><br><span class="line">Y29tMB4XDTE3MDQyNTAzMzAzN1oXDTI3MDQyMzAzMzAzN1owZjELMAkGA1UEBhMC</span><br><span class="line">VVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28x</span><br><span class="line">FDASBgNVBAoTC2V4YW1wbGUuY29tMRQwEgYDVQQDEwtleGFtcGxlLmNvbTBZMBMG</span><br><span class="line">ByqGSM49AgEGCCqGSM49AwEHA0IABCkIHZ3mJCEPbIbUdh/Kz3zWW1C9wxnZOwfy</span><br><span class="line">yrhr6aHwWREW3ZpMWKUcbsYup5kbouBc2dvMFUgoPBoaFYJ9D0SjaTBnMA4GA1Ud</span><br><span class="line">DwEB/wQEAwIBpjAZBgNVHSUEEjAQBgRVHSUABggrBgEFBQcDATAPBgNVHRMBAf8E</span><br><span class="line">BTADAQH<span class="regexp">/MCkGA1UdDgQiBCBIA/</span>DmemwTGibbGe8uWjt5hnlE63SUsXuNKO9iGEhV</span><br><span class="line">qDAKBggqhkjOPQQDAgNIADBFAiEAyoMO2BAQ3c9gBJOk1oSyXP70XRk4dTwXMF7q</span><br><span class="line">R72ijLECIFKLANpgWFoMoo3W91uzJeUmnbJJt8Jlr00ByjurfAvv</span><br><span class="line">-----<span class="keyword">END</span> CERTIFICATE-----</span><br></pre></td></tr></table></figure>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">-----BEGIN CERTIFICATE-----</span><br><span class="line"><span class="title class_">MIICMzCCAdmgAwIBAgIQIhMiRzqkCljq3ZXnsl6EijAKBggqhkjOPQQDAjBmMQsw</span></span><br><span class="line"><span class="title class_">CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy</span></span><br><span class="line"><span class="title class_">YW5jaXNjbzEUMBIGA1UEChMLZXhhbXBsZS5jb20xFDASBgNVBAMTC2V4YW1wbGUu</span></span><br><span class="line"><span class="title class_">Y29tMB4XDTE3MDQyNTAzMzAzN1oXDTI3MDQyMzAzMzAzN1owZjELMAkGA1UEBhMC</span></span><br><span class="line"><span class="title class_">VVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28x</span></span><br><span class="line"><span class="title class_">FDASBgNVBAoTC2V4YW1wbGUuY29tMRQwEgYDVQQDEwtleGFtcGxlLmNvbTBZMBMG</span></span><br><span class="line"><span class="title class_">ByqGSM49AgEGCCqGSM49AwEHA0IABCkIHZ3mJCEPbIbUdh</span>/<span class="title class_">Kz3zWW1C9wxnZOwfy</span></span><br><span class="line">yrhr6aHwWREW3ZpMWKUcbsYup5kbouBc2dvMFUgoPBoaFYJ9D0SjaTBnMA4GA1Ud</span><br><span class="line"><span class="title class_">DwEB</span>/wQEAwIBpjAZBgNVHSUEEjAQBgRVHSUABggrBgEFBQcDATAPBgNVHRMBAf8E</span><br><span class="line">BTADAQH/<span class="title class_">MCkGA1UdDgQiBCBIA</span>/<span class="title class_">DmemwTGibbGe8uWjt5hnlE63SUsXuNKO9iGEhV</span></span><br><span class="line">qDAKBggqhkjOPQQDAgNIADBFAiEAyoMO2BAQ3c9gBJOk1oSyXP70XRk4dTwXMF7q</span><br><span class="line"><span class="title class_">R72ijLECIFKLANpgWFoMoo3W91uzJeUmnbJJt8Jlr00ByjurfAvv</span></span><br><span class="line">-----END CERTIFICATE-----</span><br></pre></td></tr></table></figure>
 
 <p>可以通过 OpenSSL 工具来查看其内容：</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># openssl x509 -in example.com-cert.pem -noout -text</span></span><br><span class="line"><span class="attribute">Certificate</span>:</span><br><span class="line"><span class="attribute">Data</span>:</span><br><span class="line"><span class="attribute">Version</span>: <span class="number">3</span> (<span class="number">0</span>x<span class="number">2</span>)</span><br><span class="line"><span class="attribute">Serial</span> Number:</span><br><span class="line"><span class="attribute">22</span>:<span class="number">13</span>:<span class="number">22</span>:<span class="number">47</span>:<span class="number">3</span>a:a<span class="number">4</span>:<span class="number">0</span>a:<span class="number">58</span>:ea:dd:<span class="number">95</span>:e<span class="number">7</span>:b<span class="number">2</span>:<span class="number">5</span>e:<span class="number">84</span>:<span class="number">8</span>a</span><br><span class="line"><span class="attribute">Signature</span> Algorithm: ecdsa-with-SHA<span class="number">256</span></span><br><span class="line"><span class="attribute">Issuer</span>: C=US, ST=California, L=San Francisco, O=example.com,</span><br><span class="line"><span class="attribute">CN</span>=example.com</span><br><span class="line"><span class="attribute">Validity</span></span><br><span class="line"><span class="attribute">Not</span> Before: Apr <span class="number">25</span> <span class="number">03</span>:<span class="number">30</span>:<span class="number">37</span> <span class="number">2017</span> GMT</span><br><span class="line"><span class="attribute">Not</span> After : Apr <span class="number">23</span> <span class="number">03</span>:<span class="number">30</span>:<span class="number">37</span> <span class="number">2027</span> GMT</span><br><span class="line"><span class="attribute">Subject</span>: C=US, ST=California, L=San Francisco, O=example.com,</span><br><span class="line"><span class="attribute">CN</span>=example.com</span><br><span class="line"><span class="attribute">Subject</span> Public Key Info:</span><br><span class="line"><span class="attribute">Public</span> Key Algorithm: id-ecPublicKey</span><br><span class="line"><span class="attribute">Public</span>-Key: (<span class="number">256</span> bit)</span><br><span class="line"><span class="attribute">pub</span>:</span><br><span class="line"><span class="attribute">04</span>:<span class="number">29</span>:<span class="number">08</span>:<span class="number">1</span>d:<span class="number">9</span>d:e<span class="number">6</span>:<span class="number">24</span>:<span class="number">21</span>:<span class="number">0</span>f:<span class="number">6</span>c:<span class="number">86</span>:d<span class="number">4</span>:<span class="number">76</span>:<span class="number">1</span>f:ca:</span><br><span class="line"><span class="attribute">cf</span>:<span class="number">7</span>c:d<span class="number">6</span>:<span class="number">5</span>b:<span class="number">50</span>:bd:c<span class="number">3</span>:<span class="number">19</span>:d<span class="number">9</span>:<span class="number">3</span>b:<span class="number">07</span>:f<span class="number">2</span>:ca:b<span class="number">8</span>:<span class="number">6</span>b:</span><br><span class="line"><span class="attribute">e9</span>:a<span class="number">1</span>:f<span class="number">0</span>:<span class="number">59</span>:<span class="number">11</span>:<span class="number">16</span>:dd:<span class="number">9</span>a:<span class="number">4</span>c:<span class="number">58</span>:a<span class="number">5</span>:<span class="number">1</span>c:<span class="number">6</span>e:c<span class="number">6</span>:<span class="number">2</span>e:</span><br><span class="line"><span class="attribute">a7</span>:<span class="number">99</span>:<span class="number">1</span>b:a<span class="number">2</span>:e<span class="number">0</span>:<span class="number">5</span>c:d<span class="number">9</span>:db:cc:<span class="number">15</span>:<span class="number">48</span>:<span class="number">28</span>:<span class="number">3</span>c:<span class="number">1</span>a:<span class="number">1</span>a:</span><br><span class="line"><span class="attribute">15</span>:<span class="number">82</span>:<span class="number">7</span>d:<span class="number">0</span>f:<span class="number">44</span></span><br><span class="line"><span class="attribute">ASN1</span> OID: prime<span class="number">256</span>v<span class="number">1</span></span><br><span class="line"><span class="attribute">X509v3</span> extensions:</span><br><span class="line"><span class="attribute">X509v3</span> Key Usage: critical</span><br><span class="line"><span class="attribute">Digital</span> Signature, Key Encipherment, Certificate Sign,</span><br><span class="line"><span class="attribute">CRL</span> Sign</span><br><span class="line"><span class="attribute">X509v3</span> Extended Key Usage:</span><br><span class="line"><span class="attribute">Any</span> Extended Key Usage, TLS Web Server Authentication</span><br><span class="line"><span class="attribute">X509v3</span> Basic Constraints: critical</span><br><span class="line"><span class="attribute">CA</span>:TRUE</span><br><span class="line"><span class="attribute">X509v3</span> Subject Key Identifier:</span><br><span class="line"><span class="attribute">48</span>:<span class="number">03</span>:F<span class="number">0</span>:E<span class="number">6</span>:<span class="number">7</span>A:<span class="number">6</span>C:<span class="number">13</span>:<span class="number">1</span>A:<span class="number">26</span>:DB:<span class="number">19</span>:EF:<span class="number">2</span>E:<span class="number">5</span>A:<span class="number">3</span>B:<span class="number">79</span>:<span class="number">86</span>:</span><br><span class="line"><span class="attribute">79</span>:<span class="number">44</span>:EB:<span class="number">74</span>:<span class="number">94</span>:B<span class="number">1</span>:<span class="number">7</span>B:<span class="number">8</span>D:<span class="number">28</span>:EF:<span class="number">62</span>:<span class="number">18</span>:<span class="number">48</span>:<span class="number">55</span>:A<span class="number">8</span></span><br><span class="line"><span class="attribute">Signature</span> Algorithm: ecdsa-with-SHA<span class="number">256</span></span><br><span class="line"><span class="attribute">30</span>:<span class="number">45</span>:<span class="number">02</span>:<span class="number">21</span>:<span class="number">00</span>:ca:<span class="number">83</span>:<span class="number">0</span>e:d<span class="number">8</span>:<span class="number">10</span>:<span class="number">10</span>:dd:cf:<span class="number">60</span>:<span class="number">04</span>:<span class="number">93</span>:a<span class="number">4</span>:d<span class="number">6</span>:</span><br><span class="line"><span class="attribute">84</span>:b<span class="number">2</span>:<span class="number">5</span>c:fe:f<span class="number">4</span>:<span class="number">5</span>d:<span class="number">19</span>:<span class="number">38</span>:<span class="number">75</span>:<span class="number">3</span>c:<span class="number">17</span>:<span class="number">30</span>:<span class="number">5</span>e:ea:<span class="number">47</span>:bd:a<span class="number">2</span>:<span class="number">8</span>c:</span><br><span class="line"><span class="attribute">b1</span>:<span class="number">02</span>:<span class="number">20</span>:<span class="number">52</span>:<span class="number">8</span>b:<span class="number">00</span>:da:<span class="number">60</span>:<span class="number">58</span>:<span class="number">5</span>a:<span class="number">0</span>c:a<span class="number">2</span>:<span class="number">8</span>d:d<span class="number">6</span>:f<span class="number">7</span>:<span class="number">5</span>b:b<span class="number">3</span>:<span class="number">25</span>:</span><br><span class="line"><span class="attribute">e5</span>:<span class="number">26</span>:<span class="number">9</span>d:b<span class="number">2</span>:<span class="number">49</span>:b<span class="number">7</span>:c<span class="number">2</span>:<span class="number">65</span>:af:<span class="number">4</span>d:<span class="number">01</span>:ca:<span class="number">3</span>b:ab:<span class="number">7</span>c:<span class="number">0</span>b:ef</span><br></pre></td></tr></table></figure>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># openssl x509 -in example.com-cert.pem -noout -text</span></span><br><span class="line"><span class="attribute">Certificate</span>:</span><br><span class="line"><span class="attribute">Data</span>:</span><br><span class="line"><span class="attribute">Version</span>: <span class="number">3</span> (<span class="number">0</span>x2)</span><br><span class="line"><span class="attribute">Serial</span> Number:</span><br><span class="line"><span class="attribute">22</span>:<span class="number">13</span>:<span class="number">22</span>:<span class="number">47</span>:<span class="number">3</span>a:a4:<span class="number">0</span>a:<span class="number">58</span>:ea:dd:<span class="number">95</span>:e7:b2:<span class="number">5</span>e:<span class="number">84</span>:<span class="number">8</span>a</span><br><span class="line"><span class="attribute">Signature</span> Algorithm: ecdsa-with-SHA256</span><br><span class="line"><span class="attribute">Issuer</span>: C=US, ST=California, L=San Francisco, O=example.com,</span><br><span class="line"><span class="attribute">CN</span>=example.com</span><br><span class="line"><span class="attribute">Validity</span></span><br><span class="line"><span class="attribute">Not</span> Before: Apr <span class="number">25</span> <span class="number">03</span>:<span class="number">30</span>:<span class="number">37</span> <span class="number">2017</span> GMT</span><br><span class="line"><span class="attribute">Not</span> After : Apr <span class="number">23</span> <span class="number">03</span>:<span class="number">30</span>:<span class="number">37</span> <span class="number">2027</span> GMT</span><br><span class="line"><span class="attribute">Subject</span>: C=US, ST=California, L=San Francisco, O=example.com,</span><br><span class="line"><span class="attribute">CN</span>=example.com</span><br><span class="line"><span class="attribute">Subject</span> Public Key Info:</span><br><span class="line"><span class="attribute">Public</span> Key Algorithm: id-ecPublicKey</span><br><span class="line"><span class="attribute">Public</span>-Key: (<span class="number">256</span> bit)</span><br><span class="line"><span class="attribute">pub</span>:</span><br><span class="line"><span class="attribute">04</span>:<span class="number">29</span>:<span class="number">08</span>:<span class="number">1</span>d:<span class="number">9</span>d:e6:<span class="number">24</span>:<span class="number">21</span>:<span class="number">0</span>f:<span class="number">6</span>c:<span class="number">86</span>:d4:<span class="number">76</span>:<span class="number">1</span>f:ca:</span><br><span class="line"><span class="attribute">cf</span>:<span class="number">7</span>c:d6:<span class="number">5</span>b:<span class="number">50</span>:bd:c3:<span class="number">19</span>:d9:<span class="number">3</span>b:<span class="number">07</span>:f2:ca:b8:<span class="number">6</span>b:</span><br><span class="line"><span class="attribute">e9</span>:a1:f0:<span class="number">59</span>:<span class="number">11</span>:<span class="number">16</span>:dd:<span class="number">9</span>a:<span class="number">4</span>c:<span class="number">58</span>:a5:<span class="number">1</span>c:<span class="number">6</span>e:c6:<span class="number">2</span>e:</span><br><span class="line"><span class="attribute">a7</span>:<span class="number">99</span>:<span class="number">1</span>b:a2:e0:<span class="number">5</span>c:d9:db:cc:<span class="number">15</span>:<span class="number">48</span>:<span class="number">28</span>:<span class="number">3</span>c:<span class="number">1</span>a:<span class="number">1</span>a:</span><br><span class="line"><span class="attribute">15</span>:<span class="number">82</span>:<span class="number">7</span>d:<span class="number">0</span>f:<span class="number">44</span></span><br><span class="line"><span class="attribute">ASN1</span> OID: prime256v1</span><br><span class="line"><span class="attribute">X509v3</span> extensions:</span><br><span class="line"><span class="attribute">X509v3</span> Key Usage: critical</span><br><span class="line"><span class="attribute">Digital</span> Signature, Key Encipherment, Certificate Sign,</span><br><span class="line"><span class="attribute">CRL</span> Sign</span><br><span class="line"><span class="attribute">X509v3</span> Extended Key Usage:</span><br><span class="line"><span class="attribute">Any</span> Extended Key Usage, TLS Web Server Authentication</span><br><span class="line"><span class="attribute">X509v3</span> Basic Constraints: critical</span><br><span class="line"><span class="attribute">CA</span>:TRUE</span><br><span class="line"><span class="attribute">X509v3</span> Subject Key Identifier:</span><br><span class="line"><span class="attribute">48</span>:<span class="number">03</span>:F0:E6:<span class="number">7</span>A:<span class="number">6</span>C:<span class="number">13</span>:<span class="number">1</span>A:<span class="number">26</span>:DB:<span class="number">19</span>:EF:<span class="number">2</span>E:<span class="number">5</span>A:<span class="number">3</span>B:<span class="number">79</span>:<span class="number">86</span>:</span><br><span class="line"><span class="attribute">79</span>:<span class="number">44</span>:EB:<span class="number">74</span>:<span class="number">94</span>:B1:<span class="number">7</span>B:<span class="number">8</span>D:<span class="number">28</span>:EF:<span class="number">62</span>:<span class="number">18</span>:<span class="number">48</span>:<span class="number">55</span>:A8</span><br><span class="line"><span class="attribute">Signature</span> Algorithm: ecdsa-with-SHA256</span><br><span class="line"><span class="attribute">30</span>:<span class="number">45</span>:<span class="number">02</span>:<span class="number">21</span>:<span class="number">00</span>:ca:<span class="number">83</span>:<span class="number">0</span>e:d8:<span class="number">10</span>:<span class="number">10</span>:dd:cf:<span class="number">60</span>:<span class="number">04</span>:<span class="number">93</span>:a4:d6:</span><br><span class="line"><span class="attribute">84</span>:b2:<span class="number">5</span>c:fe:f4:<span class="number">5</span>d:<span class="number">19</span>:<span class="number">38</span>:<span class="number">75</span>:<span class="number">3</span>c:<span class="number">17</span>:<span class="number">30</span>:<span class="number">5</span>e:ea:<span class="number">47</span>:bd:a2:<span class="number">8</span>c:</span><br><span class="line"><span class="attribute">b1</span>:<span class="number">02</span>:<span class="number">20</span>:<span class="number">52</span>:<span class="number">8</span>b:<span class="number">00</span>:da:<span class="number">60</span>:<span class="number">58</span>:<span class="number">5</span>a:<span class="number">0</span>c:a2:<span class="number">8</span>d:d6:f7:<span class="number">5</span>b:b3:<span class="number">25</span>:</span><br><span class="line"><span class="attribute">e5</span>:<span class="number">26</span>:<span class="number">9</span>d:b2:<span class="number">49</span>:b7:c2:<span class="number">65</span>:af:<span class="number">4</span>d:<span class="number">01</span>:ca:<span class="number">3</span>b:ab:<span class="number">7</span>c:<span class="number">0</span>b:ef</span><br></pre></td></tr></table></figure>
 
 <p>需要注意，用户自行生成私钥情况下，私钥文件一旦丢失，CA 方由于不持有私钥信息，无法进行恢复，意味着通过该证书中公钥加密的内容将无法被解密。</p>
 <h3 id="证书的撤销"><a href="#证书的撤销" class="headerlink" title="证书的撤销"></a>证书的撤销</h3><p>证书超出有效期后会作废，用户也可以主动向 CA 申请撤销某证书文件。</p>
 <p>由于 CA 无法强制收回已经颁发出去的数字证书，因此为了实现证书的作废，往往还需要维护一个撤销证书列表（Certificate Revocation List，CRL），用于记录已经撤销的证书序号。</p>
 <p>因此，通常情况下，当第三方对某个证书进行验证时，需要首先检查该证书是否在撤销列表中。如果存在，则该证书无法通过验证。如果不在，则继续进行后续的证书验证过程。</p>
 <h2 id="Merkle树结构"><a href="#Merkle树结构" class="headerlink" title="Merkle树结构"></a>Merkle树结构</h2><p>Merkle（默克尔）树，又叫哈希树，是一种典型的二叉树结构，由一个根节点、一组中间节点和一组叶节点组成。在区块链系统出现之前，广泛用于文件系统和 P2P 系统中，如下图所示。 </p>
-<p><img src="Blockchain-Cryptography-and-Network-Security/Merkle%E6%A0%91%E7%A4%BA%E4%BE%8B.png" alt="Merkle树示例"></p>
+<p><img src="/articles/Blockchain-Cryptography-and-Network-Security/Merkle%E6%A0%91%E7%A4%BA%E4%BE%8B.png" alt="Merkle树示例"></p>
 <p>其主要特点为：</p>
 <p>最下面的叶节点包含存储数据或其哈希值；</p>
 <p>非叶子节点（包括中间节点和根节点）都是它的两个孩子节点内容的哈希值。</p>
@@ -312,20 +310,20 @@ var _hmt = _hmt || [];
 <p>因此，一旦发现某个节点如 Root 的数值发生变化，沿着 Root→N4→N1，最多通过 O(logn) 时间即可快速定位到实际发生改变的数据块 D1。</p>
 <h3 id="零知识证明"><a href="#零知识证明" class="headerlink" title="零知识证明"></a>零知识证明</h3><p>仍以上图为例，如何向他人证明拥有的某组数据（D0……D3）中包括给定某个内容D0而不暴露其他任何内容。</p>
 <p>很简单，构造如图所示的一个默克尔树，公布 N1、N5、Root。D0 拥有者通过验证生成的 Root 是否跟提供的值一致，即可很容易检测 D0 存在。整个过程中验证者无法获知其他内容。</p>
-<h2 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h2><p>布隆过滤器（Bloom Filter）于 1970 年由 Burton Howard Bloom 在论文《Space/Time Trade-offs in Hash Coding with Allowable Errors》中提出。布隆过滤器是一种基于Hash的高效查找结构，能够快速（常数时间内）回答“某个元素是否在一个集合内”的问题。</p>
+<h2 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h2><p>布隆过滤器（Bloom Filter）于 1970 年由 Burton Howard Bloom 在论文《Space&#x2F;Time Trade-offs in Hash Coding with Allowable Errors》中提出。布隆过滤器是一种基于Hash的高效查找结构，能够快速（常数时间内）回答“某个元素是否在一个集合内”的问题。</p>
 <p>布隆过滤器因为其高效性大量应用于网络和安全领域，例如信息检索（BigTable和HBase）、垃圾邮件规则、注册管理等。</p>
 <h3 id="基于Hash的快速查找"><a href="#基于Hash的快速查找" class="headerlink" title="基于Hash的快速查找"></a>基于Hash的快速查找</h3><p>在布隆过滤器之前，先来看基于 Hash 的快速查找算法。在前面的讲解中我们提到，Hash 可以将任意内容映射到一个固定长度的字符串，而且不同内容映射到相同串的概率很低。因此，这就构成了一个很好的“内容→索引”的生成关系。</p>
 <p>试想，如果给定一个内容和存储数组，通过构造 Hash 函数，让映射后的 Hash 值总不超过数组的大小，则可以实现快速的基于内容的查找。例如，内容 “hello world” 的 Hash 值如果是 “100”，则存放到数组的第 100 个单元上去。如果需要快速查找任意内容，如 “hello world” 字符串是否在存储系统中，只需要将其在常数时间内计算 Hash 值，并用 Hash 值查看系统中对应元素即可。该系统“完美地”实现了常数时间内的查找。</p>
 <p>然而，令人遗憾的是，当映射后的值限制在一定范围（如总数组的大小）内时，会发现 Hash 冲突的概率会变高，而且范围越小，冲突概率越大。很多时候，存储系统的大小又不能无限扩展，这就造成算法效率的下降。为了提高空间利用率，后来人们基于Hash算法的思想设计出了布隆过滤器结构。</p>
 <h3 id="更高效的布隆过滤器"><a href="#更高效的布隆过滤器" class="headerlink" title="更高效的布隆过滤器"></a>更高效的布隆过滤器</h3><p>布隆过滤器采用了多个 Hash 函数来提高空间利用率。对同一个给定输入来说，多个 Hash 函数计算出多个地址，分别在位串的这些地址上标记为 1。进行查找时，进行同样的计算过程，并查看对应元素，如果都为 1，则说明较大概率是存在该输入。如下图所示。</p>
-<p><img src="Blockchain-Cryptography-and-Network-Security/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8.png" alt="布隆过滤器"></p>
+<p><img src="/articles/Blockchain-Cryptography-and-Network-Security/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8.png" alt="布隆过滤器"></p>
 <p>布隆过滤器相对单个 Hash 算法查找，大大提高了空间利用率，可以使用较少的空间来表示较大集合的存在关系。</p>
 <p>实际上，无论是 Hash 算法，还是布隆过滤器，基本思想是一致的，都是基于内容的编址。Hash 函数存在冲突，布隆过滤器也存在冲突。这就造成了两种方法都存在着误报（false positive）的情况，但绝对不会漏报（false negative）。</p>
 <p>布隆过滤器在应用中误报率往往很低，例如，在使用 7 个不同 Hash 函数的情况下，记录 100 万个数据，采用 2 MB 大小的位串，整体的误判率将低于 1%。而传统的 Hash 查找算法的误报率将接近 10%。</p>
 <h2 id="同态加密"><a href="#同态加密" class="headerlink" title="同态加密"></a>同态加密</h2><h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>同态加密（homomorphic encryption）是一种特殊的加密方法，允许对密文进行处理得到仍然是加密的结果。即对密文直接进行处理，跟对明文进行处理后再对处理结果加密，得到的结果相同。从抽象代数的角度讲，保持了同态性。</p>
 <p>同态加密可以保证实现处理者无法访问到数据自身的信息。</p>
 <p>如果定义一个运算符 Δ，对加密算法E和解密算法D，满足：</p>
-<p>E(XΔY) = E(X) Δ E(Y)</p>
+<p>E(XΔY) &#x3D; E(X) Δ E(Y)</p>
 <p>则意味着对于该运算满足同态性。</p>
 <p>同态性来自代数领域，一般包括四种类型：加法同态、乘法同态、减法同态和除法同态。同时满足加法同态和乘法同态，则意味着是代数同态，称为全同态（full homomorphic）。同时满足四种同态性，则称为算数同态。</p>
 <p>对于计算机操作来讲，实现了全同态意味着对于所有处理都可以实现同态性。只能实现部分特定操作的同态性，称为特定同态（somewhat homomorphic）。</p>
@@ -365,34 +363,34 @@ var _hmt = _hmt || [];
 <p>现代密码学安全技术在设计上大量应用了十分专业的现代数学知识，如果读者希望成为这方面的专家，则需要进一步学习并深入掌握近现代的数学科学，特别是数论、抽象代数等相关内容。可以说，密码学安全学科是没有捷径可走的。</p>
 <p>另外，从应用的角度来看，一套完整的安全系统除了核心算法外，还包括协议、机制、系统、人员等多个方面。任何一个环节出现漏洞都将带来巨大的安全风险。因此，要实现高安全可靠的系统是十分困难的。</p>
 <p>区块链技术中大量利用了现代密码学的已有成果，包括哈希、加解密、签名、Merkle 树数据结构等。另一方面，区块链系统和诸多新的场景也对密码学和安全技术提出了很多新的需求，反过来也将促进相关学科的进一步发展。</p>
- 
+
       <!-- reward -->
-      
+
       <div id="reword-out">
         <div id="reward-btn">
           打赏
         </div>
       </div>
-      
+
     </div>
-    
+
 
     <!-- copyright -->
-    
+
     <div class="declare">
       <ul class="post-copyright">
         <li>
           <i class="ri-copyright-line"></i>
           <strong>版权声明： </strong>
-          
+
           本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
-          
+
         </li>
       </ul>
     </div>
-    
+
     <footer class="article-footer">
-       
+
 <div class="share-btn">
       <span class="share-sns share-outer">
         <i class="ri-share-forward-line"></i>
@@ -401,7 +399,7 @@ var _hmt = _hmt || [];
       <div class="share-wrap">
         <i class="arrow"></i>
         <div class="share-icons">
-          
+
           <a class="weibo share-sns" href="javascript:;" data-type="weibo">
             <i class="ri-weibo-fill"></i>
           </a>
@@ -417,7 +415,7 @@ var _hmt = _hmt || [];
           <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
             <i class="icon icon-qzone"></i>
           </a> -->
-          
+
           <a class="facebook share-sns" href="javascript:;" data-type="facebook">
             <i class="ri-facebook-circle-fill"></i>
           </a>
@@ -435,37 +433,37 @@ var _hmt = _hmt || [];
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Blockchain-Cryptography-and-Network-Security.html" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Blockchain-Cryptography-and-Network-Security.html" alt="微信分享二维码">
     </div>
 </div>
 
-<div id="share-mask"></div>  
+<div id="share-mask"></div>
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Blockchain/" rel="tag">Blockchain</a></li></ul>
 
     </footer>
   </div>
 
-   
+
   <nav class="article-nav">
-    
+
       <a href="/articles/Java-How-to-Learn-Java.html" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
-          
+
             巅峰之旅（一）如何学习 Java
-          
+
         </div>
       </a>
-    
-    
+
+
       <a href="/articles/Blockchain-Distributed-issues.html" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
         <div class="article-nav-title">区块链系列——分布式核心问题</div>
       </a>
-    
+
   </nav>
 
-   
+
 <!-- valine评论 -->
 <div id="vcomments-box">
   <div id="vcomments"></div>
@@ -513,8 +511,8 @@ var _hmt = _hmt || [];
   }
 </style>
 
- 
-     
+
+
 </article>
 
 </section>
@@ -523,45 +521,45 @@ var _hmt = _hmt || [];
     <ul>
       <li>
         Copyrights &copy;
-        2017-2021
+        2017-2026
         <i class="ri-heart-fill heart_icon"></i> Shadowalker
       </li>
     </ul>
     <ul>
       <li>
-        
-        
-        
+
+
+
         由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
         <span class="division">|</span>
         主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
+
       </li>
     </ul>
     <ul>
       <li>
-        
-        
+
+
         <span>
   <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
   <span class="division">|</span>
   <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
 </span>
-        
+
       </li>
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
       <li>
         <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
-        
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
       </li>
     </ul>
   </div>
@@ -580,52 +578,52 @@ var _hmt = _hmt || [];
     <aside class="sidebar on">
       <button class="navbar-toggle"></button>
 <nav class="navbar">
-  
+
   <div class="logo">
     <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
   </div>
-  
+
   <ul class="nav nav-main">
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/">主页</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/archives">归档</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/categories">分类</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/schedule">计划</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/about">关于</a>
     </li>
-    
+
   </ul>
 </nav>
 <nav class="navbar navbar-bottom">
   <ul class="nav">
     <li class="nav-item">
-      
+
       <a class="nav-item-link nav-item-search"  title="搜索">
         <i class="ri-search-line"></i>
       </a>
-      
-      
+
+
     </li>
   </ul>
 </nav>
@@ -649,22 +647,22 @@ var _hmt = _hmt || [];
   <span class="close"><i class="ri-close-line"></i></span>
   <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
-    
+
     <div class="reward-item">
       <img class="reward-img" src="/images/aliPay.jpeg">
       <span class="reward-type">支付宝</span>
     </div>
-    
-    
+
+
     <div class="reward-item">
       <img class="reward-img" src="/images/wechatPay.png">
       <span class="reward-type">微信</span>
     </div>
-    
+
   </div>
 </div>
-    
-<script src="/js/jquery-2.0.3.min.js"></script>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
 
 
 <script src="/js/lazyload.min.js"></script>
@@ -699,14 +697,14 @@ var _hmt = _hmt || [];
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
-    <!-- Background of PhotoSwipe. 
+    <!-- Background of PhotoSwipe.
          It's a separate element as animating opacity is faster than rgba(). -->
     <div class="pswp__bg"></div>
 
     <!-- Slides wrapper with overflow:hidden. -->
     <div class="pswp__scroll-wrap">
 
-        <!-- Container that holds slides. 
+        <!-- Container that holds slides.
             PhotoSwipe keeps only 3 of them in the DOM to save memory.
             Don't modify these 3 pswp__item elements, data is added later on. -->
         <div class="pswp__container">
@@ -822,7 +820,7 @@ var _hmt = _hmt || [];
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <script>
   var ayerConfig = {
     mathjax: true
@@ -852,7 +850,7 @@ var _hmt = _hmt || [];
 
 <link rel="stylesheet" href="/css/clipboard.css">
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="/js/clipboard-2.0.11.min.js"></script>
 <script>
   function wait(callback, seconds) {
     var timelag = null;
@@ -879,7 +877,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-checkbox-circle-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPIED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-checkbox-circle-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -895,7 +893,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-time-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPY FAILED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-time-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -915,8 +913,10 @@ var _hmt = _hmt || [];
 
 
 
-    
+
   </div>
-<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
 
 </html>

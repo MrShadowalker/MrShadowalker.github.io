@@ -6,42 +6,42 @@
 
 <head>
   <meta charset="utf-8" />
-   
-  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
-   
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
   <meta name="description" content="Valar Morghulis" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     秒杀系列（三）数据库与缓存双写问题的思考 |  Shadow.Net
   </title>
   <meta name="generator" content="hexo-theme-ayer">
-  
+
   <link rel="shortcut icon" href="/favicon.ico" />
-  
-  
+
+
 <link rel="stylesheet" href="/dist/main.css">
 
-  
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
 
-  
+
 <link rel="stylesheet" href="/css/custom.css">
 
-  
-  
+
+
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
 
-  
-  
 
-  
+
+
+
 <script>
 var _hmt = _hmt || [];
 (function() {
 	var hm = document.createElement("script");
 	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
-	var s = document.getElementsByTagName("script")[0]; 
+	var s = document.getElementsByTagName("script")[0];
 	s.parentNode.insertBefore(hm, s);
 })();
 </script>
@@ -50,15 +50,13 @@ var _hmt = _hmt || [];
 <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
 </head>
 
-</html>
-
 <body>
   <div id="app">
-    
-      
+
+
       <canvas width="1777" height="841"
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
-      
+
     <main class="content on">
       <section class="outer">
   <article
@@ -69,20 +67,24 @@ var _hmt = _hmt || [];
   data-scroll-reveal
 >
   <div class="article-inner">
-    
+
     <header class="article-header">
-       
+
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
   秒杀系列（三）数据库与缓存双写问题的思考
 </h1>
- 
+
 
     </header>
-     
+
     <div class="article-meta">
       <a href="/articles/Java-SecKill-DB-Cache-Inconsistent.html" class="article-date">
-  <time datetime="2021-07-26T02:49:14.000Z" itemprop="datePublished">2021-07-26</time>
-</a>   
+  <time datetime="2021-07-26T08:49:14.000Z" itemprop="datePublished">2021-07-26</time>
+</a>
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
@@ -101,47 +103,47 @@ var _hmt = _hmt || [];
         </span>
     </span>
 </div>
- 
+
     </div>
-      
+
     <div class="tocbot"></div>
 
 
 
 
-  
+
     <div class="article-entry" itemprop="articleBody">
-       
+
   <h1 id="缓存热点数据"><a href="#缓存热点数据" class="headerlink" title="缓存热点数据"></a>缓存热点数据</h1><p>在秒杀实际的业务中，一定有很多需要做缓存的场景，比如售卖的商品，包括名称、详情等。访问量很大的数据，可以算是“热点”数据了，尤其是一些读取量远大于写入量的数据，更应该被缓存，而不应该让请求打到数据库上。</p>
 <span id="more"></span>
 
 <h2 id="为何要使用缓存"><a href="#为何要使用缓存" class="headerlink" title="为何要使用缓存"></a>为何要使用缓存</h2><p>缓存是为了追求“快”而存在的。我们用代码举一个例子。</p>
 <p>拿出之前三篇文章的项目代码来，在其中增加两个查询库存的接口 getStockByDB 和 getStockByCache，分别表示从数据库和缓存查询某商品的库存量。</p>
 <p>随后我们用 JMeter 进行并发请求测试。（JMeter 的使用请参考第一篇秒杀系统文章）</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 查询库存：通过数据库查询库存</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/getStockByDB/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getStockByDB</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        count = stockService.getStockCountByDB(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;查询库存失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;查询库存失败&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;商品Id: [&#123;&#125;] 剩余库存为: [&#123;&#125;]&quot;</span>, sid, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;商品Id: %d 剩余库存为：%d&quot;</span>, sid, count);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 查询库存：通过缓存查询库存</span></span><br><span class="line"><span class="comment">  * 缓存命中：返回库存</span></span><br><span class="line"><span class="comment">  * 缓存未命中：查询数据库写入缓存并返回</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/getStockByCache/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getStockByCache</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    Integer count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        count = stockService.getStockCountByCache(sid);</span><br><span class="line">        <span class="keyword">if</span> (count == <span class="keyword">null</span>) &#123;</span><br><span class="line">            count = stockService.getStockCountByDB(sid);</span><br><span class="line">            log.info(<span class="string">&quot;缓存未命中，查询数据库，并写入缓存&quot;</span>);</span><br><span class="line">            stockService.setStockCountToCache(sid, count);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;查询库存失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;查询库存失败&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;商品Id: [&#123;&#125;] 剩余库存为: [&#123;&#125;]&quot;</span>, sid, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;商品Id: %d 剩余库存为：%d&quot;</span>, sid, count);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 查询库存：通过数据库查询库存</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/getStockByDB/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">String</span> <span class="title function_">getStockByDB</span><span class="params">(<span class="meta">@PathVariable</span> <span class="type">int</span> sid)</span> &#123;</span><br><span class="line">    <span class="type">int</span> count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        count = stockService.getStockCountByDB(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;查询库存失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;查询库存失败&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;商品Id: [&#123;&#125;] 剩余库存为: [&#123;&#125;]&quot;</span>, sid, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;商品Id: %d 剩余库存为：%d&quot;</span>, sid, count);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 查询库存：通过缓存查询库存</span></span><br><span class="line"><span class="comment">  * 缓存命中：返回库存</span></span><br><span class="line"><span class="comment">  * 缓存未命中：查询数据库写入缓存并返回</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/getStockByCache/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">String</span> <span class="title function_">getStockByCache</span><span class="params">(<span class="meta">@PathVariable</span> <span class="type">int</span> sid)</span> &#123;</span><br><span class="line">    Integer count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        count = stockService.getStockCountByCache(sid);</span><br><span class="line">        <span class="keyword">if</span> (count == <span class="literal">null</span>) &#123;</span><br><span class="line">            count = stockService.getStockCountByDB(sid);</span><br><span class="line">            log.info(<span class="string">&quot;缓存未命中，查询数据库，并写入缓存&quot;</span>);</span><br><span class="line">            stockService.setStockCountToCache(sid, count);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;查询库存失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;查询库存失败&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;商品Id: [&#123;&#125;] 剩余库存为: [&#123;&#125;]&quot;</span>, sid, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;商品Id: %d 剩余库存为：%d&quot;</span>, sid, count);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
 
 
 <p>在设置为 10000 个并发请求的情况下，运行 JMeter，结果首先出现了大量的报错，10000 个请求中 98% 的请求都直接失败了。</p>
 <p>打开日志，报错如下：</p>
-<p>![图片](Java-SecKill-DB-Cache-Inconsistent/JMeter 报错结果.png)</p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/JMeter%20%E6%8A%A5%E9%94%99%E7%BB%93%E6%9E%9C.png" alt="图片"></p>
 <p>原来是 SpringBoot 内置的 Tomcat 最大并发数搞的鬼，其默认值为 200，对于 10000 的并发，单机服务实在是力不从心。</p>
 <p>当然，你可以修改这里的并发数设置，但是你的小机器仍然可能会扛不住。</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E5%B9%B6%E5%8F%91%E6%95%B0%E8%AE%BE%E7%BD%AE.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E5%B9%B6%E5%8F%91%E6%95%B0%E8%AE%BE%E7%BD%AE.png" alt="图片"></p>
 <p>将其修改为如下配置后，我的小机器才在通过缓存拿库存的情况下，保证了10000个并发的100%返回请求：</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">server.tomcat.max-threads=10000</span><br><span class="line">server.tomcat.max-connections=10000</span><br></pre></td></tr></table></figure>
 
 
 
 <p>不使用缓存的情况下，吞吐量为 668 个请求每秒，并且有 5% 的请求由于服务压力实在太大，没有返回库存数据：</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片"></p>
 <p>使用缓存的情况下，吞吐量为2177个请求每秒：</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片"></p>
 <p>在这种“不严谨”的对比下，有缓存对于一台单机，性能提升了 3 倍多，如果在多台机器，更多并发的情况下，由于数据库有了更大的压力，缓存的性能优势应该会更加明显。</p>
 <p>测完了这个小实验，我看了眼我挂着 MySQL 的小水管腾讯云服务器，生怕他被这么高流量搞挂。这种突发的流量，指不定会被检测为异常攻击流量呢~</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9B%91%E6%8E%A7.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9B%91%E6%8E%A7.png" alt="图片"></p>
 <p>我用的是腾讯云服务器1C4G2M，活动买的，很便宜。</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E4%BA%91%E6%9C%8D%E5%8A%A1%E6%9C%9F%E9%85%8D%E7%BD%AE.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E4%BA%91%E6%9C%8D%E5%8A%A1%E6%9C%9F%E9%85%8D%E7%BD%AE.png" alt="图片"></p>
 <h2 id="哪类数据适合缓存"><a href="#哪类数据适合缓存" class="headerlink" title="哪类数据适合缓存"></a>哪类数据适合缓存</h2><p>缓存量大但又不常变化的数据，比如详情、评论等。对于那些经常变化的数据，其实并不适合缓存，一方面会增加系统的复杂性（缓存的更新，缓存脏数据），另一方面也给系统带来一定的不稳定性（缓存系统的维护）。</p>
 <p><strong>「但一些极端情况下，你需要将一些会变动的数据进行缓存，比如想要页面显示准实时的库存数，或者其他一些特殊业务场景。这时候你需要保证缓存不能（一直）有脏数据，这就需要再深入讨论一下。」</strong></p>
 <h2 id="缓存的利与弊"><a href="#缓存的利与弊" class="headerlink" title="缓存的利与弊"></a>缓存的利与弊</h2><p>我们到底该不该上缓存的，这其实也是个 trade-off 的问题。</p>
@@ -219,7 +221,7 @@ var _hmt = _hmt || [];
 <p>最终一致性强调的是系统中所有的数据副本，在经过一段时间的同步后，最终能够达到一个一致的状态。</p>
 <p>因此，最终一致性的本质是需要系统保证最终数据能够达到一致，而不需要实时保证系统数据的强一致性。</p>
 </blockquote>
-<p>大佬们给出了到达最终一致性的解决思路，主要是针对上面两种双写策略（先删缓存，再更新数据库/先更新数据库，再删缓存）导致的脏数据问题，进行相应的处理，来保证最终一致性。</p>
+<p>大佬们给出了到达最终一致性的解决思路，主要是针对上面两种双写策略（先删缓存，再更新数据库&#x2F;先更新数据库，再删缓存）导致的脏数据问题，进行相应的处理，来保证最终一致性。</p>
 <h3 id="延时双删"><a href="#延时双删" class="headerlink" title="延时双删"></a>延时双删</h3><p>问：先删除缓存，再更新数据库中避免脏数据？</p>
 <p>答案：采用延时双删策略。</p>
 <p>上文我们提到，在先删除缓存，再更新数据库的情况下，如果不采用给缓存设置过期时间策略，该数据永远都是脏数据。</p>
@@ -255,7 +257,7 @@ var _hmt = _hmt || [];
 <p>「解决方案就是再加上一个重试机制，保证删除缓存成功。」</p>
 <p>参考孤独烟老师给的方案图：</p>
 <p>「方案一：」</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6%E6%96%B9%E6%A1%88%E4%B8%80.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6%E6%96%B9%E6%A1%88%E4%B8%80.png" alt="图片"></p>
 <blockquote>
 <p>流程如下所示</p>
 <p>（1）更新数据库数据</p>
@@ -266,7 +268,7 @@ var _hmt = _hmt || [];
 <p>然而，该方案有一个缺点，对业务线代码造成大量的侵入。于是有了方案二，在方案二中，启动一个订阅程序去订阅数据库的binlog，获得需要操作的数据。在应用程序中，另起一段程序，获得这个订阅程序传来的信息，进行删除缓存操作。</p>
 </blockquote>
 <p>方案二：</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6%E6%96%B9%E6%A1%88%E4%BA%8C.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6%E6%96%B9%E6%A1%88%E4%BA%8C.png" alt="图片"></p>
 <blockquote>
 <p>流程如下图所示：</p>
 <p>（1）更新数据库数据</p>
@@ -281,35 +283,35 @@ var _hmt = _hmt || [];
 <p>好了，到这里我们已经把缓存双写一致性的思路彻底梳理了一遍，下面就是我对这几种思路徒手写的实战代码，方便有需要的朋友参考。</p>
 <h2 id="实战：先删除缓存，再更新数据库"><a href="#实战：先删除缓存，再更新数据库" class="headerlink" title="实战：先删除缓存，再更新数据库"></a>实战：先删除缓存，再更新数据库</h2><p>终于到了实战，我们在秒杀项目的代码上增加接口：先删除缓存，再更新数据库</p>
 <p>OrderController 中新增：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先删除缓存，再更新数据库</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV1/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createOrderWithCacheV1</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        orderService.createPessimisticOrder(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先删除缓存，再更新数据库</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV1/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">String</span> <span class="title function_">createOrderWithCacheV1</span><span class="params">(<span class="meta">@PathVariable</span> <span class="type">int</span> sid)</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        orderService.createPessimisticOrder(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 
 
 
 <p>stockService中新增：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">delStockCountCache</span><span class="params">(<span class="keyword">int</span> id)</span> </span>&#123;</span><br><span class="line">    String hashKey = CacheKey.STOCK_COUNT.getKey() + <span class="string">&quot;_&quot;</span> + id;</span><br><span class="line">    stringRedisTemplate.delete(hashKey);</span><br><span class="line">    log.info(<span class="string">&quot;删除商品id：[&#123;&#125;] 缓存&quot;</span>, id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">void</span> <span class="title function_">delStockCountCache</span><span class="params">(<span class="type">int</span> id)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">hashKey</span> <span class="operator">=</span> CacheKey.STOCK_COUNT.getKey() + <span class="string">&quot;_&quot;</span> + id;</span><br><span class="line">    stringRedisTemplate.delete(hashKey);</span><br><span class="line">    log.info(<span class="string">&quot;删除商品id：[&#123;&#125;] 缓存&quot;</span>, id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 
 <p>其他涉及的代码都在之前三篇文章中有介绍，并且可以直接去Github拿到项目源码，就不在这里重复贴了。</p>
 <h2 id="实战：先更新数据库，再删缓存"><a href="#实战：先更新数据库，再删缓存" class="headerlink" title="实战：先更新数据库，再删缓存"></a>实战：先更新数据库，再删缓存</h2><p>如果是先更新数据库，再删缓存，那么代码只是在业务顺序上颠倒了一下，这里就只贴OrderController中新增：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先更新数据库，再删缓存</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV2/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createOrderWithCacheV2</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        orderService.createPessimisticOrder(sid);</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先更新数据库，再删缓存</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV2/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">String</span> <span class="title function_">createOrderWithCacheV2</span><span class="params">(<span class="meta">@PathVariable</span> <span class="type">int</span> sid)</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        orderService.createPessimisticOrder(sid);</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 
 
 <h2 id="实战：缓存延时双删"><a href="#实战：缓存延时双删" class="headerlink" title="实战：缓存延时双删"></a>实战：缓存延时双删</h2><p>如何做延时双删呢，最好的方法是开设一个线程池，在线程中删除key，而不是使用Thread.sleep进行等待，这样会阻塞用户的请求。</p>
 <p>更新前先删除缓存，然后更新数据，再延时删除缓存。</p>
 <p>OrderController中新增接口：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 延时时间：预估读数据库数据业务逻辑的耗时，用来做缓存再删除</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> DELAY_MILLSECONDS = <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先删除缓存，再更新数据库，缓存延时双删</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV3/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createOrderWithCacheV3</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        count = orderService.createPessimisticOrder(sid);</span><br><span class="line">        <span class="comment">// 延时指定时间后再次删除缓存</span></span><br><span class="line">        cachedThreadPool.execute(<span class="keyword">new</span> delCacheByThread(sid));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 延时时间：预估读数据库数据业务逻辑的耗时，用来做缓存再删除</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">DELAY_MILLSECONDS</span> <span class="operator">=</span> <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先删除缓存，再更新数据库，缓存延时双删</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV3/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">String</span> <span class="title function_">createOrderWithCacheV3</span><span class="params">(<span class="meta">@PathVariable</span> <span class="type">int</span> sid)</span> &#123;</span><br><span class="line">    <span class="type">int</span> count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        count = orderService.createPessimisticOrder(sid);</span><br><span class="line">        <span class="comment">// 延时指定时间后再次删除缓存</span></span><br><span class="line">        cachedThreadPool.execute(<span class="keyword">new</span> <span class="title class_">delCacheByThread</span>(sid));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>OrderController中新增线程池：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 延时双删线程池</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> ExecutorService cachedThreadPool = <span class="keyword">new</span> ThreadPoolExecutor(<span class="number">0</span>, Integer.MAX_VALUE, <span class="number">60L</span>, TimeUnit.SECONDS,<span class="keyword">new</span> SynchronousQueue&lt;Runnable&gt;());</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 缓存再删除线程</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">delCacheByThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> sid;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">delCacheByThread</span><span class="params">(<span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.sid = sid;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            log.info(<span class="string">&quot;异步执行缓存再删除，商品id：[&#123;&#125;]， 首先休眠：[&#123;&#125;] 毫秒&quot;</span>, sid, DELAY_MILLSECONDS);</span><br><span class="line">            Thread.sleep(DELAY_MILLSECONDS);</span><br><span class="line">            stockService.delStockCountCache(sid);</span><br><span class="line">            log.info(<span class="string">&quot;再次删除商品id：[&#123;&#125;] 缓存&quot;</span>, sid);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            log.error(<span class="string">&quot;delCacheByThread执行出错&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 延时双删线程池</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="type">ExecutorService</span> <span class="variable">cachedThreadPool</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(<span class="number">0</span>, Integer.MAX_VALUE, <span class="number">60L</span>, TimeUnit.SECONDS,<span class="keyword">new</span> <span class="title class_">SynchronousQueue</span>&lt;Runnable&gt;());</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 缓存再删除线程</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">class</span> <span class="title class_">delCacheByThread</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> sid;</span><br><span class="line">    <span class="type">public</span> <span class="title function_">delCacheByThread</span><span class="params">(<span class="type">int</span> sid)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.sid = sid;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            log.info(<span class="string">&quot;异步执行缓存再删除，商品id：[&#123;&#125;]， 首先休眠：[&#123;&#125;] 毫秒&quot;</span>, sid, DELAY_MILLSECONDS);</span><br><span class="line">            Thread.sleep(DELAY_MILLSECONDS);</span><br><span class="line">            stockService.delStockCountCache(sid);</span><br><span class="line">            log.info(<span class="string">&quot;再次删除商品id：[&#123;&#125;] 缓存&quot;</span>, sid);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            log.error(<span class="string">&quot;delCacheByThread执行出错&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
 
 
 
 <p>来试验一下，请求接口 createOrderWithCacheV3：</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E8%AF%95%E9%AA%8C%E8%AF%B7%E6%B1%82%E6%8E%A5%E5%8F%A3%E5%BC%82%E6%AD%A5%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E8%AF%95%E9%AA%8C%E8%AF%B7%E6%B1%82%E6%8E%A5%E5%8F%A3%E5%BC%82%E6%AD%A5%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98.png" alt="图片"></p>
 <p>日志中，做到了两次删除：</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E8%AF%95%E9%AA%8C%E8%AF%B7%E6%B1%82%E6%8E%A5%E5%8F%A3%E5%BC%82%E6%AD%A5%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E6%97%A5%E5%BF%97.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E8%AF%95%E9%AA%8C%E8%AF%B7%E6%B1%82%E6%8E%A5%E5%8F%A3%E5%BC%82%E6%AD%A5%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E6%97%A5%E5%BF%97.png" alt="图片"></p>
 <h2 id="实战：删除缓存重试机制"><a href="#实战：删除缓存重试机制" class="headerlink" title="实战：删除缓存重试机制"></a>实战：删除缓存重试机制</h2><p>上文提到了，要解决删除失败的问题，需要用到消息队列，进行删除操作的重试。这里我们为了达到效果，接入了 RabbitMq，并且需要在接口中写发送消息，并且需要消费者常驻来消费消息。Spring 整合 RabbitMq 还是比较简单的，我把简单的整合代码也贴出来。</p>
 <p>pom.xml 新增 RabbitMq 的依赖：</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-amqp<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
@@ -317,18 +319,18 @@ var _hmt = _hmt || [];
 
 
 <p>写一个RabbitMqConfig：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RabbitMqConfig</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Queue <span class="title">delCacheQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Queue(<span class="string">&quot;delCache&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RabbitMqConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">Queue</span> <span class="title function_">delCacheQueue</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Queue</span>(<span class="string">&quot;delCache&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>添加一个消费者：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@RabbitListener(queues = &quot;delCache&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DelCacheReceiver</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StockService stockService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RabbitHandler</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(String message)</span> </span>&#123;</span><br><span class="line">        log.info(<span class="string">&quot;DelCacheReceiver收到消息: &quot;</span> + message);</span><br><span class="line">        log.info(<span class="string">&quot;DelCacheReceiver开始删除缓存: &quot;</span> + message);</span><br><span class="line">        stockService.delStockCountCache(Integer.parseInt(message));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@RabbitListener(queues = &quot;delCache&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DelCacheReceiver</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StockService stockService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RabbitHandler</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">void</span> <span class="title function_">process</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;DelCacheReceiver收到消息: &quot;</span> + message);</span><br><span class="line">        log.info(<span class="string">&quot;DelCacheReceiver开始删除缓存: &quot;</span> + message);</span><br><span class="line">        stockService.delStockCountCache(Integer.parseInt(message));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>OrderController中新增接口：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先更新数据库，再删缓存，删除缓存重试机制</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV4/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">createOrderWithCacheV4</span><span class="params">(<span class="meta">@PathVariable</span> <span class="keyword">int</span> sid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        count = orderService.createPessimisticOrder(sid);</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">        <span class="comment">// 延时指定时间后再次删除缓存</span></span><br><span class="line">        <span class="comment">// cachedThreadPool.execute(new delCacheByThread(sid));</span></span><br><span class="line">        <span class="comment">// 假设上述再次删除缓存没成功，通知消息队列进行删除缓存</span></span><br><span class="line">        sendDelCache(String.valueOf(sid));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * 下单接口：先更新数据库，再删缓存，删除缓存重试机制</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> sid</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/createOrderWithCacheV4/&#123;sid&#125;&quot;)</span></span><br><span class="line"><span class="meta">@ResponseBody</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">String</span> <span class="title function_">createOrderWithCacheV4</span><span class="params">(<span class="meta">@PathVariable</span> <span class="type">int</span> sid)</span> &#123;</span><br><span class="line">    <span class="type">int</span> count;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 完成扣库存下单事务</span></span><br><span class="line">        count = orderService.createPessimisticOrder(sid);</span><br><span class="line">        <span class="comment">// 删除库存缓存</span></span><br><span class="line">        stockService.delStockCountCache(sid);</span><br><span class="line">        <span class="comment">// 延时指定时间后再次删除缓存</span></span><br><span class="line">        <span class="comment">// cachedThreadPool.execute(new delCacheByThread(sid));</span></span><br><span class="line">        <span class="comment">// 假设上述再次删除缓存没成功，通知消息队列进行删除缓存</span></span><br><span class="line">        sendDelCache(String.valueOf(sid));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;购买失败：[&#123;&#125;]&quot;</span>, e.getMessage());</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;购买失败，库存不足&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="string">&quot;购买成功，剩余库存为: [&#123;&#125;]&quot;</span>, count);</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;购买成功，剩余库存为：%d&quot;</span>, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 
 
 <p>访问createOrderWithCacheV4：</p>
-<p><img src="Java-SecKill-DB-Cache-Inconsistent/%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95%E5%AE%9E%E6%88%98.png" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-DB-Cache-Inconsistent/%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95%E5%AE%9E%E6%88%98.png" alt="图片"></p>
 <p>可以看到，我们先完成了下单，然后删除了缓存，并且假设延迟删除缓存失败了，发送给消息队列重试的消息，消息队列收到消息后再去删除缓存。</p>
 <h2 id="实战：读取binlog异步删除缓存"><a href="#实战：读取binlog异步删除缓存" class="headerlink" title="实战：读取binlog异步删除缓存"></a>实战：读取binlog异步删除缓存</h2><p>我们需要用到阿里开源的canal来读取binlog进行缓存的异步删除。</p>
 <p>不过很蛋疼的是，这次文章的工作量实在有点太大了，连续写代码和整理文字身体有点吃不消了，不知道你们有没有学累。我准备把canal之后单开一个文章写，可能就是第五篇，也可能是单开一个canal的文章。我得先休息会，这里就留一个坑把。</p>
@@ -350,34 +352,34 @@ var _hmt = _hmt || [];
 <li>缓存做不到绝对一致性，但可以做到最终一致性。</li>
 <li>对于需要保证缓存数据库数据一致的情况，请尽量考虑对一致性到底有多高要求，选定合适的方案，避免过度设计。</li>
 </ul>
- 
+
       <!-- reward -->
-      
+
       <div id="reword-out">
         <div id="reward-btn">
           打赏
         </div>
       </div>
-      
+
     </div>
-    
+
 
     <!-- copyright -->
-    
+
     <div class="declare">
       <ul class="post-copyright">
         <li>
           <i class="ri-copyright-line"></i>
           <strong>版权声明： </strong>
-          
+
           本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
-          
+
         </li>
       </ul>
     </div>
-    
+
     <footer class="article-footer">
-       
+
 <div class="share-btn">
       <span class="share-sns share-outer">
         <i class="ri-share-forward-line"></i>
@@ -386,7 +388,7 @@ var _hmt = _hmt || [];
       <div class="share-wrap">
         <i class="arrow"></i>
         <div class="share-icons">
-          
+
           <a class="weibo share-sns" href="javascript:;" data-type="weibo">
             <i class="ri-weibo-fill"></i>
           </a>
@@ -402,7 +404,7 @@ var _hmt = _hmt || [];
           <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
             <i class="icon icon-qzone"></i>
           </a> -->
-          
+
           <a class="facebook share-sns" href="javascript:;" data-type="facebook">
             <i class="ri-facebook-circle-fill"></i>
           </a>
@@ -420,35 +422,37 @@ var _hmt = _hmt || [];
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-SecKill-DB-Cache-Inconsistent.html" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Java-SecKill-DB-Cache-Inconsistent.html" alt="微信分享二维码">
     </div>
 </div>
 
-<div id="share-mask"></div>  
+<div id="share-mask"></div>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">数据一致性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li></ul>
+
     </footer>
   </div>
 
-   
+
   <nav class="article-nav">
-    
-      <a href="/articles/Java-SecKill-Distributed-Design.html" class="article-nav-link">
+
+      <a href="/articles/AI-Knowledge-Evidence.html" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
-          
-            秒杀系列（零）高并发设计
-          
+
+            知识库能搜到，为什么还是答不准？
+
         </div>
       </a>
-    
-    
-      <a href="/articles/Java-Idempotent-Design.html" class="article-nav-link">
+
+
+      <a href="/articles/Java-SecKill-Asynchronous.html" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">Java 幂等设计</div>
+        <div class="article-nav-title">秒杀系列（二）如何优雅地异步下订单</div>
       </a>
-    
+
   </nav>
 
-   
+
 <!-- valine评论 -->
 <div id="vcomments-box">
   <div id="vcomments"></div>
@@ -496,8 +500,8 @@ var _hmt = _hmt || [];
   }
 </style>
 
- 
-     
+
+
 </article>
 
 </section>
@@ -506,45 +510,45 @@ var _hmt = _hmt || [];
     <ul>
       <li>
         Copyrights &copy;
-        2017-2021
+        2017-2026
         <i class="ri-heart-fill heart_icon"></i> Shadowalker
       </li>
     </ul>
     <ul>
       <li>
-        
-        
-        
+
+
+
         由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
         <span class="division">|</span>
         主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
+
       </li>
     </ul>
     <ul>
       <li>
-        
-        
+
+
         <span>
   <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
   <span class="division">|</span>
   <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
 </span>
-        
+
       </li>
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
       <li>
         <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
-        
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
       </li>
     </ul>
   </div>
@@ -563,52 +567,52 @@ var _hmt = _hmt || [];
     <aside class="sidebar on">
       <button class="navbar-toggle"></button>
 <nav class="navbar">
-  
+
   <div class="logo">
     <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
   </div>
-  
+
   <ul class="nav nav-main">
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/">主页</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/archives">归档</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/categories">分类</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/schedule">计划</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/about">关于</a>
     </li>
-    
+
   </ul>
 </nav>
 <nav class="navbar navbar-bottom">
   <ul class="nav">
     <li class="nav-item">
-      
+
       <a class="nav-item-link nav-item-search"  title="搜索">
         <i class="ri-search-line"></i>
       </a>
-      
-      
+
+
     </li>
   </ul>
 </nav>
@@ -632,22 +636,22 @@ var _hmt = _hmt || [];
   <span class="close"><i class="ri-close-line"></i></span>
   <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
-    
+
     <div class="reward-item">
       <img class="reward-img" src="/images/aliPay.jpeg">
       <span class="reward-type">支付宝</span>
     </div>
-    
-    
+
+
     <div class="reward-item">
       <img class="reward-img" src="/images/wechatPay.png">
       <span class="reward-type">微信</span>
     </div>
-    
+
   </div>
 </div>
-    
-<script src="/js/jquery-2.0.3.min.js"></script>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
 
 
 <script src="/js/lazyload.min.js"></script>
@@ -682,14 +686,14 @@ var _hmt = _hmt || [];
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
-    <!-- Background of PhotoSwipe. 
+    <!-- Background of PhotoSwipe.
          It's a separate element as animating opacity is faster than rgba(). -->
     <div class="pswp__bg"></div>
 
     <!-- Slides wrapper with overflow:hidden. -->
     <div class="pswp__scroll-wrap">
 
-        <!-- Container that holds slides. 
+        <!-- Container that holds slides.
             PhotoSwipe keeps only 3 of them in the DOM to save memory.
             Don't modify these 3 pswp__item elements, data is added later on. -->
         <div class="pswp__container">
@@ -805,7 +809,7 @@ var _hmt = _hmt || [];
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <script>
   var ayerConfig = {
     mathjax: true
@@ -835,7 +839,7 @@ var _hmt = _hmt || [];
 
 <link rel="stylesheet" href="/css/clipboard.css">
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="/js/clipboard-2.0.11.min.js"></script>
 <script>
   function wait(callback, seconds) {
     var timelag = null;
@@ -862,7 +866,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-checkbox-circle-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPIED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-checkbox-circle-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -878,7 +882,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-time-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPY FAILED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-time-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -898,8 +902,10 @@ var _hmt = _hmt || [];
 
 
 
-    
+
   </div>
-<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
 
 </html>

@@ -6,42 +6,42 @@
 
 <head>
   <meta charset="utf-8" />
-   
+
   <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
-   
+
   <meta name="description" content="Valar Morghulis" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     秒杀系列（二）如何优雅地异步下订单 |  Shadow.Net
   </title>
   <meta name="generator" content="hexo-theme-ayer">
-  
+
   <link rel="shortcut icon" href="/favicon.ico" />
-  
-  
+
+
 <link rel="stylesheet" href="/dist/main.css">
 
-  
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
 
-  
+
 <link rel="stylesheet" href="/css/custom.css">
 
-  
-  
+
+
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
 
-  
-  
 
-  
+
+
+
 <script>
 var _hmt = _hmt || [];
 (function() {
 	var hm = document.createElement("script");
 	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
-	var s = document.getElementsByTagName("script")[0]; 
+	var s = document.getElementsByTagName("script")[0];
 	s.parentNode.insertBefore(hm, s);
 })();
 </script>
@@ -50,15 +50,13 @@ var _hmt = _hmt || [];
 <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
 </head>
 
-</html>
-
 <body>
   <div id="app">
-    
-      
+
+
       <canvas width="1777" height="841"
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
-      
+
     <main class="content on">
       <section class="outer">
   <article
@@ -69,24 +67,24 @@ var _hmt = _hmt || [];
   data-scroll-reveal
 >
   <div class="article-inner">
-    
+
     <header class="article-header">
-       
+
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
   秒杀系列（二）如何优雅地异步下订单
 </h1>
- 
+
 
     </header>
-     
+
     <div class="article-meta">
       <a href="/articles/Java-SecKill-Asynchronous.html" class="article-date">
   <time datetime="2021-07-26T07:24:40.000Z" itemprop="datePublished">2021-07-26</time>
-</a> 
+</a>
   <div class="article-category">
     <a class="article-category-link" href="/categories/Java/">Java</a>
   </div>
-  
+
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
@@ -105,17 +103,17 @@ var _hmt = _hmt || [];
         </span>
     </span>
 </div>
- 
+
     </div>
-      
+
     <div class="tocbot"></div>
 
 
 
 
-  
+
     <div class="article-entry" itemprop="articleBody">
-       
+
   <h1 id="简单的订单异步处理实现"><a href="#简单的订单异步处理实现" class="headerlink" title="简单的订单异步处理实现"></a>简单的订单异步处理实现</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>前面几篇文章，我们从 <strong>「限流角度，缓存角度」</strong> 来优化了用户下单的速度，减少了服务器和数据库的压力。这些处理对于一个秒杀系统都是非常重要的，并且效果立竿见影，那还有什么操作也能有立竿见影的效果呢？答案是对于下单的异步处理。</p>
 <p>在秒杀系统用户进行抢购的过程中，由于在同一时间会有大量请求涌入服务器，如果每个请求都立即访问数据库进行扣减库存+写入订单的操作，对数据库的压力是巨大的。</p>
 <p>如何减轻数据库的压力呢，<strong>「我们将每一条秒杀的请求存入消息队列（例如RabbitMQ）中，放入消息队列后，给用户返回类似“抢购请求发送成功”的结果。而在消息队列中，我们将收到的下订单请求一个个的写入数据库中」</strong>，比起多线程同步修改数据库的操作，大大缓解了数据库的连接压力，最主要的好处就表现在数据库连接的减少：</p>
@@ -191,7 +189,7 @@ var _hmt = _hmt || [];
 <p><strong>「可以看到，非异步的情况下，吞吐量是 37 个请求/秒，而异步情况下，我们的接只是做了两个事情，检查缓存中库存+发消息给消息队列，所以吞吐量为 600 个请求/秒。」</strong></p>
 <p>在发送完请求后，消息队列中立刻开始处理消息：</p>
 <p><img src="Java-SecKill-Asynchronous/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E5%A4%84%E7%90%86%E6%B6%88%E6%81%AF.png" alt="img"></p>
-<p><img src="../../../workSpace/secKill/secKill-doc/%E5%A6%82%E4%BD%95%E4%BC%98%E9%9B%85%E7%9A%84%E5%AE%9E%E7%8E%B0%E8%AE%A2%E5%8D%95%E5%BC%82%E6%AD%A5%E5%A4%84%E7%90%86.assets/640-20210221145615297" alt="图片"></p>
+<p><img src="/articles/Java-SecKill-Asynchronous/async-order-flow.webp" alt="图片"></p>
 <p>我截图了在 500 个库存刚刚好消耗完的时候的日志，可以看到，一旦库存没有了，消息队列就完成不了扣减库存的操作，就不会将订单写入数据库，也不会向缓存中记录用户已经购买了该商品的消息。</p>
 <p><img src="Java-SecKill-Asynchronous/%E5%BA%93%E5%AD%98%E5%8D%96%E5%AE%8C%E6%97%B6%E5%89%8D%E5%90%8E%E6%96%87%E6%97%A5%E5%BF%97.png" alt="图片"></p>
 <h1 id="更加优雅的实现"><a href="#更加优雅的实现" class="headerlink" title="更加优雅的实现"></a>更加优雅的实现</h1><p>那么问题来了，我们实现了上面的异步处理后，用户那边得到的结果是怎么样的呢？</p>
@@ -233,34 +231,34 @@ var _hmt = _hmt || [];
 <li>…</li>
 </ul>
 <p>当然，其他内容的文章也会不断积累总结啦。</p>
- 
+
       <!-- reward -->
-      
+
       <div id="reword-out">
         <div id="reward-btn">
           打赏
         </div>
       </div>
-      
+
     </div>
-    
+
 
     <!-- copyright -->
-    
+
     <div class="declare">
       <ul class="post-copyright">
         <li>
           <i class="ri-copyright-line"></i>
           <strong>版权声明： </strong>
-          
+
           本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
-          
+
         </li>
       </ul>
     </div>
-    
+
     <footer class="article-footer">
-       
+
 <div class="share-btn">
       <span class="share-sns share-outer">
         <i class="ri-share-forward-line"></i>
@@ -269,7 +267,7 @@ var _hmt = _hmt || [];
       <div class="share-wrap">
         <i class="arrow"></i>
         <div class="share-icons">
-          
+
           <a class="weibo share-sns" href="javascript:;" data-type="weibo">
             <i class="ri-weibo-fill"></i>
           </a>
@@ -285,7 +283,7 @@ var _hmt = _hmt || [];
           <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
             <i class="icon icon-qzone"></i>
           </a> -->
-          
+
           <a class="facebook share-sns" href="javascript:;" data-type="facebook">
             <i class="ri-facebook-circle-fill"></i>
           </a>
@@ -307,24 +305,24 @@ var _hmt = _hmt || [];
     </div>
 </div>
 
-<div id="share-mask"></div>  
+<div id="share-mask"></div>
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
 
-   
+
   <nav class="article-nav">
-    
-    
+
+
       <a href="/articles/Java-SecKill-Prevent-Oversold.html" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
         <div class="article-nav-title">秒杀系列（一）防止超卖</div>
       </a>
-    
+
   </nav>
 
-   
+
 <!-- valine评论 -->
 <div id="vcomments-box">
   <div id="vcomments"></div>
@@ -372,8 +370,8 @@ var _hmt = _hmt || [];
   }
 </style>
 
- 
-     
+
+
 </article>
 
 </section>
@@ -388,39 +386,39 @@ var _hmt = _hmt || [];
     </ul>
     <ul>
       <li>
-        
-        
-        
+
+
+
         由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
         <span class="division">|</span>
         主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
+
       </li>
     </ul>
     <ul>
       <li>
-        
-        
+
+
         <span>
   <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
   <span class="division">|</span>
   <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
 </span>
-        
+
       </li>
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
       <li>
         <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
-        
+
+        <script type="text/javascript" src="https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805"></script>
+
       </li>
     </ul>
   </div>
@@ -439,52 +437,52 @@ var _hmt = _hmt || [];
     <aside class="sidebar on">
       <button class="navbar-toggle"></button>
 <nav class="navbar">
-  
+
   <div class="logo">
     <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
   </div>
-  
+
   <ul class="nav nav-main">
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/">主页</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/archives">归档</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/categories">分类</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/schedule">计划</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/about">关于</a>
     </li>
-    
+
   </ul>
 </nav>
 <nav class="navbar navbar-bottom">
   <ul class="nav">
     <li class="nav-item">
-      
+
       <a class="nav-item-link nav-item-search"  title="搜索">
         <i class="ri-search-line"></i>
       </a>
-      
-      
+
+
     </li>
   </ul>
 </nav>
@@ -508,22 +506,22 @@ var _hmt = _hmt || [];
   <span class="close"><i class="ri-close-line"></i></span>
   <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
-    
+
     <div class="reward-item">
       <img class="reward-img" src="/images/aliPay.jpeg">
       <span class="reward-type">支付宝</span>
     </div>
-    
-    
+
+
     <div class="reward-item">
       <img class="reward-img" src="/images/wechatPay.png">
       <span class="reward-type">微信</span>
     </div>
-    
+
   </div>
 </div>
-    
-<script src="/js/jquery-2.0.3.min.js"></script>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
 
 
 <script src="/js/lazyload.min.js"></script>
@@ -558,14 +556,14 @@ var _hmt = _hmt || [];
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
-    <!-- Background of PhotoSwipe. 
+    <!-- Background of PhotoSwipe.
          It's a separate element as animating opacity is faster than rgba(). -->
     <div class="pswp__bg"></div>
 
     <!-- Slides wrapper with overflow:hidden. -->
     <div class="pswp__scroll-wrap">
 
-        <!-- Container that holds slides. 
+        <!-- Container that holds slides.
             PhotoSwipe keeps only 3 of them in the DOM to save memory.
             Don't modify these 3 pswp__item elements, data is added later on. -->
         <div class="pswp__container">
@@ -681,7 +679,7 @@ var _hmt = _hmt || [];
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <script>
   var ayerConfig = {
     mathjax: true
@@ -711,7 +709,7 @@ var _hmt = _hmt || [];
 
 <link rel="stylesheet" href="/css/clipboard.css">
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="/js/clipboard-2.0.11.min.js"></script>
 <script>
   function wait(callback, seconds) {
     var timelag = null;
@@ -738,7 +736,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-checkbox-circle-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPIED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-checkbox-circle-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -754,7 +752,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-time-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPY FAILED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-time-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -774,7 +772,7 @@ var _hmt = _hmt || [];
 
 
 
-    
+
   </div>
 <script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
 

@@ -6,42 +6,42 @@
 
 <head>
   <meta charset="utf-8" />
-   
-  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
-   
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
   <meta name="description" content="Valar Morghulis" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     EDAS ECS 应用托管 |  Shadow.Net
   </title>
   <meta name="generator" content="hexo-theme-ayer">
-  
+
   <link rel="shortcut icon" href="/favicon.ico" />
-  
-  
+
+
 <link rel="stylesheet" href="/dist/main.css">
 
-  
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
 
-  
+
 <link rel="stylesheet" href="/css/custom.css">
 
-  
-  
+
+
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
 
-  
-  
 
-  
+
+
+
 <script>
 var _hmt = _hmt || [];
 (function() {
 	var hm = document.createElement("script");
 	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
-	var s = document.getElementsByTagName("script")[0]; 
+	var s = document.getElementsByTagName("script")[0];
 	s.parentNode.insertBefore(hm, s);
 })();
 </script>
@@ -50,15 +50,13 @@ var _hmt = _hmt || [];
 <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
 </head>
 
-</html>
-
 <body>
   <div id="app">
-    
-      
+
+
       <canvas width="1777" height="841"
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
-      
+
     <main class="content on">
       <section class="outer">
   <article
@@ -69,30 +67,30 @@ var _hmt = _hmt || [];
   data-scroll-reveal
 >
   <div class="article-inner">
-    
+
     <header class="article-header">
-       
+
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
   EDAS ECS 应用托管
 </h1>
- 
+
 
     </header>
-     
+
     <div class="article-meta">
       <a href="/articles/Java-Framework-EDAS-ECS.html" class="article-date">
   <time datetime="2021-07-20T09:14:34.000Z" itemprop="datePublished">2021-07-20</time>
-</a> 
+</a>
   <div class="article-category">
     <a class="article-category-link" href="/categories/Java/">Java</a>
   </div>
-  
+
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">2k</span>
+            <span class="post-count">1.9k</span>
         </span>
     </span>
 
@@ -101,25 +99,25 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">7 分钟</span>
+            <span class="post-count">6 分钟</span>
         </span>
     </span>
 </div>
- 
+
     </div>
-      
+
     <div class="tocbot"></div>
 
 
 
 
-  
+
     <div class="article-entry" itemprop="articleBody">
-       
-  <p>您可以将 Java 应用托管到 EDAS 的 ECS 集群或混合云 ECS 集群。EDAS 为托管的应用提供了生命周期管理、CI/CD、监控、运维等一系列功能。</p>
+
+  <p>您可以将 Java 应用托管到 EDAS 的 ECS 集群或混合云 ECS 集群。EDAS 为托管的应用提供了生命周期管理、CI&#x2F;CD、监控、运维等一系列功能。</p>
 <span id="more"></span>
 
-<h1 id="应用托管概述"><a href="#应用托管概述" class="headerlink" title="应用托管概述"></a>应用托管概述</h1><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>![ECS应用托管功能总览](Java-Framework-EDAS-ECS/ECS 应用托管概览.png)</p>
+<h1 id="应用托管概述"><a href="#应用托管概述" class="headerlink" title="应用托管概述"></a>应用托管概述</h1><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p><img src="/articles/Java-Framework-EDAS-ECS/ECS%20%E5%BA%94%E7%94%A8%E6%89%98%E7%AE%A1%E6%A6%82%E8%A7%88.png" alt="ECS应用托管功能总览"></p>
 <h2 id="ECS-环境类型"><a href="#ECS-环境类型" class="headerlink" title="ECS 环境类型"></a>ECS 环境类型</h2><p>EDAS 支持阿里云 ECS 集群和混合云 ECS 集群。</p>
 <ul>
 <li>阿里云 ECS 集群：在专有网络 VPC 内创建的集群，由阿里云 ECS 实例组成。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/57453.htm#topic2215">使用控制台创建ECS集群</a>。</li>
@@ -143,8 +141,8 @@ var _hmt = _hmt || [];
 <td align="left">创建和部署（首次部署）：在应用开发、测试完成后，可以在 ECS 集群中创建并部署。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199494.htm#concept-2025121">应用创建和部署概述（ECS）</a>。升级和回滚：应用在 EDAS 中创建并部署后，还会不断迭代，需要升级。如果升级的应用版本发现问题，需要将应用回滚到历史版本。更多信息，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/199496.htm#concept-2025835">升级和回滚应用概述（ECS）</a>。</td>
 </tr>
 <tr>
-<td align="left">CI/CD</td>
-<td align="left">应用在不断迭代过程中，需要持续集成（CI）和持续部署（CD）。EDAS 支持通过<a target="_blank" rel="noopener" href="https://www.jenkins.io/">Jenkins</a>和<a target="_blank" rel="noopener" href="https://www.aliyun.com/product/yunxiao">云效</a>对您部署的应用进行 CI/CD。具体操作，请参见：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/178330.htm#task-2369261">使用云效2020部署Java应用至ECS集群</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/55479.htm#topic4215">使用Jenkins创建持续集成</a></td>
+<td align="left">CI&#x2F;CD</td>
+<td align="left">应用在不断迭代过程中，需要持续集成（CI）和持续部署（CD）。EDAS 支持通过<a target="_blank" rel="noopener" href="https://www.jenkins.io/">Jenkins</a>和<a target="_blank" rel="noopener" href="https://www.aliyun.com/product/yunxiao">云效</a>对您部署的应用进行 CI&#x2F;CD。具体操作，请参见：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/178330.htm#task-2369261">使用云效2020部署Java应用至ECS集群</a><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/55479.htm#topic4215">使用Jenkins创建持续集成</a></td>
 </tr>
 <tr>
 <td align="left">应用监控</td>
@@ -231,7 +229,7 @@ var _hmt = _hmt || [];
 <li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/213319.html?spm=a2c4g.11186623.6.774.718d443dwf9nJT">使用 API 在 ECS 集群中终止应用升级变更流程</a></p>
 </li>
 </ul>
-<h1 id="CI-CD"><a href="#CI-CD" class="headerlink" title="CI/CD"></a>CI/CD</h1><ul>
+<h1 id="CI-CD"><a href="#CI-CD" class="headerlink" title="CI&#x2F;CD"></a>CI&#x2F;CD</h1><ul>
 <li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/178330.html?spm=a2c4g.11186623.6.776.4887bfc7w3p95c">使用云效 2020 部署 Java 应用至 ECS 集群</a></p>
 </li>
 <li><p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/55479.html?spm=a2c4g.11186623.6.777.563619c6cwebUx">使用 Jenkins 创建持续集成</a></p>
@@ -346,34 +344,34 @@ var _hmt = _hmt || [];
 <h2 id="日志诊断常见问题"><a href="#日志诊断常见问题" class="headerlink" title="日志诊断常见问题"></a>日志诊断常见问题</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://help.aliyun.com/knowledge_detail/108510.html?spm=a2c4g.11186623.6.864.7037519bhV10vG">Java 应用如何收集 CPU 使用率高的问题信息</a></li>
 </ul>
- 
+
       <!-- reward -->
-      
+
       <div id="reword-out">
         <div id="reward-btn">
           打赏
         </div>
       </div>
-      
+
     </div>
-    
+
 
     <!-- copyright -->
-    
+
     <div class="declare">
       <ul class="post-copyright">
         <li>
           <i class="ri-copyright-line"></i>
           <strong>版权声明： </strong>
-          
+
           本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
-          
+
         </li>
       </ul>
     </div>
-    
+
     <footer class="article-footer">
-       
+
 <div class="share-btn">
       <span class="share-sns share-outer">
         <i class="ri-share-forward-line"></i>
@@ -382,7 +380,7 @@ var _hmt = _hmt || [];
       <div class="share-wrap">
         <i class="arrow"></i>
         <div class="share-icons">
-          
+
           <a class="weibo share-sns" href="javascript:;" data-type="weibo">
             <i class="ri-weibo-fill"></i>
           </a>
@@ -398,7 +396,7 @@ var _hmt = _hmt || [];
           <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
             <i class="icon icon-qzone"></i>
           </a> -->
-          
+
           <a class="facebook share-sns" href="javascript:;" data-type="facebook">
             <i class="ri-facebook-circle-fill"></i>
           </a>
@@ -416,37 +414,37 @@ var _hmt = _hmt || [];
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/Java-Framework-EDAS-ECS.html" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Java-Framework-EDAS-ECS.html" alt="微信分享二维码">
     </div>
 </div>
 
-<div id="share-mask"></div>  
+<div id="share-mask"></div>
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li></ul>
 
     </footer>
   </div>
 
-   
+
   <nav class="article-nav">
-    
+
       <a href="/articles/Java-Framework-EDAS-Service-Governance.html" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
-          
+
             EDAS 服务治理
-          
+
         </div>
       </a>
-    
-    
+
+
       <a href="/articles/Java-Framework-EDAS-K8s.html" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
         <div class="article-nav-title">EDAS K8s 应用托管</div>
       </a>
-    
+
   </nav>
 
-   
+
 <!-- valine评论 -->
 <div id="vcomments-box">
   <div id="vcomments"></div>
@@ -494,8 +492,8 @@ var _hmt = _hmt || [];
   }
 </style>
 
- 
-     
+
+
 </article>
 
 </section>
@@ -504,45 +502,45 @@ var _hmt = _hmt || [];
     <ul>
       <li>
         Copyrights &copy;
-        2017-2021
+        2017-2026
         <i class="ri-heart-fill heart_icon"></i> Shadowalker
       </li>
     </ul>
     <ul>
       <li>
-        
-        
-        
+
+
+
         由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
         <span class="division">|</span>
         主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
+
       </li>
     </ul>
     <ul>
       <li>
-        
-        
+
+
         <span>
   <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
   <span class="division">|</span>
   <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
 </span>
-        
+
       </li>
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
       <li>
         <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
-        
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
       </li>
     </ul>
   </div>
@@ -561,52 +559,52 @@ var _hmt = _hmt || [];
     <aside class="sidebar on">
       <button class="navbar-toggle"></button>
 <nav class="navbar">
-  
+
   <div class="logo">
     <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
   </div>
-  
+
   <ul class="nav nav-main">
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/">主页</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/archives">归档</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/categories">分类</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/schedule">计划</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/about">关于</a>
     </li>
-    
+
   </ul>
 </nav>
 <nav class="navbar navbar-bottom">
   <ul class="nav">
     <li class="nav-item">
-      
+
       <a class="nav-item-link nav-item-search"  title="搜索">
         <i class="ri-search-line"></i>
       </a>
-      
-      
+
+
     </li>
   </ul>
 </nav>
@@ -630,22 +628,22 @@ var _hmt = _hmt || [];
   <span class="close"><i class="ri-close-line"></i></span>
   <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
-    
+
     <div class="reward-item">
       <img class="reward-img" src="/images/aliPay.jpeg">
       <span class="reward-type">支付宝</span>
     </div>
-    
-    
+
+
     <div class="reward-item">
       <img class="reward-img" src="/images/wechatPay.png">
       <span class="reward-type">微信</span>
     </div>
-    
+
   </div>
 </div>
-    
-<script src="/js/jquery-2.0.3.min.js"></script>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
 
 
 <script src="/js/lazyload.min.js"></script>
@@ -680,14 +678,14 @@ var _hmt = _hmt || [];
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
-    <!-- Background of PhotoSwipe. 
+    <!-- Background of PhotoSwipe.
          It's a separate element as animating opacity is faster than rgba(). -->
     <div class="pswp__bg"></div>
 
     <!-- Slides wrapper with overflow:hidden. -->
     <div class="pswp__scroll-wrap">
 
-        <!-- Container that holds slides. 
+        <!-- Container that holds slides.
             PhotoSwipe keeps only 3 of them in the DOM to save memory.
             Don't modify these 3 pswp__item elements, data is added later on. -->
         <div class="pswp__container">
@@ -803,7 +801,7 @@ var _hmt = _hmt || [];
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <script>
   var ayerConfig = {
     mathjax: true
@@ -833,7 +831,7 @@ var _hmt = _hmt || [];
 
 <link rel="stylesheet" href="/css/clipboard.css">
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="/js/clipboard-2.0.11.min.js"></script>
 <script>
   function wait(callback, seconds) {
     var timelag = null;
@@ -860,7 +858,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-checkbox-circle-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPIED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-checkbox-circle-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -876,7 +874,7 @@ var _hmt = _hmt || [];
         $icon.addClass('ri-time-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPY FAILED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-time-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -896,8 +894,10 @@ var _hmt = _hmt || [];
 
 
 
-    
+
   </div>
-<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
 
 </html>

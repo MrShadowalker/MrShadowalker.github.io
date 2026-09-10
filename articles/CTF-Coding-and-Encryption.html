@@ -6,42 +6,42 @@
 
 <head>
   <meta charset="utf-8" />
-   
-  <meta name="keywords" content="Java,Blockchain,代码,面试,学习,摄影,思考" />
-   
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
   <meta name="description" content="Valar Morghulis" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     CTF 盘点系列——脑洞大开的编码和加密 |  Shadow.Net
   </title>
   <meta name="generator" content="hexo-theme-ayer">
-  
+
   <link rel="shortcut icon" href="/favicon.ico" />
-  
-  
+
+
 <link rel="stylesheet" href="/dist/main.css">
 
-  
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
 
-  
+
 <link rel="stylesheet" href="/css/custom.css">
 
-  
-  
+
+
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
 
-  
-  
 
-  
+
+
+
 <script>
 var _hmt = _hmt || [];
 (function() {
 	var hm = document.createElement("script");
 	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
-	var s = document.getElementsByTagName("script")[0]; 
+	var s = document.getElementsByTagName("script")[0];
 	s.parentNode.insertBefore(hm, s);
 })();
 </script>
@@ -50,15 +50,13 @@ var _hmt = _hmt || [];
 <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
 </head>
 
-</html>
-
 <body>
   <div id="app">
-    
-      
+
+
       <canvas width="1777" height="841"
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
-      
+
     <main class="content on">
       <section class="outer">
   <article
@@ -69,30 +67,30 @@ var _hmt = _hmt || [];
   data-scroll-reveal
 >
   <div class="article-inner">
-    
+
     <header class="article-header">
-       
+
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
   CTF 盘点系列——脑洞大开的编码和加密
 </h1>
- 
+
 
     </header>
-     
+
     <div class="article-meta">
       <a href="/articles/CTF-Coding-and-Encryption.html" class="article-date">
   <time datetime="2017-11-07T14:47:18.000Z" itemprop="datePublished">2017-11-07</time>
-</a> 
+</a>
   <div class="article-category">
     <a class="article-category-link" href="/categories/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/">信息安全</a>
   </div>
-  
+
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">14.7k</span>
+            <span class="post-count">14.8k</span>
         </span>
     </span>
 
@@ -105,30 +103,30 @@ var _hmt = _hmt || [];
         </span>
     </span>
 </div>
- 
+
     </div>
-      
+
     <div class="tocbot"></div>
 
 
 
 
-  
+
     <div class="article-entry" itemprop="articleBody">
-       
+
   <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>玩过 CTF 的小伙伴会经常遇到类似这样的问题：dalao 这是啥编码方式啊？怎么解密啊？</p>
 <p>其实 CTF 中的脑洞密码题，通常是费现代加密方式，一般都是各种古典密码的变形，一般出题者会对密文进行一些处理，但都会留下不少线索，当然也需要参赛者对于各种编码方式有所了解，这样更有利于快速入手解密，结合一定的脑洞，拿到 Flag 就 so easy 了~</p>
 <span id="more"></span>
 
 <h1 id="编码方式汇总"><a href="#编码方式汇总" class="headerlink" title="编码方式汇总"></a>编码方式汇总</h1><h2 id="常见编码"><a href="#常见编码" class="headerlink" title="常见编码"></a>常见编码</h2><p>ASCii 编码</p>
-<p>Base64/32/16 编码</p>
+<p>Base64&#x2F;32&#x2F;16 编码</p>
 <p>shellcode 编码</p>
 <p>Quoted-printable 编码</p>
 <p>XXencode 编码</p>
 <p>UUencode 编码</p>
 <p>URL 编码</p>
 <p>Unicode 编码</p>
-<p>Escape/Unescape 编码</p>
+<p>Escape&#x2F;Unescape 编码</p>
 <p>HTML 实体编码</p>
 <p>Tap Code 敲击码</p>
 <p>Morse Code 摩尔斯电码</p>
@@ -137,7 +135,7 @@ var _hmt = _hmt || [];
 <p>Columnar Transposition Cipher 列位移加密</p>
 <h3 id="替换加密"><a href="#替换加密" class="headerlink" title="替换加密"></a>替换加密</h3><p>Atbash Cipher 埃特巴什码</p>
 <p>Caesar Cipher 凯撒密码</p>
-<p>ROT5/13/18/47</p>
+<p>ROT5&#x2F;13&#x2F;18&#x2F;47</p>
 <p>Simple Substitution Cipher 简单换位密码</p>
 <p>Hill Cipher 希尔密码</p>
 <p>Pigpen Cipher 猪圈密码</p>
@@ -152,7 +150,7 @@ var _hmt = _hmt || [];
 <p>Homophonic Substitution Cipher 同音替换密码</p>
 <p>Affine Cipher 仿射密码</p>
 <p>Baconian Cipher 培根密码</p>
-<p>ADFG/VX Cipher ADFG 和 ADFGVX 密码</p>
+<p>ADFG&#x2F;VX Cipher ADFG 和 ADFGVX 密码</p>
 <p>Bifid Cipher 双密码</p>
 <p>Trifid Cipher 三分密码</p>
 <p>Four-Square Cipher 四方密码</p>
@@ -161,11 +159,11 @@ var _hmt = _hmt || [];
 <p>代码混淆加密</p>
 <p>asp 混淆加密</p>
 <p>php 混淆加密</p>
-<p>css/js 混淆加密</p>
+<p>css&#x2F;js 混淆加密</p>
 <p>VBScript.Encode 混淆加密</p>
 <p>ppencode</p>
 <p>rrencode</p>
-<p>jjencode/aaencode</p>
+<p>jjencode&#x2F;aaencode</p>
 <p>JSfuck</p>
 <p>jother</p>
 <p>brainfuck</p>
@@ -182,9 +180,9 @@ var _hmt = _hmt || [];
 84 104 101 32 113 117 105 99 107 32 98 114 111 119 110 32 102 111 120 32 106 117 109 112 115 32 111 118 101 114 32 116 104 101 32 108 97 122 121 32 100 111 103</pre>
 
 <p>对应可以转换成二进制，八进制，十六进制等。</p>
-<h3 id="Base64-32-16-编码"><a href="#Base64-32-16-编码" class="headerlink" title="Base64/32/16 编码"></a>Base64/32/16 编码</h3><p>base64、base32、base16 可以分别编码转化 8 位字节为 6 位、5 位、4 位。16，32，64 分别表示用多少个字符来编码，这里我注重介绍 base64。</p>
+<h3 id="Base64-32-16-编码"><a href="#Base64-32-16-编码" class="headerlink" title="Base64&#x2F;32&#x2F;16 编码"></a>Base64&#x2F;32&#x2F;16 编码</h3><p>base64、base32、base16 可以分别编码转化 8 位字节为 6 位、5 位、4 位。16，32，64 分别表示用多少个字符来编码，这里我注重介绍 base64。</p>
 <p>Base64 常用于在通常处理文本数据的场合，表示、传输、存储一些二进制数据。包括 MIME 的 email，email via MIME，在 XML 中存储复杂数据。</p>
-<p>编码原理：Base64编码要求把3个8位字节转化为4个6位的字节，之后在6位的前面补两个0，形成8位一个字节的形式，6位2进制能表示的最大数是2的6次方是64，这也是为什么是64个字符(A-Z,a-z，0-9，+，/这64个编码字符，=号不属于编码字符，而是填充字符)的原因，这样就需要一张映射表，如下：</p>
+<p>编码原理：Base64编码要求把3个8位字节转化为4个6位的字节，之后在6位的前面补两个0，形成8位一个字节的形式，6位2进制能表示的最大数是2的6次方是64，这也是为什么是64个字符(A-Z,a-z，0-9，+，&#x2F;这64个编码字符，&#x3D;号不属于编码字符，而是填充字符)的原因，这样就需要一张映射表，如下：</p>
 <p>举个例子(base64)：</p>
 <p>源文本：T h e</p>
 <p>对应ascii码:84 104 101</p>
@@ -250,7 +248,7 @@ var _hmt = _hmt || [];
 <pre>#!shell
   1  2  3  4  5
 1 A  B C/K D  E
-2 F  G  H  I  J 
+2 F  G  H  I  J
 3 L  M  N  O  P
 4 Q  R  S  T  U
 5 V  W  X  Y  Z</pre>
@@ -276,8 +274,8 @@ G  --.   T  -     ?  ..--..              7  --...
 H  ....  U  ..-   @  .--.-.              8  ---..
 I  ..    V  ...-  -  -....-              9  ----.
 J  .---  W  .--   ;  -.-.-.              0  -----
-K  -.-   X  -..-  (  -.--.           
-L  .-..  Y  -.--  )  -.--.-          
+K  -.-   X  -..-  (  -.--.
+L  .-..  Y  -.--  )  -.--.-
 M  --    Z  --..  =  -...-</pre>
 <p> 源文本: <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</code> </p>
 <p>编码后:</p>
@@ -633,13 +631,13 @@ Y,Z | Z N O P Q R S T U V W X Y B C D E F G H I J K L M A</pre>
 <pre>#!shell
 A = aaaaa  I/J = abaaa  R = baaaa
 
-<p>B = aaaab  K = abaab    S = baaab</p>
-<p>C = aaaba  L = ababa    T = baaba</p>
-<p>D = aaabb  M = ababb    U/V = baabb</p>
-<p>E = aabaa  N = abbaa    W = babaa</p>
-<p>F = aabab  O = abbab    X = babab</p>
-<p>G = aabba  P = abbba    Y = babba</p>
-<p>H = aabbb  Q = abbbb    Z = babbb</pre></p>
+<p>B &#x3D; aaaab  K &#x3D; abaab    S &#x3D; baaab</p>
+<p>C &#x3D; aaaba  L &#x3D; ababa    T &#x3D; baaba</p>
+<p>D &#x3D; aaabb  M &#x3D; ababb    U&#x2F;V &#x3D; baabb</p>
+<p>E &#x3D; aabaa  N &#x3D; abbaa    W &#x3D; babaa</p>
+<p>F &#x3D; aabab  O &#x3D; abbab    X &#x3D; babab</p>
+<p>G &#x3D; aabba  P &#x3D; abbba    Y &#x3D; babba</p>
+<p>H &#x3D; aabbb  Q &#x3D; abbbb    Z &#x3D; babbb</pre></p>
 <p> 明文： <code>T H E F O X</code> </p>
 <p> 密文： <code>baaba aabbb aabaa aabab abbab babab</code> </p>
 <p> 加解密 <a href="http://rumkin.com/tools/cipher/baconian.php" rel="nofollow,noindex" target="_blank">传送门</a> </p>
@@ -650,10 +648,10 @@ A = aaaaa  I/J = abaaa  R = baaaa
 <pre>#!shell
     A  D  F  G   X
   ----------------
-A | p  h  q  g   m 
-D | e  a  y  n   o 
+A | p  h  q  g   m
+D | e  a  y  n   o
 F | f  d  x  k   r
-G | c  v  s  z   w 
+G | c  v  s  z   w
 X | b  u  t  i/j l</pre>
 <p> 明文： <code>THE QUICK BROWN FOX</code> </p>
 <p>结果矩阵加密：</p>
@@ -741,7 +739,7 @@ CRYPTANALYS IS OF BIFID BY HAND IS ACTUALLY FAIRLY DIFFICULT THE FRACTIONATING N
 <p>三分密码(Trifid Cipher)结合换位和替换，三分密码与双密码非常相似，差别之处就是用除了3×3×3的密阵代替5×5密阵。</p>
 <p>示例密阵:</p>
 <pre>#!shell
-密阵顺序 = EPSDUCVWYM.ZLKXNBTFGORIJHAQ      
+密阵顺序 = EPSDUCVWYM.ZLKXNBTFGORIJHAQ
 
 <p>方阵 1      方阵 2      方阵 3<br>  1 2 3      1 2 3      1 2 3<br>1 E P S    1 M . Z    1 F G O<br>2 D U C    2 L K X    2 R I J<br>3 V W Y    3 N B T    3 H A Q</pre></p>
 <p> 明文: <code>THE QUICK BROWN FOX.</code> </p>
@@ -795,9 +793,9 @@ gcc -O3 -lm foursquarecrack2.c scoreText_2.c -o fsc
 ./fsc</pre>
 <p>输出结果：</p>
 <pre>#!shell
-Running foursquarecrack, this could take a few minutes... 
+Running foursquarecrack, this could take a few minutes...
 best score so far: -1239.505249, on iteration 1
-Key: 'KFMLUGWSQEPOZTNRBHDAVXCIY','UGSVKFIZMOYXPQRWTHLNCABED'     
+Key: 'KFMLUGWSQEPOZTNRBHDAVXCIY','UGSVKFIZMOYXPQRWTHLNCABED'
 plaintext: 'THECIPHERTEXTSQUARESCANBEGENERATEDUSINGAKEYWORDDROPPINGDUPLICAT
             ELETTERSTHENFILLTHEREMAININGSPACESWITHTHEREMAININGLETTERSOFTHEA
             LPHABETINORDERALTERNATIVELYTHECIPHERTEXTSQUARESCANBEGENERATEDCO
@@ -924,7 +922,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <p>示例密阵:</p>
 <p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_47"> </p>
 <pre>#!shell
-明文:T  H  E  Q  U  I  C  K  B  R  O  W  N  F  O 
+明文:T  H  E  Q  U  I  C  K  B  R  O  W  N  F  O
 密文:84 27 82 41 51 66 31 36 15 71 67 73 52 34 67</pre>
 <p>说明：明文中的字母在密阵位置可能不止一个，所以加密结果可能有多种，但是不影响解密。密阵还有6x6，7x7，9x9,10x10几种。显然密阵越大每个字母被替换的情况就可能越多，那么加密效果就更好。</p>
 <h3>28.比尔密码</h3>
@@ -965,7 +963,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_54"> </p>
 <p> JSfuck <a href="http://www.jsfuck.com/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
 <h3>9.jother</h3>
-<p> jother是一种运用于javascript语言中利用少量字符构造精简的匿名函数方法对于字符串进行的编码方式。其中8个少量字符包括： <code>! + ( ) [ ] &#123; &#125;</code> 。只用这些字符就能完成对任意字符串的编码。 </p>
+<p> jother是一种运用于javascript语言中利用少量字符构造精简的匿名函数方法对于字符串进行的编码方式。其中8个少量字符包括： <code>! + ( ) [ ] { }</code> 。只用这些字符就能完成对任意字符串的编码。 </p>
 <p> <a href="http://drops.wooyun.org/author/do9gy" rel="nofollow,noindex" target="_blank">do9gy</a> 的 <a href="http://drops.wooyun.org/web/4410" rel="nofollow,noindex" target="_blank">jother编码之谜</a> </p>
 <p> <img src="http://image99.360doc.com/DownloadImg/2016/09/0621/79515527_55"> </p>
 <p> jother编码 <a href="http://tmxk.org/jother/" rel="nofollow,noindex" target="_blank">传送门</a> </p>
@@ -985,10 +983,10 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 
 
 
-<p>============================</p>
+<p>&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;</p>
 <h4 id="Base64"><a href="#Base64" class="headerlink" title="Base64"></a>Base64</h4><p>ZXZhbCgkX1BPU1RbcDRuOV96MV96aDNuOV9qMXVfU2gxX0oxM10p</p>
-<p>NTU2NJC3ODHHYWJIZ3P4ZWY=</p>
-<p>Base64编码要求把3个8位字节转化为4个6位的字节，之后在6位的前面补两个0，形成8位一个字节的形式。 如果剩下的字符不足3个字节，则用0填充，输出字符使用’=’，因此编码后输出的文本末尾可能会出现1或2个’=’</p>
+<p>NTU2NJC3ODHHYWJIZ3P4ZWY&#x3D;</p>
+<p>Base64编码要求把3个8位字节转化为4个6位的字节，之后在6位的前面补两个0，形成8位一个字节的形式。 如果剩下的字符不足3个字节，则用0填充，输出字符使用’&#x3D;’，因此编码后输出的文本末尾可能会出现1或2个’&#x3D;’</p>
 <h4 id="Base32"><a href="#Base32" class="headerlink" title="Base32"></a>Base32</h4><p>Base32和Base64相比只有一个区别就是，用32个字符表示256个ASC字符，也就是说5个ASC字符一组可以生成8个Base字符，反之亦然。</p>
 <p><a target="_blank" rel="noopener" href="http://base64.xpcha.com/">在线编解码</a></p>
 <h4 id="希尔密码"><a href="#希尔密码" class="headerlink" title="希尔密码"></a>希尔密码</h4><p>密文： 22,09,00,12,03,01,10,03,04,08,01,17<br>明文：wjamdbkdeibr</p>
@@ -1008,11 +1006,11 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <p><a target="_blank" rel="noopener" href="http://www.practicalcryptography.com/ciphers/classical-era/rail-fence/">在线解密</a></p>
 <h4 id="凯撒密码"><a href="#凯撒密码" class="headerlink" title="凯撒密码"></a>凯撒密码</h4><p>通过把字母移动一定的位数来实现加密和解密。明文中的所有字母都在字母表上向后（或向前）按照一个固定数目进行偏移后被替换成密文。</p>
 <p>常规解密：</p>
-<p>from pycipher import Caesar<br>for i in range(1,27):<br>str=Caesar(key=i).encipher(‘UIF RVJDLCSPXOGPYKVNQTPWFSUIFMBAZEPH’)<br>print “mingwen:”+str.lower()+“rn“</p>
-<p>密文样例：U8Y]:8KdJHTXRI&gt;XU#?!K_ecJH]kJG<em>bRH7YJH7YSH]</em>=93dVZ3^S8*$:8″&amp;:9U]RH;g=8Y!U92’=j*$KH]ZSj&amp;[S#!gU#*dK9.</p>
+<p>from pycipher import Caesar<br>for i in range(1,27):<br>str&#x3D;Caesar(key&#x3D;i).encipher(‘UIF RVJDLCSPXOGPYKVNQTPWFSUIFMBAZEPH’)<br>print “mingwen:”+str.lower()+“rn“</p>
+<p>密文样例：U8Y]:8KdJHTXRI&gt;XU#?!K_ecJH]kJG<em>bRH7YJH7YSH]</em>&#x3D;93dVZ3^S8*$:8″&amp;:9U]RH;g&#x3D;8Y!U92’&#x3D;j*$KH]ZSj&amp;[S#!gU#*dK9.</p>
 <p>解题思路：</p>
 <p>得知是凯撒加密之后，尝试进行127次轮转爆破：</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">lstr</span>=”””U<span class="number">8</span>Y]:<span class="number">8</span>KdJHTXRI&gt;XU#?!K_ecJH]kJG*bRH<span class="number">7</span>YJH<span class="number">7</span>YSH]*=<span class="number">93</span>dVZ<span class="number">3</span>^S<span class="number">8</span>*$:<span class="number">8</span>″&amp;:<span class="number">9</span>U]RH;g=<span class="number">8</span>Y!U<span class="number">92</span>’=j*$KH]ZSj&amp;[S#!gU#*dK<span class="number">9</span>.”””</span><br><span class="line"><span class="attribute">forp</span> in range(<span class="number">127</span>):</span><br><span class="line"><span class="attribute">str1</span> = ”</span><br><span class="line"><span class="attribute">for</span> i in lstr:</span><br><span class="line"><span class="attribute">temp</span> = chr((ord(i)+p)%<span class="number">127</span>)</span><br><span class="line"><span class="attribute">if</span> <span class="number">32</span>&lt;ord(temp)&lt;<span class="number">127</span> :</span><br><span class="line"><span class="attribute">str1</span> = str<span class="number">1</span> + temp</span><br><span class="line"><span class="attribute">feel</span> = <span class="number">1</span></span><br><span class="line"><span class="attribute">else</span>:</span><br><span class="line"><span class="attribute">feel</span> = <span class="number">0</span></span><br><span class="line"><span class="attribute">break</span></span><br><span class="line"><span class="attribute">if</span> feel == <span class="number">1</span>:</span><br><span class="line"><span class="attribute">print</span>(str<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<figure class="highlight freedesktop"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">lstr</span><span class="operator">=</span>”””U8Y]:8KdJHTXRI&gt;XU#?!K_ecJH]kJG*bRH7YJH7YSH]*<span class="operator">=</span>93dVZ3^S8*$:8″&amp;:9U]RH;g<span class="operator">=</span>8Y!U92’<span class="operator">=</span>j*$KH]ZSj&amp;[S#!gU#*dK9.”””</span><br><span class="line">forp in range(127):</span><br><span class="line"><span class="attr">str1</span> <span class="operator">=</span> ”</span><br><span class="line">for i in lstr:</span><br><span class="line"><span class="attr">temp</span> <span class="operator">=</span> chr((ord(i)+p)%127)</span><br><span class="line">if 32&lt;ord(temp)&lt;127 :</span><br><span class="line"><span class="attr">str1</span> <span class="operator">=</span> str1 + temp</span><br><span class="line"><span class="attr">feel</span> <span class="operator">=</span> 1</span><br><span class="line">else:</span><br><span class="line"><span class="attr">feel</span> <span class="operator">=</span> 0</span><br><span class="line">break</span><br><span class="line">if feel == 1:</span><br><span class="line">print(str1)</span><br></pre></td></tr></table></figure>
 
 <p><a target="_blank" rel="noopener" href="http://blog.csdn.net/shinukami/article/details/46369765">原文链接</a></p>
 <h4 id="Unicode"><a href="#Unicode" class="headerlink" title="Unicode"></a>Unicode</h4><p>密文样例：u5927u5bb6u597duff0cu6211u662fu0040u65e0u6240u4e0du80fdu7684u9b42u5927u4ebauff01u8bddu8bf4u5faeu535au7c89u4e1du8fc7</p>
@@ -1058,9 +1056,9 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <p><a target="_blank" rel="noopener" href="http://blog.csdn.net/ab748998806/article/details/46382017">原文链接</a></p>
 <h4 id="颜文字加密-aaencode"><a href="#颜文字加密-aaencode" class="headerlink" title="颜文字加密(aaencode)"></a>颜文字加密(aaencode)</h4><p>这个好萌啊&gt;.&lt;</p>
 <p>颜文字js加密：明文alert(“flag”);</p>
-<p>密文：ﾟωﾟﾉ= /｀ｍ´）ﾉ ~┻━┻ //<em>´∇｀</em>/ [‘<em>’]; o=(ﾟｰﾟ) =</em>=3; c=(ﾟΘﾟ) =(ﾟｰﾟ)-(ﾟｰﾟ); (ﾟДﾟ) =(ﾟΘﾟ)= (o^_^o)/ (o^_^o);(ﾟДﾟ)={ﾟΘﾟ: ‘_’ ,ﾟωﾟﾉ : ((ﾟωﾟﾉ==3) +’_’) [ﾟΘﾟ] ,ﾟｰﾟﾉ :(ﾟωﾟﾉ+ ‘_’)[o^_^o -(ﾟΘﾟ)] ,ﾟДﾟﾉ:((ﾟｰﾟ==3) +’_’)[ﾟｰﾟ] }; (ﾟДﾟ) [ﾟΘﾟ] =((ﾟωﾟﾉ==3) +’_’) [c language=”^_^o”][/c];(ﾟДﾟ) [‘c’] = ((ﾟДﾟ)+’_’) [ (ﾟｰﾟ)+(ﾟｰﾟ)-(ﾟΘﾟ) ];(ﾟДﾟ) [‘o’] = ((ﾟДﾟ)+’_’) [ﾟΘﾟ];(ﾟoﾟ)=(ﾟДﾟ) [‘c’]+(ﾟДﾟ) [‘o’]+(ﾟωﾟﾉ +’_’)[ﾟΘﾟ]+ ((ﾟωﾟﾉ==3) +’_’) [ﾟｰﾟ] + ((ﾟДﾟ) +’_’) [(ﾟｰﾟ)+(ﾟｰﾟ)]+ ((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ]+((ﾟｰﾟ==3) +’_’) [(ﾟｰﾟ) – (ﾟΘﾟ)]+(ﾟДﾟ) [‘c’]+((ﾟДﾟ)+’_’) [(ﾟｰﾟ)+(ﾟｰﾟ)]+ (ﾟДﾟ) [‘o’]+((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ];(ﾟДﾟ) [‘_’] =(o^_^o) [ﾟoﾟ] [ﾟoﾟ];(ﾟεﾟ)=((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ]+ (ﾟДﾟ) .ﾟДﾟﾉ+((ﾟДﾟ)+’_’) [(ﾟｰﾟ) + (ﾟｰﾟ)]+((ﾟｰﾟ==3) +’_’) [o^_^o -ﾟΘﾟ]+((ﾟｰﾟ==3) +’_’) [ﾟΘﾟ]+ (ﾟωﾟﾉ +’_’) [ﾟΘﾟ]; (ﾟｰﾟ)+=(ﾟΘﾟ); (ﾟДﾟ)[ﾟεﾟ]=’\’; (ﾟДﾟ).ﾟΘﾟﾉ=(ﾟДﾟ+ ﾟｰﾟ)[o^_^o -(ﾟΘﾟ)];(oﾟｰﾟo)=(ﾟωﾟﾉ +’_’)[c language=”^_^o”][/c];(ﾟДﾟ) [ﾟoﾟ]=’”‘;(ﾟДﾟ) [‘_’] ( (ﾟДﾟ) [‘_’] (ﾟεﾟ+(ﾟДﾟ)[ﾟoﾟ]+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((o^_^o) +(o^_^o))+ ((o^_^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((o^_^o) +(o^_^o))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (ﾟΘﾟ))+ (c^_^o)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟｰﾟ)+ ((o^_^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((o^_^o) +(o^_^o))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((ﾟｰﾟ) + (o^_^o))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟｰﾟ)+ ((o^_^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (o^_^o))+ (o^_^o)+ (ﾟДﾟ)[ﾟoﾟ]) (ﾟΘﾟ)) (‘_’);</p>
+<p>密文：ﾟωﾟﾉ&#x3D; &#x2F;｀ｍ´）ﾉ ~┻━┻ &#x2F;&#x2F;<em>´∇｀</em>&#x2F; [‘<em>’]; o&#x3D;(ﾟｰﾟ) &#x3D;</em>&#x3D;3; c&#x3D;(ﾟΘﾟ) &#x3D;(ﾟｰﾟ)-(ﾟｰﾟ); (ﾟДﾟ) &#x3D;(ﾟΘﾟ)&#x3D; (o^<em>^o)&#x2F; (o^</em>^o);(ﾟДﾟ)&#x3D;{ﾟΘﾟ: ‘<em>’ ,ﾟωﾟﾉ : ((ﾟωﾟﾉ&#x3D;&#x3D;3) +’</em>’) [ﾟΘﾟ] ,ﾟｰﾟﾉ :(ﾟωﾟﾉ+ ‘<em>’)[o^</em>^o -(ﾟΘﾟ)] ,ﾟДﾟﾉ:((ﾟｰﾟ&#x3D;&#x3D;3) +’<em>’)[ﾟｰﾟ] }; (ﾟДﾟ) [ﾟΘﾟ] &#x3D;((ﾟωﾟﾉ&#x3D;&#x3D;3) +’</em>’) [c language&#x3D;”^<em>^o”][&#x2F;c];(ﾟДﾟ) [‘c’] &#x3D; ((ﾟДﾟ)+’</em>’) [ (ﾟｰﾟ)+(ﾟｰﾟ)-(ﾟΘﾟ) ];(ﾟДﾟ) [‘o’] &#x3D; ((ﾟДﾟ)+’<em>’) [ﾟΘﾟ];(ﾟoﾟ)&#x3D;(ﾟДﾟ) [‘c’]+(ﾟДﾟ) [‘o’]+(ﾟωﾟﾉ +’</em>’)[ﾟΘﾟ]+ ((ﾟωﾟﾉ&#x3D;&#x3D;3) +’<em>’) [ﾟｰﾟ] + ((ﾟДﾟ) +’</em>’) [(ﾟｰﾟ)+(ﾟｰﾟ)]+ ((ﾟｰﾟ&#x3D;&#x3D;3) +’<em>’) [ﾟΘﾟ]+((ﾟｰﾟ&#x3D;&#x3D;3) +’</em>’) [(ﾟｰﾟ) – (ﾟΘﾟ)]+(ﾟДﾟ) [‘c’]+((ﾟДﾟ)+’<em>’) [(ﾟｰﾟ)+(ﾟｰﾟ)]+ (ﾟДﾟ) [‘o’]+((ﾟｰﾟ&#x3D;&#x3D;3) +’</em>’) [ﾟΘﾟ];(ﾟДﾟ) [‘<em>’] &#x3D;(o^</em>^o) [ﾟoﾟ] [ﾟoﾟ];(ﾟεﾟ)&#x3D;((ﾟｰﾟ&#x3D;&#x3D;3) +’<em>’) [ﾟΘﾟ]+ (ﾟДﾟ) .ﾟДﾟﾉ+((ﾟДﾟ)+’</em>’) [(ﾟｰﾟ) + (ﾟｰﾟ)]+((ﾟｰﾟ&#x3D;&#x3D;3) +’<em>’) [o^</em>^o -ﾟΘﾟ]+((ﾟｰﾟ&#x3D;&#x3D;3) +’<em>’) [ﾟΘﾟ]+ (ﾟωﾟﾉ +’</em>’) [ﾟΘﾟ]; (ﾟｰﾟ)+&#x3D;(ﾟΘﾟ); (ﾟДﾟ)[ﾟεﾟ]&#x3D;’\’; (ﾟДﾟ).ﾟΘﾟﾉ&#x3D;(ﾟДﾟ+ ﾟｰﾟ)[o^<em>^o -(ﾟΘﾟ)];(oﾟｰﾟo)&#x3D;(ﾟωﾟﾉ +’</em>’)[c language&#x3D;”^<em>^o”][&#x2F;c];(ﾟДﾟ) [ﾟoﾟ]&#x3D;’”‘;(ﾟДﾟ) [‘</em>’] ( (ﾟДﾟ) [‘<em>’] (ﾟεﾟ+(ﾟДﾟ)[ﾟoﾟ]+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((o^</em>^o) +(o^<em>^o))+ ((o^</em>^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((o^<em>^o) +(o^</em>^o))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (ﾟΘﾟ))+ (c^<em>^o)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟｰﾟ)+ ((o^</em>^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((o^<em>^o) +(o^</em>^o))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ ((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟｰﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟΘﾟ)+ (ﾟｰﾟ)+ ((ﾟｰﾟ) + (o^<em>^o))+ (ﾟДﾟ)[ﾟεﾟ]+(ﾟｰﾟ)+ ((o^</em>^o) – (ﾟΘﾟ))+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (ﾟΘﾟ))+ (ﾟΘﾟ)+ (ﾟДﾟ)[ﾟεﾟ]+((ﾟｰﾟ) + (o^<em>^o))+ (o^</em>^o)+ (ﾟДﾟ)[ﾟoﾟ]) (ﾟΘﾟ)) (‘_’);</p>
 <p><a target="_blank" rel="noopener" href="http://utf-8.jp/public/aaencode.html">在线解密</a></p>
-<h4 id="Jjencode"><a href="#Jjencode" class="headerlink" title="Jjencode"></a>Jjencode</h4><p>密文：$=~[];$={<em><strong>:++$,$$$$:(![]+””)[$],</strong>$:++$,$</em>$<em>:(![]+””)[$],</em>$<em>:++$,$</em>$$:({}+””)[$],$$<em>$:($[$]+””)[$],</em>$$:++$,$$$<em>:(!””+””)[$],$__:++$,$</em>$:++$,$$<strong>:({}+””)[$],$$<em>:++$,$$$:++$,$</em></strong>:++$,$<strong>$:++$};$.$<em>=($.$</em>=$+””)[$.$<em>$]+($.</em>$=$.$_[$.</strong>$])+($.$$=($.$+””)[$.<strong>$])+((!$)+””)[$._$$]+($.</strong>=$.$<em>[$.$$</em>])+($.$=(!””+””)[$.<strong>$])+($.<em>=(!””+””)[$.</em>$<em>])+$.$</em>[$.$_$]+$.</strong>+$.<em>$+$.$;$.$$=$.$+(!””+””)[$.</em>$$]+$.<strong>+$.<em>+$.$+$.$$;$.$=($.</em></strong>)[$.$<em>][$.$</em>];$.$($.$($.$$+”””+$.$<em>$</em>+(![]+””)[$.<em>$</em>]+$.$$$<em>+”\”+$.__$+$.$$</em>+$.<em>$</em>+$.<strong>+”(\”\”+$.</strong>$+$.<strong>$+$.</strong><em>+$.$$$</em>+(![]+””)[$.<em>$</em>]+(![]+””)[$.<em>$</em>]+$.<em>$+”,\”+$.$<strong>+$.</strong></em>+”\”+$.<strong>$+$.</strong>$+$.<em>$</em>+$.$<em>$</em>+”\”+$.<strong>$+$.$$<em>+$.$$</em>+$.$<em>$</em>+”\”+$.</strong>$+$.<em>$</em>+$.<em>$$+$.$$<strong>+”\”+$.</strong>$+$.$$</em>+$.<em>$</em>+”\”+$.<strong>$+$.$_$+$.</strong>$+”\”+$.<strong>$+$.$$<em>+$.</em></strong>+$.<strong>+”\”\”+$.$</strong>+$.___+”)”+”””)())();</p>
+<h4 id="Jjencode"><a href="#Jjencode" class="headerlink" title="Jjencode"></a>Jjencode</h4><p>密文：$&#x3D;~[];$&#x3D;{<em><strong>:++$,$$$$:(![]+””)[$],</strong>$:++$,$</em>$<em>:(![]+””)[$],</em>$<em>:++$,$</em>$$:({}+””)[$],$$<em>$:($[$]+””)[$],</em>$$:++$,$$$<em>:(!””+””)[$],$__:++$,$</em>$:++$,$$<strong>:({}+””)[$],$$<em>:++$,$$$:++$,$</em></strong>:++$,$<strong>$:++$};$.$<em>&#x3D;($.$</em>&#x3D;$+””)[$.$<em>$]+($.</em>$&#x3D;$.$_[$.</strong>$])+($.$$&#x3D;($.$+””)[$.<strong>$])+((!$)+””)[$._$$]+($.</strong>&#x3D;$.$<em>[$.$$</em>])+($.$&#x3D;(!””+””)[$.<strong>$])+($.<em>&#x3D;(!””+””)[$.</em>$<em>])+$.$</em>[$.$_$]+$.</strong>+$.<em>$+$.$;$.$$&#x3D;$.$+(!””+””)[$.</em>$$]+$.<strong>+$.<em>+$.$+$.$$;$.$&#x3D;($.</em></strong>)[$.$<em>][$.$</em>];$.$($.$($.$$+”””+$.$<em>$</em>+(![]+””)[$.<em>$</em>]+$.$$$<em>+”\”+$.__$+$.$$</em>+$.<em>$</em>+$.<strong>+”(\”\”+$.</strong>$+$.<strong>$+$.</strong><em>+$.$$$</em>+(![]+””)[$.<em>$</em>]+(![]+””)[$.<em>$</em>]+$.<em>$+”,\”+$.$<strong>+$.</strong></em>+”\”+$.<strong>$+$.</strong>$+$.<em>$</em>+$.$<em>$</em>+”\”+$.<strong>$+$.$$<em>+$.$$</em>+$.$<em>$</em>+”\”+$.</strong>$+$.<em>$</em>+$.<em>$$+$.$$<strong>+”\”+$.</strong>$+$.$$</em>+$.<em>$</em>+”\”+$.<strong>$+$.$_$+$.</strong>$+”\”+$.<strong>$+$.$$<em>+$.</em></strong>+$.<strong>+”\”\”+$.$</strong>+$.___+”)”+”””)())();</p>
 <p><a target="_blank" rel="noopener" href="http://utf-8.jp/public/jjencode.html?src=&var=$">解密地址</a></p>
 <h4 id="无字母加密"><a href="#无字母加密" class="headerlink" title="无字母加密"></a>无字母加密</h4><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">@<span class="variable">$_</span>++; <span class="comment">// $_ = 1</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>=(“<span class="comment">#”^”|”); // $__ = _</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“.”^”~”); <span class="comment">// _P</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“/”^”`”); <span class="comment">// _PO</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“|”^”/”); <span class="comment">// _POS</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$__</span>.=(“&#123;“^”/”); <span class="comment">// _POST</span></span><br><span class="line"></span><br><span class="line">$&#123;<span class="variable">$__</span>&#125;[!<span class="variable">$_</span>]($&#123;<span class="variable">$__</span>&#125;[<span class="variable">$_</span>]); <span class="comment">// $_POST[0]($_POST[1]);</span></span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
 
@@ -1070,7 +1068,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <p>无论何种，都是+开头-结尾</p>
 <p><a target="_blank" rel="noopener" href="http://tomeko.net/online_tools/base32.php?lang=en">在线解密</a></p>
 <h4 id="云影密码"><a href="#云影密码" class="headerlink" title="云影密码"></a>云影密码</h4><p>如果密码只有01248组成。。。</p>
-<p>原理很简单，有了1，2，4，8这四个简单的数字，你可以以加法表示出0-9任何一个数字，例如0=28，7=124，9=18。</p>
+<p>原理很简单，有了1，2，4，8这四个简单的数字，你可以以加法表示出0-9任何一个数字，例如0&#x3D;28，7&#x3D;124，9&#x3D;18。</p>
 <p>这样，再用1-26来表示A-Z，就可以用作密码了。</p>
 <p>为了不至于混乱，我个人引入了第五个数字0，来用作间隔，以避免翻译错误，所以还可以称“01248密码”。</p>
 <p>题目：12401011801180212011401804</p>
@@ -1079,7 +1077,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <p>第三步，推测得出明文。可以推测后面的18表示r，前面的为p最合适。</p>
 <p>明文：password（密码）.</p>
 <h4 id="RC4"><a href="#RC4" class="headerlink" title="RC4"></a>RC4</h4><p>key welcometoicqedu</p>
-<p>密文UUyFTj8PCzF6geFn6xgBOYSvVTrbpNU4OF9db9wMcPD1yDbaJw==</p>
+<p>密文UUyFTj8PCzF6geFn6xgBOYSvVTrbpNU4OF9db9wMcPD1yDbaJw&#x3D;&#x3D;</p>
 <p>用脚本解密 脚本已存 </p>
 <h4 id="曼彻斯特"><a href="#曼彻斯特" class="headerlink" title="曼彻斯特"></a>曼彻斯特</h4><p>转二进制 不是10就是01 即是曼彻斯特 解密看脚本</p>
 <p>对于其他一些未知密文，可尝试到下列几个网站转换试试，看看运气</p>
@@ -1089,7 +1087,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <h3 id="其他小技巧："><a href="#其他小技巧：" class="headerlink" title="其他小技巧："></a>其他小技巧：</h3><ul>
 <li><p>如果密文是十进制，字符范围为“0-9”，可以猜测是ASCII编码；</p>
 </li>
-<li><p>如果密文由“a-z”“A-Z”和“=”构成，特别是末尾有“=”，那么可以判断为Base64编码；</p>
+<li><p>如果密文由“a-z”“A-Z”和“&#x3D;”构成，特别是末尾有“&#x3D;”，那么可以判断为Base64编码；</p>
 </li>
 <li><p>如果密文含有“%” ，形式为 “%xx” 和 “%uxxxx”，字符范围又是十六进制“0-F”，判断是escape() 函数编码，用unescape()解码；</p>
 </li>
@@ -1097,34 +1095,34 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 </li>
 </ul>
 <p>判断出可能的编码方式，就可以使用程序或工具进行解密。</p>
- 
+
       <!-- reward -->
-      
+
       <div id="reword-out">
         <div id="reward-btn">
           打赏
         </div>
       </div>
-      
+
     </div>
-    
+
 
     <!-- copyright -->
-    
+
     <div class="declare">
       <ul class="post-copyright">
         <li>
           <i class="ri-copyright-line"></i>
           <strong>版权声明： </strong>
-          
+
           本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
-          
+
         </li>
       </ul>
     </div>
-    
+
     <footer class="article-footer">
-       
+
 <div class="share-btn">
       <span class="share-sns share-outer">
         <i class="ri-share-forward-line"></i>
@@ -1133,7 +1131,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       <div class="share-wrap">
         <i class="arrow"></i>
         <div class="share-icons">
-          
+
           <a class="weibo share-sns" href="javascript:;" data-type="weibo">
             <i class="ri-weibo-fill"></i>
           </a>
@@ -1149,7 +1147,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
           <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
             <i class="icon icon-qzone"></i>
           </a> -->
-          
+
           <a class="facebook share-sns" href="javascript:;" data-type="facebook">
             <i class="ri-facebook-circle-fill"></i>
           </a>
@@ -1167,37 +1165,37 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://chenzihao.me/articles/CTF-Coding-and-Encryption.html" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/CTF-Coding-and-Encryption.html" alt="微信分享二维码">
     </div>
 </div>
 
-<div id="share-mask"></div>  
+<div id="share-mask"></div>
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li></ul>
 
     </footer>
   </div>
 
-   
+
   <nav class="article-nav">
-    
+
       <a href="/articles/PC-DIY-Hardware.html" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
-          
+
             电脑DIY系列——电脑硬件
-          
+
         </div>
       </a>
-    
-    
+
+
       <a href="/articles/Essay-Love-and-Respect.html" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
         <div class="article-nav-title">爱与尊重</div>
       </a>
-    
+
   </nav>
 
-   
+
 <!-- valine评论 -->
 <div id="vcomments-box">
   <div id="vcomments"></div>
@@ -1245,8 +1243,8 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
   }
 </style>
 
- 
-     
+
+
 </article>
 
 </section>
@@ -1255,45 +1253,45 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
     <ul>
       <li>
         Copyrights &copy;
-        2017-2021
+        2017-2026
         <i class="ri-heart-fill heart_icon"></i> Shadowalker
       </li>
     </ul>
     <ul>
       <li>
-        
-        
-        
+
+
+
         由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
         <span class="division">|</span>
         主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
+
       </li>
     </ul>
     <ul>
       <li>
-        
-        
+
+
         <span>
   <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
   <span class="division">|</span>
   <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
 </span>
-        
+
       </li>
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
-      
+
     </ul>
     <ul>
       <li>
         <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='&lt;script type=&#34;text/javascript&#34; src=&#34;https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805&#34;&gt;&lt;/script&gt;'></script>
-        
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
       </li>
     </ul>
   </div>
@@ -1312,52 +1310,52 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
     <aside class="sidebar on">
       <button class="navbar-toggle"></button>
 <nav class="navbar">
-  
+
   <div class="logo">
     <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
   </div>
-  
+
   <ul class="nav nav-main">
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/">主页</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/archives">归档</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/categories">分类</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/schedule">计划</a>
     </li>
-    
+
     <li class="nav-item">
       <a class="nav-item-link" href="/about">关于</a>
     </li>
-    
+
   </ul>
 </nav>
 <nav class="navbar navbar-bottom">
   <ul class="nav">
     <li class="nav-item">
-      
+
       <a class="nav-item-link nav-item-search"  title="搜索">
         <i class="ri-search-line"></i>
       </a>
-      
-      
+
+
     </li>
   </ul>
 </nav>
@@ -1381,22 +1379,22 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
   <span class="close"><i class="ri-close-line"></i></span>
   <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
-    
+
     <div class="reward-item">
       <img class="reward-img" src="/images/aliPay.jpeg">
       <span class="reward-type">支付宝</span>
     </div>
-    
-    
+
+
     <div class="reward-item">
       <img class="reward-img" src="/images/wechatPay.png">
       <span class="reward-type">微信</span>
     </div>
-    
+
   </div>
 </div>
-    
-<script src="/js/jquery-2.0.3.min.js"></script>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
 
 
 <script src="/js/lazyload.min.js"></script>
@@ -1431,14 +1429,14 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
-    <!-- Background of PhotoSwipe. 
+    <!-- Background of PhotoSwipe.
          It's a separate element as animating opacity is faster than rgba(). -->
     <div class="pswp__bg"></div>
 
     <!-- Slides wrapper with overflow:hidden. -->
     <div class="pswp__scroll-wrap">
 
-        <!-- Container that holds slides. 
+        <!-- Container that holds slides.
             PhotoSwipe keeps only 3 of them in the DOM to save memory.
             Don't modify these 3 pswp__item elements, data is added later on. -->
         <div class="pswp__container">
@@ -1554,7 +1552,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 <script>
   var ayerConfig = {
     mathjax: true
@@ -1584,7 +1582,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 
 <link rel="stylesheet" href="/css/clipboard.css">
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="/js/clipboard-2.0.11.min.js"></script>
 <script>
   function wait(callback, seconds) {
     var timelag = null;
@@ -1611,7 +1609,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
         $icon.addClass('ri-checkbox-circle-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPIED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-checkbox-circle-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -1627,7 +1625,7 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
         $icon.addClass('ri-time-line');
         let $span = $($btn.find('span'));
         $span[0].innerText = 'COPY FAILED';
-        
+
         wait(function () { // 等待两秒钟后恢复
           $icon.removeClass('ri-time-line');
           $icon.addClass('ri-file-copy-2-line');
@@ -1647,8 +1645,10 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 
 
 
-    
+
   </div>
-<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
 
 </html>

@@ -1,0 +1,5 @@
+.DS_Store
+.idea/
+docs_private/
+__pycache__/
+node_modules/

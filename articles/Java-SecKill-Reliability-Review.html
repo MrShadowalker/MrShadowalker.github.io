@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
+  <meta name="description" content="回看旧秒杀 demo，从请求受理、事务、消息确认和结果查询检查异步订单链路。" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    异步下单之后，还需要补上哪些可靠性环节 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+
+  <link rel="shortcut icon" href="/favicon.ico" />
+
+
+<link rel="stylesheet" href="/dist/main.css">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0];
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+<body>
+  <div id="app">
+
+
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Java-SecKill-Reliability-Review"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+
+    <header class="article-header">
+
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  异步下单之后，还需要补上哪些可靠性环节
+</h1>
+
+
+    </header>
+
+    <div class="article-meta">
+      <a href="/articles/Java-SecKill-Reliability-Review.html" class="article-date">
+  <time datetime="2026-09-09T01:40:00.000Z" itemprop="datePublished">2026-09-09</time>
+</a>
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">4 分钟</span>
+        </span>
+    </span>
+</div>
+
+    </div>
+
+    <div class="tocbot"></div>
+
+
+
+
+
+    <div class="article-entry" itemprop="articleBody">
+
+  <p>旧博客的异步下单文章，把请求放进消息队列，再由消费者写订单。它很适合展示一个变化：用户请求不必一直等待完整的数据库操作。</p>
+<p>这次再看代码，更值得继续讨论的是失败以后会发生什么。消息进了队列就一定有订单吗？库存已经更新，但订单插入失败怎么办？用户重复发一次请求，系统认得出来吗？</p>
+<p>下面基于旧学习 demo 做一次代码阅读。它不是生产故障复盘，也没有新的压测结论。</p>
+<span id="more"></span>
+
+<h2 id="先还原代码中的处理顺序"><a href="#先还原代码中的处理顺序" class="headerlink" title="先还原代码中的处理顺序"></a>先还原代码中的处理顺序</h2><p>项目里可以沿 <code>OrderController</code>、<code>OrderMqReceiver</code>、<code>OrderServiceImpl</code> 追踪请求。</p>
+<p>在异步订单方法中，代码依次校验库存、尝试乐观更新、删除库存缓存、写数据库订单，最后写入订单结果缓存。方法开头还有一个用于演示排队的十秒等待。</p>
+<p>这说明它的重点是展示异步流程。实际工程中的排队应当从消息积压、消费者并发和任务耗时中观察，不能把演示用的等待当成处理策略。</p>
+<h2 id="请求受理和订单成功，需要两个结果"><a href="#请求受理和订单成功，需要两个结果" class="headerlink" title="请求受理和订单成功，需要两个结果"></a>请求受理和订单成功，需要两个结果</h2><p>前端收到接口响应时，后台可能还没有开始处理订单。</p>
+<p>可以让响应返回一个可查询的请求编号。客户端先展示“已受理”，再根据结果查询展示成功、库存不足或处理失败。</p>
+<p>消息发布确认和消费者处理确认也要分开。RabbitMQ 的发布确认覆盖发布者到消息代理这一段，不能证明订单已经在业务数据库中创建。两种确认的边界可以参考 <a target="_blank" rel="noopener" href="https://www.rabbitmq.com/docs/confirms">RabbitMQ 官方说明</a>。</p>
+<h2 id="乐观更新成功，不代表整个下单操作都成功"><a href="#乐观更新成功，不代表整个下单操作都成功" class="headerlink" title="乐观更新成功，不代表整个下单操作都成功"></a>乐观更新成功，不代表整个下单操作都成功</h2><p>旧代码中，异步方法先更新库存，再插入订单。这个方法自身没有声明 <code>@Transactional</code>；同一个类里的悲观下单方法则明确声明了事务。</p>
+<p>这是代码阅读发现的边界问题，不是已经验证的运行时故障。还应检查外层调用及事务配置，才能判断实际运行范围。</p>
+<p>不过要设计这条链路，必须明确回答：库存更新成功而订单插入失败时，前者是否回滚？如果两者使用同一个数据库，通常可以把扣库存和建订单放在明确的本地事务里；缓存更新与结果通知还要设计提交后的处理和失败修复。</p>
+<p>加了注解也要验证调用方式。Spring 默认代理模式下，同一对象内部的自调用不会经过事务代理，详见 <a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html">Spring 事务文档</a>。</p>
+<h2 id="消费者捕获异常以后，谁来决定重试"><a href="#消费者捕获异常以后，谁来决定重试" class="headerlink" title="消费者捕获异常以后，谁来决定重试"></a>消费者捕获异常以后，谁来决定重试</h2><p><code>OrderMqReceiver.process</code> 捕获下单方法的异常后只记录日志，然后正常返回。</p>
+<p>不能只看这一段就断言消息一定丢失，因为实际确认行为还取决于监听容器配置。但它提出了一个必须核对的问题：业务失败以后，框架是否还能感知失败，消息会重试、进入失败队列，还是被当作正常处理结束？</p>
+<p>对可恢复错误可以设置有上限的重试；对库存不足这类业务终态，应记录明确结果；超过重试条件的消息应留下可查询、可处理的失败记录。具体确认时机需要与数据库提交顺序一起设计。</p>
+<h2 id="幂等需要落到稳定的业务标识"><a href="#幂等需要落到稳定的业务标识" class="headerlink" title="幂等需要落到稳定的业务标识"></a>幂等需要落到稳定的业务标识</h2><p>在入口查缓存，发现用户尚未下单，可以减少无效请求。但两个请求可能同时读到“尚未下单”，也可能因为消息重投而进入同一段消费逻辑。</p>
+<p>因此，可以按业务规则选择请求编号、活动与用户组合等稳定标识，并通过数据库约束与事务内检查保障重复处理不会生成第二份业务结果。已经完成的请求再次到达时，应返回或查询已有结果。</p>
+<p>缓存可以帮助查询和削减流量，但不应成为判断唯一业务结果的唯一依据。</p>
+<h2 id="结果查询也需要区分状态"><a href="#结果查询也需要区分状态" class="headerlink" title="结果查询也需要区分状态"></a>结果查询也需要区分状态</h2><p>缓存里查不到订单，可能表示尚未处理，也可能表示订单落库成功后缓存写入失败。只用一个布尔值，很难解释这些差异。</p>
+<p>一个简化的结果模型可以包含 <code>ACCEPTED</code>、<code>PROCESSING</code>、<code>SUCCEEDED</code>、<code>REJECTED</code>、<code>FAILED</code>。这些是设计示例，并非旧项目已经实现的状态。状态应有明确的持久化位置、更新时间和查询路径；“没查到”与“已失败”需要分开处理。</p>
+<h2 id="下一次实验，优先验证失败路径"><a href="#下一次实验，优先验证失败路径" class="headerlink" title="下一次实验，优先验证失败路径"></a>下一次实验，优先验证失败路径</h2><p>与其只比较接口平均耗时，更有价值的是构造几个确定的失败点：库存更新后订单插入失败；数据库提交后消费者进程退出；同一消息重复到达；订单成功后缓存不可用；乐观更新因并发竞争失败。</p>
+<p>每次都检查数据库结果、消息状态和用户可查询的结果是否一致。性能实验则另外固定消费者数量、数据库连接池、请求规模与硬件条件。</p>
+<p>异步化改变了等待的位置，也把可靠性问题分散到了多个步骤。把这些步骤逐个说清楚，旧 demo 就能继续成为理解工程问题的好材料。</p>
+<p>代码来源：<a target="_blank" rel="noopener" href="https://github.com/MrShadowalker/secKill">secKill</a>，本次阅读基于<a target="_blank" rel="noopener" href="https://github.com/MrShadowalker/secKill/tree/1f7d43a597add6e4c68cbb6c60a18913348be49a">提交 <code>1f7d43a597ad</code></a>；原系列：<a href="https://chenzihao.me/articles/Java-SecKill-Asynchronous.html">如何优雅地异步下订单</a>。</p>
+
+      <!-- reward -->
+
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- copyright -->
+
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+
+        </li>
+      </ul>
+    </div>
+
+    <footer class="article-footer">
+
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Java-SecKill-Reliability-Review.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/" rel="tag">RabbitMQ</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
+
+    </footer>
+  </div>
+
+
+  <nav class="article-nav">
+
+
+      <a href="/articles/Java-Interview-to-Engineering.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">把 Java 面试笔记串成一条工程主线</div>
+      </a>
+
+  </nav>
+
+
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+
+
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+
+
+
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+
+      </li>
+    </ul>
+    <ul>
+      <li>
+
+
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+      </li>
+    </ul>
+    <ul>
+
+    </ul>
+    <ul>
+
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+
+  <ul class="nav nav-main">
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+
+
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+
+
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe.
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides.
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
+
+</html>

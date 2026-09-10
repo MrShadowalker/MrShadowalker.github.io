@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+
+  <meta name="description" content="用一个小而可复现的评测集，区分检索、回答、引用与业务结果。" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    给 AI 问答做测试：先把错误分清楚 |  Shadow.Net
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+
+  <link rel="shortcut icon" href="/favicon.ico" />
+
+
+<link rel="stylesheet" href="/dist/main.css">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0];
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml">
+</head>
+
+<body>
+  <div id="app">
+
+
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-QA-Evaluation"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+
+    <header class="article-header">
+
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  给 AI 问答做测试：先把错误分清楚
+</h1>
+
+
+    </header>
+
+    <div class="article-meta">
+      <a href="/articles/AI-QA-Evaluation.html" class="article-date">
+  <time datetime="2026-09-09T01:10:00.000Z" itemprop="datePublished">2026-09-09</time>
+</a>
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">4 分钟</span>
+        </span>
+    </span>
+</div>
+
+    </div>
+
+    <div class="tocbot"></div>
+
+
+
+
+
+    <div class="article-entry" itemprop="articleBody">
+
+  <p>给知识库换了检索策略，测试分数从 80 变成 90，可以上线了吗？</p>
+<p>先别急。这个分数到底在衡量什么？搜到了目标文档，答案写得像参考答案，还是用户真的得到了可以使用的结论？</p>
+<p>同样一个问题，可能文档找对了、答案却用错了版本；也可能答案正确，引用却点不开。把它们压成一个总分，最需要修复的地方反而不容易看见。</p>
+<span id="more"></span>
+
+<h2 id="一道测试题不应该只有一句问题"><a href="#一道测试题不应该只有一句问题" class="headerlink" title="一道测试题不应该只有一句问题"></a>一道测试题不应该只有一句问题</h2><p>假设要验证“2.3 版本能否处理扫描件”。测试样本可以这样记录：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">id:</span> <span class="string">version-scanned-document-001</span></span><br><span class="line"><span class="attr">question:</span> <span class="string">&quot;2.3 自部署版支持扫描件吗？&quot;</span></span><br><span class="line"><span class="attr">identity_fixture:</span> <span class="string">reader-a</span></span><br><span class="line"><span class="attr">expected_behavior:</span> <span class="string">answer</span></span><br><span class="line"><span class="attr">required_claims:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">&quot;结论仅适用于 2.3 自部署版&quot;</span></span><br><span class="line"><span class="attr">required_evidence:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">&quot;release-note-2.3#scanned-document&quot;</span></span><br><span class="line"><span class="attr">forbidden_claims:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">&quot;所有版本均支持&quot;</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">&quot;未有证据的速度或准确率承诺&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的编号和材料名称都是示例。实际测试还应固定知识快照、检索参数、提示词版本和模型标识，便于发现退步后复现问题。</p>
+<p>如果把问题改成“这个版本支持吗”，而上下文没有版本号，预期行为就应该变成补问。测试不能要求模型在缺少条件时猜中一个标准答案。</p>
+<h2 id="把整条链拆开看"><a href="#把整条链拆开看" class="headerlink" title="把整条链拆开看"></a>把整条链拆开看</h2><p>对每一道题，分别记录下面几件事：</p>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>要检查什么</th>
+<th>常见问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>权限与范围</td>
+<td>候选材料是否属于当前身份和版本</td>
+<td>召回了不应访问的资料</td>
+</tr>
+<tr>
+<td>检索</td>
+<td>必要证据是否出现在候选结果中</td>
+<td>正确文档没有进入结果集</td>
+</tr>
+<tr>
+<td>结论</td>
+<td>答案是否满足问题条件</td>
+<td>拿其他版本的能力作答</td>
+</tr>
+<tr>
+<td>引用</td>
+<td>来源是否支持对应结论、能否访问</td>
+<td>引用相关，但证明不了结论</td>
+</tr>
+<tr>
+<td>使用结果</td>
+<td>用户是否完成了原本的任务</td>
+<td>答案完整，实际操作仍走不通</td>
+</tr>
+</tbody></table>
+<p>前四项可以做较多自动化。最后一项往往需要真实用户反馈或业务系统中的结果，不能用“接口返回成功”直接代替。</p>
+<h2 id="小样本也能有代表性"><a href="#小样本也能有代表性" class="headerlink" title="小样本也能有代表性"></a>小样本也能有代表性</h2><p>起步时可以先准备 20 道题：8 道明确可答、4 道需要补问、4 道无依据、2 道资料冲突、2 道权限边界。</p>
+<p>这只是一个便于执行的起始分配，不是行业标准。重点是让不同失败类型都出现，而不是凑够数量。</p>
+<p>每道题还可以保留一两个自然的改写。“是否支持扫描件”和“扫描出来的 PDF 能用吗”表达不同，用户意图却可能接近。改写题应该和原题放在同一组，避免同一个事实被重复统计，导致分数虚高。</p>
+<p>权限测试需要分身份运行。管理员能回答，并不能证明普通用户也能安全使用。</p>
+<h2 id="指标要写清分母"><a href="#指标要写清分母" class="headerlink" title="指标要写清分母"></a>指标要写清分母</h2><p>“引用准确率 95%”可能有几种解释：95% 的答案带了链接，95% 的链接能打开，或者95% 的引用真的支撑了结论。</p>
+<p>如果需要定义一个简单的引用支持率，可以使用：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">引用支持率 = 有充分引用支持的事实性结论数 / 需要引用支持的事实性结论总数</span><br></pre></td></tr></table></figure>
+
+<p>但还要另外检查必要事实有没有回答完整，否则模型少说几句就可能获得高分。类似地，“应该拒答却直接作答”和“应该回答却拒答”需要分别统计，避免靠一律拒答得到漂亮结果。</p>
+<p>延迟也一样。记录从用户发出问题到最终可见答案的时间，并说明是否包含排队、检索、重排和工具调用。离线单请求耗时不能直接代表多人同时使用时的体验。</p>
+<h2 id="用模型评分，也要保留人工标尺"><a href="#用模型评分，也要保留人工标尺" class="headerlink" title="用模型评分，也要保留人工标尺"></a>用模型评分，也要保留人工标尺</h2><p>模型可以协助检查答案是否遗漏条件、引用是否对应、表达是否清楚。不过评分器本身也可能出错，或者偏爱更长、更像自己的答案。</p>
+<p>可以先人工标注一小组明显正确、明显错误和边界案例，再检查自动评分是否与人工判断一致。对权限泄露、相反结论、虚构能力等关键错误，保留明确规则和人工复核。</p>
+<h2 id="每次只回答一个改动问题"><a href="#每次只回答一个改动问题" class="headerlink" title="每次只回答一个改动问题"></a>每次只回答一个改动问题</h2><p>如果同时换模型、提示词、切分策略和重排器，分数变化很难解释。</p>
+<p>更容易推进的方式是：固定其余条件，只改一个主要变量；对同一批题比较结果；优先查看从正确变成错误的样本；必要时重复运行，区分偶然波动与稳定退步。</p>
+<p>测试输出可以很简单：通过哪些题、退步哪些题、错误发生在哪一层、下一步改什么。等这些信息稳定以后，再扩展规模和统计方法。</p>
+<p>一份评测报告真正有用的地方，是让下一次修改更有方向。它不应该只留下一个看起来不错的分数。</p>
+
+      <!-- reward -->
+
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- copyright -->
+
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+
+        </li>
+      </ul>
+    </div>
+
+    <footer class="article-footer">
+
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-QA-Evaluation.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" rel="tag">知识库</a></li></ul>
+
+    </footer>
+  </div>
+
+
+  <nav class="article-nav">
+
+      <a href="/articles/Engineering-Release-Readback.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+
+            服务启动了，然后呢？一次发布应该怎样验收
+
+        </div>
+      </a>
+
+
+      <a href="/articles/AI-Knowledge-Evidence.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">知识库能搜到，为什么还是答不准？</div>
+      </a>
+
+  </nav>
+
+
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+
+
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+
+
+
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+
+      </li>
+    </ul>
+    <ul>
+      <li>
+
+
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+      </li>
+    </ul>
+    <ul>
+
+    </ul>
+    <ul>
+
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+
+  <ul class="nav nav-main">
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule">计划</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于</a>
+    </li>
+
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+
+
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+
+
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe.
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides.
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true
+  }
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+
+<script src="/js/clickBoom2.js"></script>
+
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+<script src="/js/dz.js"></script>
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script>
+</body>
+
+</html>
