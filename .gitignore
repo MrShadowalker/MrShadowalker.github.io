@@ -3,3 +3,10 @@
 docs_private/
 __pycache__/
 node_modules/
+
+# iCloud/Finder duplicate copies (for example `index 2.html`).
+# Keep generated pages canonical and prevent sync artifacts from returning.
+**/* 2
+**/* 2.*
+**/* 3
+**/* 3.*

@@ -37,6 +37,12 @@ def main():
     checked = 0
     for name in filter(None, tracked):
         path = ROOT / name
+        # A worktree may contain intentional, unstaged deletions while stale
+        # iCloud/Finder copies are being removed. Only inspect files that are
+        # present on disk; references from existing pages are still checked
+        # below.
+        if not path.exists():
+            continue
         text = path.read_text()
         if 'hexo-theme-ayer' not in text:
             continue  # Standalone pages have a separate lifecycle.

@@ -7,10 +7,10 @@
 ## 本地预览与检查
 
 ```sh
-python3 -m http.server 4173 --bind 127.0.0.1
+python3 scripts/serve.py
 ```
 
-访问 `http://127.0.0.1:4173`。预览只绑定本机。不要在这份产物中执行 `hexo clean`，也不要直接用其他目录的 `public/` 覆盖整个仓库。
+访问 `http://127.0.0.1:4173`。预览只绑定本机，并会像 GitHub Pages 一样回退到自定义 `404.html`。不要在这份产物中执行 `hexo clean`，也不要直接用其他目录的 `public/` 覆盖整个仓库。
 
 ```sh
 python3 scripts/check_site.py
@@ -24,7 +24,7 @@ python3 scripts/check_site.py
 - 样式修改优先放在 `css/custom.css`，保留原主题视觉基线。
 - 前端依赖使用确定版本，升级前核对主题 API 兼容性。
 - 草稿、审计证据、备份放在忽略的 `docs_private/`，不要提交进公共站点。
-- 历史 `* 2.*`、`* 3.*` 文件暂时保留；不能只凭文件名批量删除。
+- 已清理历史 `* 2.*`、`* 3.*` 等 iCloud/Finder 重复副本；`.gitignore` 已拦截同类文件，新增文章和资源请使用不带编号后缀的规范路径。
 - 发布前保留 `CNAME`、`pCR.html`、`rhythm.html` 及已有文章路径，检查文章清单、搜索、归档和 RSS 的一致性。
 
 2026-09-09 的本地维护记录与文章草稿入口：`docs_private/README.md`。这些文件不会随 Git 推送公开。

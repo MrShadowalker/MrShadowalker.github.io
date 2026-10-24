@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://chenzihao.me/sitemap.xml
-Sitemap: https://chenzihao.me/baidusitemap.xml
