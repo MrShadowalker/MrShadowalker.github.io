@@ -10,7 +10,75 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-09-09T01:40:00.000Z</updated>
+  <updated>2026-10-24T02:30:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="测试" scheme="https://chenzihao.me/tags/%E6%B5%8B%E8%AF%95/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="可观测性" scheme="https://chenzihao.me/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"/>
+    <category term="部署" scheme="https://chenzihao.me/tags/%E9%83%A8%E7%BD%B2/"/>
+    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
+    <id>https://chenzihao.me/articles/Agent-Evaluation-and-Operations.html</id>
+    <link href="https://chenzihao.me/articles/Agent-Evaluation-and-Operations.html"/>
+    <published>2026-10-24T02:30:00.000Z</published>
+    <summary>把 Agent 的评测、灰度、追踪、成本和故障响应接成一条可执行的上线流程。</summary>
+    <title>Agent 上线前评测什么：从离线样本到线上运维</title>
+    <updated>2026-10-24T02:30:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="信息安全" scheme="https://chenzihao.me/tags/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/"/>
+    <category term="权限" scheme="https://chenzihao.me/tags/%E6%9D%83%E9%99%90/"/>
+    <category term="企业架构" scheme="https://chenzihao.me/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/"/>
+    <id>https://chenzihao.me/articles/Agent-Tool-Calling-Security.html</id>
+    <link href="https://chenzihao.me/articles/Agent-Tool-Calling-Security.html"/>
+    <published>2026-10-24T02:20:00.000Z</published>
+    <summary>从工具契约、权限令牌、参数校验、审批和审计出发，建立 Agent 工具调用的安全边界。</summary>
+    <title>Agent 工具调用怎么做才安全：权限、审批与审计</title>
+    <updated>2026-10-24T02:20:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="RAG" scheme="https://chenzihao.me/tags/RAG/"/>
+    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
+    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
+    <id>https://chenzihao.me/articles/Enterprise-AI-Platform-Layers.html</id>
+    <link href="https://chenzihao.me/articles/Enterprise-AI-Platform-Layers.html"/>
+    <published>2026-10-24T02:10:00.000Z</published>
+    <summary>用数据、模型、知识、推理、评测和运营六层能力，规划一套可复用的企业 AI 平台。</summary>
+    <title>企业 AI 平台怎么搭：从模型接入到业务闭环的分层设计</title>
+    <updated>2026-10-24T02:10:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
+    <category term="企业架构" scheme="https://chenzihao.me/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/"/>
+    <category term="工作流" scheme="https://chenzihao.me/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/"/>
+    <id>https://chenzihao.me/articles/Enterprise-Agent-Architecture.html</id>
+    <link href="https://chenzihao.me/articles/Enterprise-Agent-Architecture.html"/>
+    <published>2026-10-24T02:00:00.000Z</published>
+    <summary>从任务、模型、工具、记忆和治理五个层面，拆解企业级 Agent 的可落地架构。</summary>
+    <title>企业级 Agent 不是聊天机器人：从任务闭环设计架构</title>
+    <updated>2026-10-24T02:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -97,9 +165,9 @@
       <name>Shadowalker</name>
     </author>
     <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
+    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
     <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
     <category term="分布式" scheme="https://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
-    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
     <category term="数据库" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
     <category term="缓存" scheme="https://chenzihao.me/tags/%E7%BC%93%E5%AD%98/"/>
     <id>https://chenzihao.me/articles/Java-SecKill-DB-Cache-Inconsistent.html</id>
@@ -144,10 +212,10 @@
       <name>Shadowalker</name>
     </author>
     <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
+    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
     <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
     <category term="高并发" scheme="https://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
     <category term="分布式" scheme="https://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
-    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
     <id>https://chenzihao.me/articles/Java-SecKill-Distributed-Design.html</id>
     <link href="https://chenzihao.me/articles/Java-SecKill-Distributed-Design.html"/>
     <published>2021-07-26T03:02:55.000Z</published>
@@ -254,63 +322,5 @@
     <summary>EDAS 操作手册</summary>
     <title>企业级分布式应用服务 EDAS 应用</title>
     <updated>2021-07-20T00:18:33.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="异常" scheme="https://chenzihao.me/tags/%E5%BC%82%E5%B8%B8/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <id>https://chenzihao.me/articles/Java-Basics-Exception.html</id>
-    <link href="https://chenzihao.me/articles/Java-Basics-Exception.html"/>
-    <published>2021-07-19T22:20:50.000Z</published>
-    <summary>Valar Morghulis</summary>
-    <title>Java 基础（二）异常体系</title>
-    <updated>2021-07-19T22:20:50.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="框架" scheme="https://chenzihao.me/tags/%E6%A1%86%E6%9E%B6/"/>
-    <category term="阿里" scheme="https://chenzihao.me/tags/%E9%98%BF%E9%87%8C/"/>
-    <id>https://chenzihao.me/articles/Java-Framework-EDAS-Introduction.html</id>
-    <link href="https://chenzihao.me/articles/Java-Framework-EDAS-Introduction.html"/>
-    <published>2021-07-19T06:33:37.000Z</published>
-    <summary>Valar Morghulis</summary>
-    <title>企业级分布式应用服务 EDAS 简介</title>
-    <updated>2021-07-19T06:33:37.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <id>https://chenzihao.me/articles/Java-Basics-Keywords.html</id>
-    <link href="https://chenzihao.me/articles/Java-Basics-Keywords.html"/>
-    <published>2021-07-17T04:25:14.000Z</published>
-    <summary>Java 关键字一篇搞定</summary>
-    <title>Java 基础（一）Java 关键字</title>
-    <updated>2021-07-17T04:25:14.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <id>https://chenzihao.me/articles/Java-Interview-Menu.html</id>
-    <link href="https://chenzihao.me/articles/Java-Interview-Menu.html"/>
-    <published>2021-07-17T04:07:07.000Z</published>
-    <summary>Java 大厂面试实录的汇总目录。</summary>
-    <title>巅峰之旅（二）Java 灵魂拷问汇总</title>
-    <updated>2021-07-17T04:07:07.000Z</updated>
   </entry>
 </feed>

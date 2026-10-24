@@ -117,6 +117,242 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-Agent-Evaluation-and-Operations"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/Agent-Evaluation-and-Operations.html"
+    >Agent 上线前评测什么：从离线样本到线上运维</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Agent-Evaluation-and-Operations.html" class="article-date">
+  <time datetime="2026-10-24T02:30:00.000Z" itemprop="datePublished">2026-10-24</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>Agent 的效果很难用一个分数概括。它可能答对了最终问题，却越权读取了材料；也可能工具调用成功，但任务没有真正完成；还可能离线样本表现稳定，线上遇到长上下文和并发后延迟失控。</p>
+<p>上线前评测的目标不是证明 Agent 永远正确，而是知道它在哪些条件下可靠、在哪些条件下必须拒答或交给人，并且能在结果变差时快速定位原因。</p> 
+      <a class="article-more-link" href="/articles/Agent-Evaluation-and-Operations.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag">可观测性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%83%A8%E7%BD%B2/" rel="tag">部署</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Agent-Tool-Calling-Security"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/Agent-Tool-Calling-Security.html"
+    >Agent 工具调用怎么做才安全：权限、审批与审计</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Agent-Tool-Calling-Security.html" class="article-date">
+  <time datetime="2026-10-24T02:20:00.000Z" itemprop="datePublished">2026-10-24</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>Agent 一旦可以查询订单、修改配置或发送消息，工具调用就不再是普通的函数调用，而是一次由自然语言触发的业务操作。模型可能误解用户意图，外部材料可能包含恶意指令，工具返回的数据也可能被拼接到下一轮提示词中。</p>
+<p>因此，安全边界不能只写在系统提示词里。模型可以提出动作，但真正决定“能不能做、对什么对象做、做完是否生效”的，应该是独立于模型的策略和执行层。</p> 
+      <a class="article-more-link" href="/articles/Agent-Tool-Calling-Security.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/" rel="tag">企业架构</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/" rel="tag">信息安全</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%9D%83%E9%99%90/" rel="tag">权限</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Enterprise-AI-Platform-Layers"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/Enterprise-AI-Platform-Layers.html"
+    >企业 AI 平台怎么搭：从模型接入到业务闭环的分层设计</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Enterprise-AI-Platform-Layers.html" class="article-date">
+  <time datetime="2026-10-24T02:10:00.000Z" itemprop="datePublished">2026-10-24</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>企业做 AI 平台，最容易出现的误区是先搭一个“模型门户”，把模型列表、密钥和聊天页面放在一起，然后等待业务自己找到用法。真正进入生产后，团队需要解决的却是另一组问题：数据能不能被安全使用，模型输出能不能被评测，Agent 能不能调用业务系统，成本和故障能不能定位。</p>
+<p>平台的价值是把一次项目里反复出现的能力沉淀下来，让业务团队专注于任务和流程。平台边界应围绕可复用能力划分，而不是围绕某个模型或某个项目划分。</p> 
+      <a class="article-more-link" href="/articles/Enterprise-AI-Platform-Layers.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RAG/" rel="tag">RAG</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">数据一致性</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Enterprise-Agent-Architecture"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/Enterprise-Agent-Architecture.html"
+    >企业级 Agent 不是聊天机器人：从任务闭环设计架构</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Enterprise-Agent-Architecture.html" class="article-date">
+  <time datetime="2026-10-24T02:00:00.000Z" itemprop="datePublished">2026-10-24</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>很多团队把 Agent 项目理解成“接一个大模型，再加一段提示词”。演示阶段确实可以这样做，但一旦任务涉及权限、业务系统和长期运行，问题就会迅速变成工程问题：模型什么时候可以决定下一步，工具失败后如何恢复，用户中途修改要求时怎样取消旧任务，哪些结果需要人工确认。</p>
+<p>企业级 Agent 的核心不是让模型多说几句话，而是把一个业务目标变成可追踪、可恢复、可审计的任务闭环。模型负责处理不确定性，平台负责约束不确定性。</p> 
+      <a class="article-more-link" href="/articles/Enterprise-Agent-Architecture.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/" rel="tag">企业架构</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" rel="tag">工作流</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-Java-SecKill-Reliability-Review"
   class="article article-type-post"
   itemscope
@@ -465,262 +701,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">数据一致性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Java-SecKill-Asynchronous"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-SecKill-Asynchronous.html"
-    >秒杀系列（二）如何优雅地异步下订单</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/Java-SecKill-Asynchronous.html" class="article-date">
-  <time datetime="2021-07-26T07:24:40.000Z" itemprop="datePublished">2021-07-26</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="简单的订单异步处理实现"><a href="#简单的订单异步处理实现" class="headerlink" title="简单的订单异步处理实现"></a>简单的订单异步处理实现</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>前面几篇文章，我们从 <strong>「限流角度，缓存角度」</strong> 来优化了用户下单的速度，减少了服务器和数据库的压力。这些处理对于一个秒杀系统都是非常重要的，并且效果立竿见影，那还有什么操作也能有立竿见影的效果呢？答案是对于下单的异步处理。</p>
-<p>在秒杀系统用户进行抢购的过程中，由于在同一时间会有大量请求涌入服务器，如果每个请求都立即访问数据库进行扣减库存+写入订单的操作，对数据库的压力是巨大的。</p>
-<p>如何减轻数据库的压力呢，<strong>「我们将每一条秒杀的请求存入消息队列（例如RabbitMQ）中，放入消息队列后，给用户返回类似“抢购请求发送成功”的结果。而在消息队列中，我们将收到的下订单请求一个个的写入数据库中」</strong>，比起多线程同步修改数据库的操作，大大缓解了数据库的连接压力，最主要的好处就表现在数据库连接的减少：</p>
-<ul>
-<li>同步方式：大量请求快速占满数据库框架开启的数据库连接池，同时修改数据库，导致数据库读写性能骤减。</li>
-<li>异步方式：一条条消息以顺序的方式写入数据库，连接数几乎不变（当然，也取决于消息队列消费者的数量）。</li>
-</ul>
-<p><strong>「这种实现可以理解为是一中流量削峰：让数据库按照他的处理能力，从消息队列中拿取消息进行处理。」</strong></p> 
-      <a class="article-more-link" href="/articles/Java-SecKill-Asynchronous.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Java-SecKill-Prevent-Oversold"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-SecKill-Prevent-Oversold.html"
-    >秒杀系列（一）防止超卖</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/Java-SecKill-Prevent-Oversold.html" class="article-date">
-  <time datetime="2021-07-26T03:03:30.000Z" itemprop="datePublished">2021-07-26</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="秒杀系统"><a href="#秒杀系统" class="headerlink" title="秒杀系统"></a>秒杀系统</h1><p>秒杀系统相信网上已经介绍了很多了，我也不想粘贴很多定义过来了。</p>
-<p>废话少说，秒杀系统主要应用在商品抢购的场景，比如：</p>
-<ul>
-<li>电商抢购限量商品</li>
-<li>卖周董演唱会的门票</li>
-<li>火车票抢座</li>
-<li>……</li>
-</ul>
-<p>秒杀系统抽象来说就是以下几个步骤：</p>
-<ul>
-<li>用户选定商品下单</li>
-<li>校验库存</li>
-<li>扣库存</li>
-<li>创建用户订单</li>
-<li>用户支付等后续步骤</li>
-</ul>
-<p>听起来就是个用户买商品的流程而已嘛！确实，所以我们为啥要说它是个专门的系统呢？</p> 
-      <a class="article-more-link" href="/articles/Java-SecKill-Prevent-Oversold.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Java-SecKill-Distributed-Design"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-SecKill-Distributed-Design.html"
-    >秒杀系列（零）高并发设计</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/Java-SecKill-Distributed-Design.html" class="article-date">
-  <time datetime="2021-07-26T03:02:55.000Z" itemprop="datePublished">2021-07-26</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>秒杀系列开篇文章，整理分布式微服务设计中，面对高并发场景的一系列潜在问题和处理思路。</p> 
-      <a class="article-more-link" href="/articles/Java-SecKill-Distributed-Design.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">数据一致性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Java-Idempotent-Design"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Idempotent-Design.html"
-    >Java 幂等设计</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/Java-Idempotent-Design.html" class="article-date">
-  <time datetime="2021-07-26T01:39:55.000Z" itemprop="datePublished">2021-07-26</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>小伙伴们有没有遇到过<strong>生产环境经常出现过重复的数据？</strong>在排查问题的时候，数据又是正常的。这个是何解呢？<strong>怎么会出现这种情况，而且还很难排查问题</strong>。</p>
-<p>今天给大家分享一下这里的原因，以及解决方案。</p> 
-      <a class="article-more-link" href="/articles/Java-Idempotent-Design.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
