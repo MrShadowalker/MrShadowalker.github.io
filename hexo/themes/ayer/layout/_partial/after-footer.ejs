@@ -1,0 +1,26 @@
+<script src="<%- url_for('/js/jquery-3.7.1.min.js') %>"></script>
+<script src="<%- url_for('/js/lazyload.min.js') %>"></script>
+<% if (theme.toc && is_post() && !page.no_toc) { %>
+<script src="<%- url_for('/js/tocbot.min.js') %>"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+<% } %>
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="<%- url_for('/dist/main.js') %>"></script>
+<% if (theme.image_viewer) { %><%- partial('viewer') %><% } %>
+<% if (theme.mathjax) { %><%- partial('mathjax') %><script>var ayerConfig = { mathjax: true };</script><% } %>
+<% if (theme.busuanzi && theme.busuanzi.enable) { %><script src="<%- url_for('/js/busuanzi-2.3.pure.min.js') %>"></script><% } %>
+<% if (theme.click_effect === 1) { %><script src="<%- url_for('/js/clickLove.js') %>"></script><% } %>
+<% if (theme.click_effect === 2) { %><script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script><script src="<%- url_for('/js/clickBoom1.js') %>"></script><% } %>
+<% if (theme.click_effect === 3) { %><script src="<%- url_for('/js/clickBoom2.js') %>"></script><% } %>
+<% if (theme.copy_btn === true) { %>
+<link rel="stylesheet" href="<%- url_for('/css/clipboard.css') %>" />
+<script src="<%- url_for('/js/clipboard-2.0.11.min.js') %>"></script>
+<%- partial('post/clipboard') %>
+<% } %>
+<% if (theme.canvas_bg === 1) { %><script src="<%- url_for('/js/dz.js') %>"></script><% } %>
+<script src="<%- url_for('/live2dw/lib/L2Dwidget.min.js') %>"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>

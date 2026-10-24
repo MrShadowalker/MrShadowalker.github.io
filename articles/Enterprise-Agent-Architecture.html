@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="从任务、模型、工具、记忆和治理五个层面，拆解企业级 Agent 的可落地架构。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>企业级 Agent 不是聊天机器人：从任务闭环设计架构 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Enterprise-Agent-Architecture"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  企业级 Agent 不是聊天机器人：从任务闭环设计架构
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/Enterprise-Agent-Architecture.html" class="article-date">
+  <time datetime="2026-10-24T02:00:00.000Z" itemprop="datePublished">2026-10-24</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.7k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">6 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>很多团队把 Agent 项目理解成“接一个大模型，再加一段提示词”。演示阶段确实可以这样做，但一旦任务涉及权限、业务系统和长期运行，问题就会迅速变成工程问题：模型什么时候可以决定下一步，工具失败后如何恢复，用户中途修改要求时怎样取消旧任务，哪些结果需要人工确认。</p>
+<p>企业级 Agent 的核心不是让模型多说几句话，而是把一个业务目标变成可追踪、可恢复、可审计的任务闭环。模型负责处理不确定性，平台负责约束不确定性。</p>
+<span id="more"></span>
+
+<h2 id="先定义任务，再选择-Agent-形态"><a href="#先定义任务，再选择-Agent-形态" class="headerlink" title="先定义任务，再选择 Agent 形态"></a>先定义任务，再选择 Agent 形态</h2><p>不是所有场景都需要自由规划的 Agent。一个稳定的审批流、固定的报表生成流程，使用普通工作流更容易维护。只有当步骤、数据来源或工具选择会随输入变化时，才需要把部分决策交给模型。</p>
+<p>可以先把场景按三个问题分类：</p>
+<ol>
+<li>下一步是否只有一个确定选择？如果是，优先使用工作流。</li>
+<li>是否需要根据上下文选择工具或补充问题？如果是，可以使用受约束的 Agent。</li>
+<li>是否允许任务持续运行并改变业务数据？如果是，必须增加状态机、权限和人工确认。</li>
+</ol>
+<p>这一步可以避免把确定性逻辑放进提示词里。模型不应该决定订单状态如何流转，也不应该用自然语言表达权限边界。</p>
+<h2 id="一个可维护的分层架构"><a href="#一个可维护的分层架构" class="headerlink" title="一个可维护的分层架构"></a>一个可维护的分层架构</h2><p>一个实用的企业级 Agent 通常包含以下层次：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>主要职责</th>
+<th>关键产物</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务层</td>
+<td>接收目标、拆分步骤、保存状态、处理取消和重试</td>
+<td>Task、Step、状态机</td>
+</tr>
+<tr>
+<td>推理层</td>
+<td>模型路由、提示词、结构化输出、规划和反思</td>
+<td>ModelRequest、Plan、Decision</td>
+</tr>
+<tr>
+<td>工具层</td>
+<td>访问搜索、数据库、业务 API 和文件系统</td>
+<td>Tool Contract、Tool Result</td>
+</tr>
+<tr>
+<td>上下文层</td>
+<td>管理会话、检索证据、短期与长期记忆</td>
+<td>Context、Evidence、Memory</td>
+</tr>
+<tr>
+<td>治理层</td>
+<td>身份、权限、预算、审计、内容与数据策略</td>
+<td>Policy、Approval、Audit Event</td>
+</tr>
+<tr>
+<td>运营层</td>
+<td>追踪、评测、灰度、成本和故障处理</td>
+<td>Trace、Metric、Incident</td>
+</tr>
+</tbody></table>
+<p>这些层次不一定对应六个微服务。早期可以放在一个应用中，但接口要分开。这样以后替换模型、迁移向量库或增加审批策略时，不需要重写整个 Agent。</p>
+<h2 id="用状态机承载任务，而不是依赖对话历史"><a href="#用状态机承载任务，而不是依赖对话历史" class="headerlink" title="用状态机承载任务，而不是依赖对话历史"></a>用状态机承载任务，而不是依赖对话历史</h2><p>对话历史适合帮助模型理解语境，不适合承担业务状态。建议为每个任务建立持久化状态，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATED</span><br><span class="line">  -&gt; RUNNING</span><br><span class="line">  -&gt; WAITING_FOR_INPUT</span><br><span class="line">  -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">  -&gt; SUCCEEDED</span><br><span class="line">  -&gt; FAILED</span><br><span class="line">  -&gt; CANCELED</span><br></pre></td></tr></table></figure>
+
+<p>每次工具调用都应记录输入摘要、调用者、策略结果、执行结果和下一步状态。任务恢复时根据最后一个已确认的 Step 继续，而不是把整段历史重新交给模型，让它猜测自己做到哪一步。</p>
+<p>状态迁移也要有明确规则。<code>WAITING_FOR_APPROVAL</code> 不能被模型直接改成 <code>SUCCEEDED</code>；<code>CANCELED</code> 之后的迟到工具结果不能再次写入业务数据。把这些约束写在代码和数据库层，才不会因为提示词变化而失效。</p>
+<h2 id="模型负责判断，平台负责边界"><a href="#模型负责判断，平台负责边界" class="headerlink" title="模型负责判断，平台负责边界"></a>模型负责判断，平台负责边界</h2><p>模型路由不应只按“哪个模型最强”来做。可以按照任务类型选择模型：分类、抽取、改写等简单步骤使用低成本模型；需要复杂规划或跨材料推理的步骤使用更强模型；涉及高风险写入的步骤则要求结构化输出和额外校验。</p>
+<p>模型输出最好先经过 schema 校验，再进入执行器。一个计划可以是：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;goal&quot;</span><span class="punctuation">:</span> <span class="string">&quot;核对客户合同中的付款条件&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;steps&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;read_contract&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;tool&quot;</span><span class="punctuation">:</span> <span class="string">&quot;document.read&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;args&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;document_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;...&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;compare_policy&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;tool&quot;</span><span class="punctuation">:</span> <span class="string">&quot;knowledge.search&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;args&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;query&quot;</span><span class="punctuation">:</span> <span class="string">&quot;付款条件&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;draft_result&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;tool&quot;</span><span class="punctuation">:</span> <span class="string">&quot;result.compose&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;depends_on&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;read_contract&quot;</span><span class="punctuation">,</span> <span class="string">&quot;compare_policy&quot;</span><span class="punctuation">]</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>执行器只接受允许的工具、参数类型和依赖关系。模型可以提出计划，但不能通过自由文本注入任意函数调用。</p>
+<h2 id="工具和记忆都要有边界"><a href="#工具和记忆都要有边界" class="headerlink" title="工具和记忆都要有边界"></a>工具和记忆都要有边界</h2><p>工具不是“给模型一个函数名”这么简单。工具描述需要包含输入 schema、权限要求、幂等规则、超时、重试方式和返回数据的敏感级别。读取合同和修改合同是两个不同能力，不能用一个 <code>contract</code> 工具覆盖。</p>
+<p>记忆也应该分层：当前任务所需的上下文放在短期记忆，经过确认的用户偏好才进入长期记忆，临时推理过程不应默认永久保存。每一条长期记忆都需要来源、创建时间、适用范围和删除方式。否则记忆越多，冲突和过期信息越难排查。</p>
+<h2 id="企业场景必须把治理前置"><a href="#企业场景必须把治理前置" class="headerlink" title="企业场景必须把治理前置"></a>企业场景必须把治理前置</h2><p>至少需要提前设计以下控制点：</p>
+<ul>
+<li>以用户和服务身份分别鉴权，不能只依赖前端传入的用户编号。</li>
+<li>对读取和写入设置不同权限，批量写入设置更高风险等级。</li>
+<li>为每个任务设置超时、最大步数、最大 token 和工具预算。</li>
+<li>对敏感数据做脱敏、最小化传递和访问记录。</li>
+<li>对付款、发布、删除、对外发送等动作设置审批或双人确认。</li>
+<li>保存可关联到任务的审计记录，能够回答“谁在什么时候让 Agent 做了什么”。</li>
+</ul>
+<p>治理不是上线前的文档工作，而是执行器的一部分。策略判断失败时应该安全拒绝，并告诉用户需要补充什么，而不是让模型继续猜。</p>
+<h2 id="从一个闭环开始扩展"><a href="#从一个闭环开始扩展" class="headerlink" title="从一个闭环开始扩展"></a>从一个闭环开始扩展</h2><p>企业级 Agent 适合从一条完整但范围较小的链路开始，例如“读取工单、检索知识、生成处理建议、人工确认后回写”。先把任务状态、工具契约、审计和评测跑通，再增加更多工具和自主规划能力。</p>
+<p>每增加一个工具，都要增加对应的权限测试和失败测试；每替换一次模型，都要跑回归样本；每开放一个写入动作，都要重新检查审批和幂等性。这样 Agent 才会从一次演示，逐渐变成可以交付和维护的业务系统。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/Enterprise-Agent-Architecture.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/" rel="tag">企业架构</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" rel="tag">工作流</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/Enterprise-AI-Platform-Layers.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            企业 AI 平台怎么搭：从模型接入到业务闭环的分层设计
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Java-SecKill-Reliability-Review.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">异步下单之后，还需要补上哪些可靠性环节</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
