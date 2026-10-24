@@ -115,7 +115,12 @@ var searchFunc = function (path, search_id, content_id) {
     entries = Array.from(xml.querySelectorAll('entry')).map(function (entry) {
       function value(name) { var el = entry.querySelector(name); return el ? el.textContent.trim() : ''; }
       var url;
-      try { url = new URL(value('url'), location.origin); } catch (_) { return null; }
+      var rawUrl = value('url');
+      // hexo-generator-searchdb can emit the root-prefixed path as `//...`
+      // when config.url is set. Treat that form as a local path so preview
+      // and the deployed Pages site resolve the same article URL.
+      if (rawUrl.indexOf('//') === 0) rawUrl = rawUrl.slice(1);
+      try { url = new URL(rawUrl, location.origin); } catch (_) { return null; }
       if (!['http:', 'https:'].includes(url.protocol)) return null;
       if (![location.host, 'chenzihao.me', 'mrshadowalker.github.io'].includes(url.host.toLowerCase())) return null;
       var content = new DOMParser().parseFromString(value('content'), 'text/html');

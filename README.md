@@ -1,30 +1,49 @@
 # Shadow.Net
 
-个人博客：[chenzihao.me](https://chenzihao.me)。保留 Hexo / Ayer 的海浪封面、侧栏、配色和文章样式。
+个人博客：[chenzihao.me](https://chenzihao.me)。仓库同时保存可维护的 Hexo 源码和 GitHub Pages 发布产物：`hexo/` 是唯一编辑入口，仓库根目录是可直接部署的静态结果。
 
-此仓库是 **GitHub Pages 发布产物**，不是完整的 Hexo 源码仓库。`master` 根目录由 Pages 直接发布，推送即可能更新线上。
+## 本地维护
 
-## 本地预览与检查
+首次使用先安装依赖：
 
 ```sh
-python3 scripts/serve.py
+cd hexo
+npm install
 ```
 
-访问 `http://127.0.0.1:4173`。预览只绑定本机，并会像 GitHub Pages 一样回退到自定义 `404.html`。不要在这份产物中执行 `hexo clean`，也不要直接用其他目录的 `public/` 覆盖整个仓库。
+日常编辑文章放在 `hexo/source/_posts/`，主题覆盖和公共前端资源分别放在 `hexo/themes/ayer/` 与 `hexo/source/`。文章正文保留为 HTML 片段，是为了让旧文章里的表格、代码、图片和交互标记在重建后保持不变；`about/`、`schedule/`、`pCR.html`、`rhythm.html` 和 `trip/` 是独立页面，也保留为原始静态页面。
+
+预览源工程：
 
 ```sh
+cd hexo
+npm run server
+```
+
+生成并检查静态结果：
+
+```sh
+cd hexo
+npm run build
+cd ..
 python3 scripts/check_site.py
 ```
 
-检查本地资源、HTML 根标签、依赖版本和域名配置。浏览器回归还应覆盖首页、文章、搜索、手机侧栏、目录、图片预览和代码复制；静态检查不能代替浏览器验证。
+`hexo/public/` 是构建缓存，已加入忽略规则。确认预览和检查通过后，用下面的命令把生成结果同步到仓库根目录：
 
-## 维护约定
+```sh
+cd hexo
+npm run publish
+```
 
-- 更新页面公共逻辑时，同时修改对应的 Hexo 主题源文件，否则下次生成会覆盖修复。
-- 样式修改优先放在 `css/custom.css`，保留原主题视觉基线。
-- 前端依赖使用确定版本，升级前核对主题 API 兼容性。
-- 草稿、审计证据、备份放在忽略的 `docs_private/`，不要提交进公共站点。
-- 已清理历史 `* 2.*`、`* 3.*` 等 iCloud/Finder 重复副本；`.gitignore` 已拦截同类文件，新增文章和资源请使用不带编号后缀的规范路径。
-- 发布前保留 `CNAME`、`pCR.html`、`rhythm.html` 及已有文章路径，检查文章清单、搜索、归档和 RSS 的一致性。
+也可以直接预览已经生成的 Pages 目录，并保留自定义 404 行为：
 
-2026-09-09 的本地维护记录与文章草稿入口：`docs_private/README.md`。这些文件不会随 Git 推送公开。
+```sh
+python3 scripts/serve.py --root hexo/public
+```
+
+根目录静态文件用于 GitHub Pages 发布，请不要手工编辑生成的文章、归档、分类、标签或首页 HTML；修改源码后重新 `npm run publish`。发布前会保留 `CNAME`、特殊独立页面和现有文章路径，并清理已从 Hexo 结果中移除的旧产物。
+
+## 清理记录
+
+已清理历史 `* 2.*`、`* 3.*` 等 iCloud/Finder 重复副本；`.gitignore` 已拦截同类文件。依赖版本固定在 `hexo/package.json` 和 `hexo/package-lock.json`，升级前请先检查 Ayer 主题和本地交互脚本。

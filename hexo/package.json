@@ -1,0 +1,33 @@
+{
+  "name": "shadow-net-hexo-source",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shadow.Net 的可维护 Hexo 源码工程，生成结果发布到仓库根目录。",
+  "hexo": {
+    "version": "6.3.0"
+  },
+  "scripts": {
+    "clean": "node node_modules/hexo-cli/bin/hexo clean",
+    "generate": "node node_modules/hexo-cli/bin/hexo generate && node tools/normalize-output.js",
+    "build": "node node_modules/hexo-cli/bin/hexo clean && node node_modules/hexo-cli/bin/hexo generate && node tools/normalize-output.js",
+    "server": "node node_modules/hexo-cli/bin/hexo server",
+    "publish": "node tools/publish.js"
+  },
+  "dependencies": {
+    "hexo-cli": "4.3.2",
+    "hexo-generator-archive": "2.0.0",
+    "hexo-generator-baidu-sitemap": "0.1.9",
+    "hexo-generator-category": "2.0.0",
+    "hexo-generator-feed": "4.0.0",
+    "hexo-generator-index": "4.0.0",
+    "hexo-generator-searchdb": "1.5.0",
+    "hexo-generator-sitemap": "3.0.1",
+    "hexo-generator-tag": "2.0.0",
+    "hexo-renderer-ejs": "2.0.0",
+    "hexo-renderer-marked": "6.3.0",
+    "hexo-server": "3.0.0"
+  },
+  "devDependencies": {
+    "hexo": "6.3.0"
+  }
+}

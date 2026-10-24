@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="<%= config.language || 'zh-CN' %>">
+<head>
+  <meta charset="utf-8" />
+  <% var title = page.title; if (is_archive()) { title = __('archive_a'); if (is_month()) { title += ': ' + page.year + '/' + page.month; } else if (is_year()) { title += ': ' + page.year; } } else if (is_category()) { title = page.category; } else if (is_tag()) { title = __('tag') + ': ' + page.tag; } %>
+  <% if (page.keywords) { %><meta name="keywords" content="<%= page.keywords %>,<%= config.keywords || '' %>" /><% } else if (config.keywords) { %><meta name="keywords" content="<%= config.keywords %>" /><% } %>
+  <% if (page.description) { %><meta name="description" content="<%= page.description %>" /><% } else if (config.description) { %><meta name="description" content="<%= config.description %>" /><% } %>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><% if (title) { %><%= title %> | <% } %><%= config.title %></title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <% if (theme.favicon) { %><link rel="shortcut icon" href="<%- url_for(theme.favicon) %>" /><% } %>
+  <link rel="stylesheet" href="<%- url_for('/dist/main.css') %>" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="<%- url_for('/css/custom.css') %>" />
+  <% if (theme.progressBar) { %><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script><% } %>
+  <%- partial('google-analytics') %>
+  <%- partial('baidu-analytics') %>
+  <link rel="alternate" href="<%- url_for('/atom.xml') %>" title="<%= config.title %>" type="application/atom+xml" />
+  <% if (page.content && page.content.indexOf('DPlayer') !== -1) { %><script src="<%- url_for('/assets/js/DPlayer.min.js') %>"></script><% } %>
+</head>

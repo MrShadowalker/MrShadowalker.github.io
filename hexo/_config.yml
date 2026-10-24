@@ -1,0 +1,169 @@
+title: Shadow.Net
+subtitle: 生活家 程序猿 摄影狮
+description: Valar Morghulis
+keywords: 程序员，摄影师，生活家，车手
+author: Shadowalker
+language: zh-CN
+timezone: Asia/Shanghai
+url: https://chenzihao.me
+root: /
+permalink: articles/:title.html
+permalink_defaults:
+  lang: zh-CN
+source_dir: source
+public_dir: public
+theme: ayer
+default_layout: post
+new_post_name: :title.md
+filename_case: 0
+relative_link: false
+pretty_urls:
+  trailing_index: true
+  trailing_html: true
+
+per_page: 10
+pagination_dir: page
+archive_dir: archives
+category_dir: categories
+tag_dir: tags
+
+archive_generator:
+  per_page: 10
+  yearly: true
+  monthly: true
+  daily: false
+
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+  hub:
+  content: false
+
+sitemap:
+  path: sitemap.xml
+
+baidusitemap:
+  path: baidusitemap.xml
+
+search:
+  path: search.xml
+  field: post
+  content: true
+  format: html
+
+skip_render:
+  - 404.html
+  - CNAME
+  - manifest.json
+  - robots.txt
+  - pCR.html
+  - rhythm.html
+  - about/index.html
+  - schedule/index.html
+  - trip/**/*.html
+  # These are the original browser assets. Copy them byte-for-byte instead
+  # of letting Hexo's template renderer interpret CSS/JS comments or braces.
+  - css/**
+  - js/**
+  - dist/**
+  - lib/**
+  - assets/**
+  - live2dw/**
+  - images/**
+  - articles/**
+
+theme_config:
+  menu:
+    主页: /
+    归档: /archives/
+    分类: /categories/
+    标签: /tags/
+    摄影: https://mr-shaodwalker.lofter.com/
+    计划: /schedule/
+    关于: /about/
+  ads: []
+  subtitle:
+    enable: true
+    text: 细水流年，与君同
+    text2: 繁华落尽，与君老
+    text3:
+    startDelay: 0
+    typeSpeed: 200
+    loop: true
+    backSpeed: 100
+    showCursor: true
+  favicon: /favicon.ico
+  logo: /images/avatar.png
+  cover:
+    enable: true
+    path: /images/cover1.jpg
+    logo: false
+  progressBar: true
+  broadcast:
+    enable: true
+    type: 2
+    text:
+  excerpt_link: 阅读更多...
+  excerpt_all: false
+  copy_btn: true
+  share_enable: true
+  share_china: true
+  share_text: 分享
+  nav_text:
+    page_prev: 上一页
+    page_next: 下一页
+    post_prev: 上一篇
+    post_next: 下一篇
+  toc: true
+  image_viewer: true
+  word_count:
+    enable: true
+    only_article_visit: true
+  reward_type: 2
+  reward_wording: 请我喝杯咖啡吧~
+  alipay: /images/aliPay.jpeg
+  weixin: /images/wechatPay.png
+  copyright_type: 2
+  search: true
+  rss:
+  darkmode: true
+  canvas_bg: 1
+  mouse:
+    enable: true
+    path: /images/mouse.cur
+  click_effect: 3
+  layout:
+    article_width: 80rem
+    sidebar_width: 8rem
+  github:
+    enable: true
+    url: https://github.com/MrShadowalker
+  busuanzi:
+    enable: true
+  cnzz:
+    enable: true
+    url: https://s4.cnzz.com/z_stat.php?id=1278565805&web_id=1278565805
+  baidu_analytics: 3311bd4794ea0a6b782915def3fc81fa
+  mathjax: true
+  katex:
+    enable: false
+  mermaid:
+    enable: false
+    cdn: https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
+    theme: forest
+  since: 2017
+  pageFooter: true
+  leancloud:
+    enable: true
+    app_id: pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz
+    app_key: t07S7p0VCiw6wR6HdlEjli0G
+  valine:
+    enable: true
+    avatar: mp
+    placeholder: 给我的文章加点评论吧~
+  twikoo:
+    enable: false
+
+deploy:
+  type: ''
