@@ -12,7 +12,7 @@
 <script src="<%- url_for('/dist/main.js') %>"></script>
 <% if (theme.image_viewer) { %><%- partial('viewer') %><% } %>
 <% if (theme.mathjax) { %><%- partial('mathjax') %><script>var ayerConfig = { mathjax: true };</script><% } %>
-<% if (theme.busuanzi && theme.busuanzi.enable) { %><script src="<%- url_for('/js/busuanzi-2.3.pure.min.js?v=4-leancloud') %>"></script><% } %>
+<% if (theme.busuanzi && theme.busuanzi.enable) { %><script src="<%- url_for('/js/busuanzi-2.3.pure.min.js?v=5-leancloud') %>"></script><% } %>
 <% if (theme.click_effect === 1) { %><script src="<%- url_for('/js/clickLove.js') %>"></script><% } %>
 <% if (theme.click_effect === 2) { %><script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script><script src="<%- url_for('/js/clickBoom1.js') %>"></script><% } %>
 <% if (theme.click_effect === 3) { %><script src="<%- url_for('/js/clickBoom2.js') %>"></script><% } %>
