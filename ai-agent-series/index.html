@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="Valar Morghulis" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 全栈开发 180 天成长系列 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="page-"
+  class="article article-type-page"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AI 全栈开发 180 天成长系列
+</h1>
+ 
+
+      
+    </header>
+       
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="AI-全栈开发-180-天成长系列"><a href="#AI-全栈开发-180-天成长系列" class="headerlink" title="AI 全栈开发 180 天成长系列"></a>AI 全栈开发 180 天成长系列</h1><p>这是一条面向有 Java&#x2F;后端基础、希望转向 AI 全栈开发的学习与实践路线。每天一篇文章，配套面试题、资料和一个可提交的项目任务；每七天复盘一次，每三十天交付一个阶段项目。</p>
+<p>总目标是完成一个企业级 Agent 平台最小实现：它能处理有状态任务，按权限检索知识，调用受控工具，等待人工审批，返回带证据的结果，并能通过评测、trace、成本和审计数据持续运营。</p>
+<h2 id="每日交付格式"><a href="#每日交付格式" class="headerlink" title="每日交付格式"></a>每日交付格式</h2><ol>
+<li>主文章：概念、架构、代码或伪代码、常见坑和实践任务。</li>
+<li>面试题：3-5 道，标注方向、难度、参考答案和追问。</li>
+<li>资料：优先官方文档、论文、公司技术博客和可核验的公开题目，记录检索日期。</li>
+<li>项目提交：代码、测试、架构图、评测样本或复盘记录。</li>
+</ol>
+<h2 id="六个月路线"><a href="#六个月路线" class="headerlink" title="六个月路线"></a>六个月路线</h2><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th align="right">天数</th>
+<th>主线</th>
+<th>阶段产物</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>第 1 月</td>
+<td align="right">1-30</td>
+<td>模型工程、上下文、Token、Prompt、结构化输出、模型 API、流式与重试</td>
+<td>统一 <code>ModelClient</code> 与最小对话服务</td>
+</tr>
+<tr>
+<td>第 2 月</td>
+<td align="right">31-60</td>
+<td>Tool Calling、ReAct、Planner、Workflow、Agent Runtime、状态机、记忆、MCP、Pi、Claude Code、ChatGPT Agent</td>
+<td>可恢复的任务型 Agent</td>
+</tr>
+<tr>
+<td>第 3 月</td>
+<td align="right">61-90</td>
+<td>文档解析、切分、混合检索、重排、权限过滤、引用、知识版本、SQL 与多模态 RAG</td>
+<td>带引用的企业知识助手</td>
+</tr>
+<tr>
+<td>第 4 月</td>
+<td align="right">91-120</td>
+<td>模型注册与路由、限流、成本、工具注册中心、租户身份、Prompt 版本、队列、异步、微服务与 K8s</td>
+<td>企业 AI 平台骨架与架构文档</td>
+</tr>
+<tr>
+<td>第 5 月</td>
+<td align="right">121-150</td>
+<td>评测集、LLM-as-judge、回归、提示词注入、越权、审批、审计、Trace、灰度、降级、SLA</td>
+<td>评测流水线、安全测试集与监控面板</td>
+</tr>
+<tr>
+<td>第 6 月</td>
+<td align="right">151-180</td>
+<td>React&#x2F;Next.js、SSE&#x2F;WebSocket、后端工程、数据库、缓存、部署、系统设计、项目复盘与模拟面试</td>
+<td>一个可演示的企业级 Agent 项目</td>
+</tr>
+</tbody></table>
+<h2 id="已完成文章"><a href="#已完成文章" class="headerlink" title="已完成文章"></a>已完成文章</h2><h3 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h3><ul>
+<li><strong>Day 1｜<a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html">企业级 Agent 全栈开发路线图：从模型调用到可运营平台的 180 天</a></strong></li>
+<li><strong>Day 2｜<a href="/articles/AI-Agent-Runtime-State-Machine.html">Agent Runtime 怎么设计：状态机、可恢复执行与幂等</a></strong></li>
+<li><strong>Day 3｜<a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界</a></strong></li>
+<li><strong>Day 4｜<a href="/articles/AI-Token-Context-Budget-Prompt-Version.html">Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控</a></strong></li>
+<li><strong>Day 5｜<a href="/articles/AI-Prompt-Regression-Golden-Set.html">Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度</a></strong></li>
+</ul>
+<h3 id="已有相关文章"><a href="#已有相关文章" class="headerlink" title="已有相关文章"></a>已有相关文章</h3><p>这些文章作为系列的预备材料，分别覆盖架构、平台、工具安全和运营评测：</p>
+<ul>
+<li><a href="/articles/Enterprise-Agent-Architecture.html">企业级 Agent 不是聊天机器人：从任务闭环设计架构</a></li>
+<li><a href="/articles/Enterprise-AI-Platform-Layers.html">企业 AI 平台怎么搭：从模型接入到业务闭环的分层设计</a></li>
+<li><a href="/articles/Agent-Tool-Calling-Security.html">Agent 工具调用怎么做才安全：权限、审批与审计</a></li>
+<li><a href="/articles/Agent-Evaluation-and-Operations.html">Agent 上线前评测什么：从离线样本到线上运维</a></li>
+<li><a href="/articles/AI-Knowledge-Evidence.html">知识库能搜到，为什么还是答不准？</a></li>
+<li><a href="/articles/AI-QA-Evaluation.html">给 AI 问答做测试：先把错误分清楚</a></li>
+</ul>
+<h3 id="后续目录"><a href="#后续目录" class="headerlink" title="后续目录"></a>后续目录</h3><p>后续文章会按下面的顺序追加；每天发布后把当天链接补到对应阶段。</p>
+<h4 id="第-1-月：模型工程和服务基础"><a href="#第-1-月：模型工程和服务基础" class="headerlink" title="第 1 月：模型工程和服务基础"></a>第 1 月：模型工程和服务基础</h4><ul>
+<li>Day 2：Agent Runtime 的状态机、可恢复执行与幂等（提前建立后续 Agent 文章的共同状态模型）</li>
+<li>Day 3：<a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">统一 ModelClient、消息、结构化输出、流式与重试的边界</a></li>
+<li>Day 4：<a href="/articles/AI-Token-Context-Budget-Prompt-Version.html">Token 与上下文预算、Prompt 版本、压缩、缓存与成本控制</a></li>
+<li>Day 5：<a href="/articles/AI-Prompt-Regression-Golden-Set.html">Prompt 回归测试、Golden Set、评测门槛与灰度</a></li>
+<li>Day 6：Token 计量与上下文压缩实验</li>
+<li>Day 7：首周复盘与小测</li>
+<li>Day 8-14：Embedding、模型路由、缓存和成本统计</li>
+<li>Day 15-21：Python&#x2F;TypeScript 服务、异步任务、数据库模型和 API 设计</li>
+<li>Day 22-30：最小对话服务、回归样本、阶段项目一：模型网关</li>
+</ul>
+<h4 id="第-2-月：Agent-核心与运行时"><a href="#第-2-月：Agent-核心与运行时" class="headerlink" title="第 2 月：Agent 核心与运行时"></a>第 2 月：Agent 核心与运行时</h4><ul>
+<li>Day 31-37：Tool Calling 与工具契约</li>
+<li>Day 38-44：ReAct、Planner、Workflow 与 Agent 的边界</li>
+<li>Day 45-51：任务状态机、暂停、取消、重试和可恢复执行</li>
+<li>Day 52-56：短期记忆、长期记忆和上下文压缩</li>
+<li>Day 57-60：MCP、Pi、Claude Code、ChatGPT Agent 对照实践与阶段项目二</li>
+</ul>
+<h4 id="第-3-月：RAG-与企业数据"><a href="#第-3-月：RAG-与企业数据" class="headerlink" title="第 3 月：RAG 与企业数据"></a>第 3 月：RAG 与企业数据</h4><ul>
+<li>Day 61-67：文档解析、切分、元数据和知识版本</li>
+<li>Day 68-74：向量检索、关键词检索、混合检索与重排</li>
+<li>Day 75-81：租户隔离、权限过滤、引用和证据链</li>
+<li>Day 82-88：SQL、结构化数据和多模态 RAG</li>
+<li>Day 89-90：知识助手发布、回归集和阶段项目三复盘</li>
+</ul>
+<h4 id="第-4-月：企业-AI-平台"><a href="#第-4-月：企业-AI-平台" class="headerlink" title="第 4 月：企业 AI 平台"></a>第 4 月：企业 AI 平台</h4><ul>
+<li>Day 91-97：模型注册、路由、限流、配额和成本</li>
+<li>Day 98-104：Agent Runtime、工具注册中心和配置管理</li>
+<li>Day 105-111：租户、身份、权限、Prompt 与策略版本</li>
+<li>Day 112-118：队列、异步执行、微服务与 Kubernetes</li>
+<li>Day 119-120：平台骨架演示和阶段项目四复盘</li>
+</ul>
+<h4 id="第-5-月：质量、安全与运营"><a href="#第-5-月：质量、安全与运营" class="headerlink" title="第 5 月：质量、安全与运营"></a>第 5 月：质量、安全与运营</h4><ul>
+<li>Day 121-127：评测集、指标分层和人工标尺</li>
+<li>Day 128-134：LLM-as-judge、回归和线上失败样本</li>
+<li>Day 135-141：提示词注入、越权、敏感数据与工具安全</li>
+<li>Day 142-147：审批、幂等、审计、Trace 和可观测性</li>
+<li>Day 148-150：灰度、降级、SLA、成本面板和阶段项目五复盘</li>
+</ul>
+<h4 id="第-6-月：全栈交付与面试"><a href="#第-6-月：全栈交付与面试" class="headerlink" title="第 6 月：全栈交付与面试"></a>第 6 月：全栈交付与面试</h4><ul>
+<li>Day 151-157：React&#x2F;Next.js、任务列表、流式输出和引用交互</li>
+<li>Day 158-164：SSE&#x2F;WebSocket、数据库、缓存和前后端错误处理</li>
+<li>Day 165-171：容器、CI&#x2F;CD、部署、压测和故障演练</li>
+<li>Day 172-176：系统设计、项目讲解、简历要点和行为面试</li>
+<li>Day 177-179：国内大厂专题题库与模拟面试</li>
+<li>Day 180：最终演示、项目复盘和下一阶段计划</li>
+</ul>
+<h2 id="复习标签"><a href="#复习标签" class="headerlink" title="复习标签"></a>复习标签</h2><p>后续面试题统一使用这些标签，便于按主题回顾：<code>模型基础</code>、<code>Prompt</code>、<code>结构化输出</code>、<code>RAG</code>、<code>Agent</code>、<code>Tool Calling</code>、<code>MCP</code>、<code>AI 平台</code>、<code>安全</code>、<code>评测</code>、<code>可观测性</code>、<code>系统设计</code>、<code>前端与部署</code>。</p>
+<h2 id="项目验收标准"><a href="#项目验收标准" class="headerlink" title="项目验收标准"></a>项目验收标准</h2><ul>
+<li>任务有明确状态，支持暂停、取消、重试和恢复。</li>
+<li>模型、检索、工具和策略版本可追踪。</li>
+<li>工具调用经过身份、权限、schema、审批和幂等校验。</li>
+<li>答案中的关键事实能关联到证据和知识版本。</li>
+<li>线上运行能看到成功率、延迟、token、工具成本、拒绝和人工接管。</li>
+<li>每次重要改动都有回归样本和失败案例记录。</li>
+</ul>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/ai-agent-series/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+    </footer>
+  </div>
+
+   
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+    
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

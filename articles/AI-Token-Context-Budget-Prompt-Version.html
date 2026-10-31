@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="把 Token 当成 Agent 的容量、延迟和成本预算，设计 Prompt 版本、上下文拼装、压缩、缓存和按租户计量。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Token-Context-Budget-Prompt-Version"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Token-Context-Budget-Prompt-Version.html" class="article-date">
+  <time datetime="2026-10-30T01:00:00.000Z" itemprop="datePublished">2026-10-30</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">5.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">19 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>昨天把模型调用收敛成了 <code>ModelClient</code>。今天继续解决一个很容易被 Demo 掩盖的问题：<strong>Agent 为什么越跑越慢、越跑越贵，而且还可能答得更差？</strong></p>
+<p>原因通常不是某一个模型突然变笨，而是每一轮都把系统指令、工具定义、历史消息、检索结果和上一次工具输出重新送进上下文。输入 Token 增长会带来更高的首 token 延迟和费用，也会让真正有用的信息在注意力里被稀释。上下文窗口变大只能延后问题，不能代替预算设计。</p>
+<p>今天把 Token 当成一种需要分配、计量和回收的资源，建立一套适合 Java&#x2F;后端服务的上下文预算方案：Prompt 有版本，消息有优先级，压缩有可回查指针，缓存有命中指标，租户有硬上限。</p>
+<span id="more"></span>
+
+<h2 id="Token-是容量、延迟和费用的共同单位"><a href="#Token-是容量、延迟和费用的共同单位" class="headerlink" title="Token 是容量、延迟和费用的共同单位"></a>Token 是容量、延迟和费用的共同单位</h2><p>一次模型请求的资源账本至少包含下面几项：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_tokens = system + developer + tools + history</span><br><span class="line">             + retrieved_context + current_user</span><br><span class="line">output_tokens = visible_output + tool_arguments + reasoning</span><br><span class="line">billable_tokens = input_tokens + output_tokens</span><br></pre></td></tr></table></figure>
+
+<p>不同模型的计费和上下文窗口可能不同，但工程上都要回答四个问题：</p>
+<ol>
+<li>这次请求最多允许使用多少输入和输出 Token？</li>
+<li>哪些内容必须保留，哪些内容可以裁剪、摘要或外置？</li>
+<li>发生重试、压缩或模型降级时，剩余预算是多少？</li>
+<li>成本应该归属哪个租户、用户、任务和版本？</li>
+</ol>
+<p>不要用字符数直接代替 Token。中文、代码、JSON、URL、图片和不同模型的分词结果差异很大。早期可以用字符数做快速保护，正式计费和边界判断应使用目标模型的 tokenizer 或供应商提供的 usage 字段，并在实际调用后用真实值校正估算器。</p>
+<h3 id="输入预算和输出预算要分开"><a href="#输入预算和输出预算要分开" class="headerlink" title="输入预算和输出预算要分开"></a>输入预算和输出预算要分开</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">context_window &gt;= input_tokens</span><br><span class="line">                 + max_output_tokens</span><br><span class="line">                 + reasoning_reserve</span><br><span class="line">                 + safety_margin</span><br></pre></td></tr></table></figure>
+
+<p><code>max_output_tokens</code> 不是“模型一定会输出这么多”，而是要为最坏情况预留的上限。Agent 还要给工具参数、错误修正和最终答案预留空间；如果把整个窗口都填满输入，模型可能还没开始回答就因为输出空间不足而截断。</p>
+<p>可以为一次任务建立预算账本：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>例子</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>固定前缀</td>
+<td>系统规则、稳定示例、工具契约</td>
+<td>版本化，尽量保持字节不变</td>
+</tr>
+<tr>
+<td>当前任务</td>
+<td>用户目标、当前约束、待办</td>
+<td>必须保留，结构化表达</td>
+</tr>
+<tr>
+<td>历史上下文</td>
+<td>最近消息、阶段摘要</td>
+<td>按 token 阈值滚动压缩</td>
+</tr>
+<tr>
+<td>外部证据</td>
+<td>检索片段、工具结果</td>
+<td>只放相关片段，保留引用 ID</td>
+</tr>
+<tr>
+<td>输出预留</td>
+<td>最终答案、工具参数、推理预算</td>
+<td>设置硬上限，留安全余量</td>
+</tr>
+<tr>
+<td>预算余量</td>
+<td>重试、澄清、错误修正</td>
+<td>到阈值时停止扩张</td>
+</tr>
+</tbody></table>
+<h2 id="Prompt-是可发布的软件资产"><a href="#Prompt-是可发布的软件资产" class="headerlink" title="Prompt 是可发布的软件资产"></a>Prompt 是可发布的软件资产</h2><p>Prompt 版本化不是给文本加一个日期后缀，而是要让一次模型调用能够重现。建议把 Prompt 作为独立记录管理：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">prompt_id       = incident_triage</span><br><span class="line">prompt_version  = 2026-10-30.2</span><br><span class="line">content_hash    = sha256(rendered_template)</span><br><span class="line">input_schema    = incident_request_v3</span><br><span class="line">output_schema   = triage_decision_v2</span><br><span class="line">model_policy    = support-agent-default</span><br><span class="line">status          = draft | evaluated | released | retired</span><br><span class="line">owner           = sre-ai</span><br></pre></td></tr></table></figure>
+
+<p>每一次请求记录 <code>prompt_id</code>、<code>prompt_version</code>、模板哈希、输入 Schema、输出 Schema、模型版本、采样参数、上下文构造策略和评测版本。这样排查线上波动时，可以区分：</p>
+<ul>
+<li>Prompt 改动导致指令顺序变化。</li>
+<li>工具定义或字段描述变化导致 Token 和选择率变化。</li>
+<li>模型路由变化导致质量或延迟变化。</li>
+<li>上下文压缩版本变化导致事实丢失。</li>
+<li>用户输入或检索数据本身发生变化。</li>
+</ul>
+<p>Prompt 发布应该像代码发布一样经过草稿、离线评测、灰度和回滚。至少保留一组固定样本，比较任务成功率、Schema 通过率、引用准确率、P95 延迟和每任务成本。只看“回答读起来不错”无法判断一行 Prompt 是否让工具调用或长尾任务退化。</p>
+<h3 id="Prompt-的稳定前缀和动态后缀"><a href="#Prompt-的稳定前缀和动态后缀" class="headerlink" title="Prompt 的稳定前缀和动态后缀"></a>Prompt 的稳定前缀和动态后缀</h3><p>如果供应商支持 Prompt Caching，通常只会复用完整匹配的前缀。建议按下面顺序组织请求：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">稳定前缀：系统规则 + 版本化示例 + 稳定工具定义</span><br><span class="line">可替换区：租户级策略 + 当前 Skill</span><br><span class="line">动态后缀：用户消息 + 当前检索结果 + 最新工具结果</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方文档</a>说明，缓存复用依赖前缀匹配，工具名称、描述、Schema 和顺序变化都可能破坏命中；缓存减少的是重复处理前缀的成本和延迟，不会复用旧答案，也不代表每次请求都一定命中。</p>
+<p>所以不要为了“看起来模块化”而每轮随机排序工具、插入当前时间或重新渲染同一段 Markdown。稳定内容保持字节级一致，动态内容放在后面；同时记录 <code>cached_tokens</code>、总输入 Token、首 token 延迟和实际费用，用数据验证缓存是否真的有效。</p>
+<h2 id="上下文拼装要有预算分配器"><a href="#上下文拼装要有预算分配器" class="headerlink" title="上下文拼装要有预算分配器"></a>上下文拼装要有预算分配器</h2><p>把所有消息直接 <code>messages.addAll()</code> 是上下文失控的起点。应该先定义每类内容的上限和优先级，再由 <code>ContextBuilder</code> 组装一次请求。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ContextBudget</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="type">int</span> maxInputTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> maxOutputTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> reserveTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> systemTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> taskTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> recentHistoryTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> retrievedTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> toolResultTokens</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">usableInputTokens</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> maxInputTokens - reserveTokens;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ContextBlock</span><span class="params">(</span></span><br><span class="line"><span class="params">    String id,</span></span><br><span class="line"><span class="params">    BlockType type,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> estimatedTokens,</span></span><br><span class="line"><span class="params">    Priority priority,</span></span><br><span class="line"><span class="params">    <span class="type">boolean</span> required,</span></span><br><span class="line"><span class="params">    String content</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">BlockType</span> &#123;</span><br><span class="line">    SYSTEM, POLICY, TASK, STATE, HISTORY, EVIDENCE, TOOL_RESULT, MEMORY</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">Priority</span> &#123; REQUIRED, HIGH, MEDIUM, LOW &#125;</span><br></pre></td></tr></table></figure>
+
+<p>拼装步骤可以是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1. 放入 SYSTEM、租户策略、权限和任务状态</span><br><span class="line">2. 放入当前用户目标与完成标准</span><br><span class="line">3. 按相关性选择证据和工具结果</span><br><span class="line">4. 从最近消息向前加入历史，直到达到 history 配额</span><br><span class="line">5. 如果超过总预算，依次执行裁剪、摘要、外置和分流</span><br><span class="line">6. 计算真实/估算 Token，确认仍为 input + output + reserve &lt;= window</span><br><span class="line">7. 固化 context_version，写入 trace</span><br></pre></td></tr></table></figure>
+
+<p><code>required=true</code> 的块不能因为普通历史变长而被挤掉。权限范围、审批状态、金额、日期、租户 ID、资源版本和任务完成条件都属于硬约束；超过预算时应减少低优先级历史或降低任务范围，而不是删除这些字段。</p>
+<h3 id="不是越多信息越好"><a href="#不是越多信息越好" class="headerlink" title="不是越多信息越好"></a>不是越多信息越好</h3><p>上下文有三个常见的质量风险：</p>
+<ul>
+<li><strong>噪声：</strong> 无关的检索片段和工具日志让模型把注意力放在错误位置。</li>
+<li><strong>冲突：</strong> 旧消息和新数据库状态同时出现，但没有标记哪个版本生效。</li>
+<li><strong>污染：</strong> 一个子 Agent 收到主 Agent 的全部中间推理和不相关历史，产生错误的委派或重复工作。</li>
+</ul>
+<p>每个子 Agent 只接受完成自己任务所需的输入，返回结构化交付物和证据 ID。不要把一个大上下文复制给所有节点；这既浪费 Token，也让责任边界变模糊。</p>
+<h2 id="上下文压缩：先保存可恢复状态，再生成摘要"><a href="#上下文压缩：先保存可恢复状态，再生成摘要" class="headerlink" title="上下文压缩：先保存可恢复状态，再生成摘要"></a>上下文压缩：先保存可恢复状态，再生成摘要</h2><p>上下文压缩的目标不是把文字变短，而是保留下一步决策所需的最小状态。建议按四种动作从低成本到高成本处理：</p>
+<ol>
+<li><strong>裁剪：</strong> 丢弃寒暄、重复日志、已经确认且不再影响决策的旧内容。</li>
+<li><strong>摘要：</strong> 把一组消息或工具调用结果压缩成阶段结论。</li>
+<li><strong>外置：</strong> 将大段文档、完整工具结果、代码 diff 和附件落到数据库或对象存储，给模型保留索引与关键片段。</li>
+<li><strong>分流：</strong> 把独立子任务交给独立上下文，只返回结构化结果，不共享整段历史。</li>
+</ol>
+<p>压缩前先抽取一个结构化状态，而不是直接让模型“总结一下”：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;goal&quot;</span><span class="punctuation">:</span> <span class="string">&quot;为订单 20261030-001 生成退款审批建议&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;completion_criteria&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;核对支付状态&quot;</span><span class="punctuation">,</span> <span class="string">&quot;确认租户权限&quot;</span><span class="punctuation">,</span> <span class="string">&quot;输出审批结论&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;constraints&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;金额超过 5000 需要人工审批&quot;</span><span class="punctuation">,</span> <span class="string">&quot;不得修改订单&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;confirmed_facts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;key&quot;</span><span class="punctuation">:</span> <span class="string">&quot;payment_status&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;value&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PAID&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;source&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tool_call_17&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;pending_steps&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;查询退款历史&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;decisions&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;artifacts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tool_result_17&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;location&quot;</span><span class="punctuation">:</span> <span class="string">&quot;s3://...&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;支付状态查询结果&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">4</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>摘要正文可以变化，但 <code>goal</code>、<code>constraints</code>、<code>confirmed_facts</code>、<code>pending_steps</code> 和 <code>artifacts</code> 要有 Schema、版本和来源。金额、编号、时间、权限、否定关系和状态迁移不能只存在自然语言摘要里。</p>
+<h3 id="什么时候触发压缩"><a href="#什么时候触发压缩" class="headerlink" title="什么时候触发压缩"></a>什么时候触发压缩</h3><p>按对话轮数触发不可靠：一轮可能只有十几个 Token，也可能包含一个很长的工具结果。更合理的触发条件是预算和风险的组合：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">if estimated_input_tokens &gt; 0.70 * max_input_tokens:</span><br><span class="line">    prepare_compaction()</span><br><span class="line"></span><br><span class="line">if estimated_input_tokens &gt; 0.85 * max_input_tokens:</span><br><span class="line">    compact_before_next_model_call()</span><br><span class="line"></span><br><span class="line">if context_loss_risk &gt; threshold:</span><br><span class="line">    stop_and_ask_user_or_externalize()</span><br></pre></td></tr></table></figure>
+
+<p>提前压缩可以避免下一轮已经没有空间才匆忙总结。每次压缩生成 <code>summary_version</code>，并记录它基于哪些 <code>message_id</code>、<code>tool_result_id</code> 和事件版本。压缩后仍然可以根据引用读取原文，出现摘要错误时能回退和重建。</p>
+<h3 id="长工具结果怎么压缩"><a href="#长工具结果怎么压缩" class="headerlink" title="长工具结果怎么压缩"></a>长工具结果怎么压缩</h3><p>工具返回一万行日志时，不要直接把全文塞回下一轮。推荐保存三层内容：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">原始结果：对象存储/数据库，可按权限回查</span><br><span class="line">结构化元数据：查询条件、时间范围、总条数、是否截断、版本</span><br><span class="line">模型摘要：结论、异常行、下一步建议、原文引用 ID</span><br></pre></td></tr></table></figure>
+
+<p>摘要必须明确“这是前 1000 条中的摘要”还是“完整结果的统计”，否则模型会把截断数据当成全量数据。对于金额、错误码、资源 ID 等关键字段，保留原始片段或确定性聚合结果，不要只依赖模型重述。</p>
+<h2 id="Token-预算要贯穿-Agent-的每一层"><a href="#Token-预算要贯穿-Agent-的每一层" class="headerlink" title="Token 预算要贯穿 Agent 的每一层"></a>Token 预算要贯穿 Agent 的每一层</h2><p>只在 API 网关记录总费用不够。一次任务可能有多个模型调用、重试、摘要调用、子 Agent 和工具结果。需要把预算从租户到步骤逐层传递：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">租户月度额度</span><br><span class="line">  -&gt; 用户/项目额度</span><br><span class="line">      -&gt; Task 总预算</span><br><span class="line">          -&gt; Step 预算</span><br><span class="line">              -&gt; Model Call input/output/retry 预算</span><br></pre></td></tr></table></figure>
+
+<p>每层都有硬上限和软上限：</p>
+<ul>
+<li><strong>硬上限：</strong> 达到后拒绝新调用、转异步或转人工，不能由模型请求覆盖。</li>
+<li><strong>软上限：</strong> 触发小模型、摘要、减少检索 TopK 或缩短输出。</li>
+<li><strong>保留额度：</strong> 为错误修正、审批和最终答案保留，不允许前面的历史无限消耗。</li>
+</ul>
+<p>一次模型调用的计量记录可以是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">trace_id, task_id, step_id, tenant_id,</span><br><span class="line">model, model_version, prompt_version, context_version,</span><br><span class="line">input_tokens, cached_tokens, output_tokens, reasoning_tokens,</span><br><span class="line">retry_count, latency_ms, first_token_ms,</span><br><span class="line">unit_price, estimated_cost, actual_cost,</span><br><span class="line">budget_before, budget_after, finish_reason</span><br></pre></td></tr></table></figure>
+
+<p>成本不能只除以请求数。至少要按“成功任务”统计平均成本和 P95 成本；失败重试、压缩调用、路由降级和子 Agent 都要算入同一条任务账单。这样才能比较“多花一次摘要调用是否减少了后续五轮输入”这种真实决策。</p>
+<h3 id="成本控制的顺序"><a href="#成本控制的顺序" class="headerlink" title="成本控制的顺序"></a>成本控制的顺序</h3><p>建议按下面顺序优化：</p>
+<ol>
+<li>先移除无关上下文和重复工具结果。</li>
+<li>再用结构化输出减少无用解释和重复文本。</li>
+<li>合并可并行的判断，减少模型轮次。</li>
+<li>稳定前缀，测量 Prompt Cache 命中和实际费用。</li>
+<li>按任务难度路由模型，小模型处理分类、改写和摘要。</li>
+<li>最后才调低输出上限或强行截断，因为这可能直接损害任务成功率。</li>
+</ol>
+<p>优化前后必须使用同一评测集比较质量、延迟和成本。只有成本下降而任务成功率明显下降，不能算优化。</p>
+<h2 id="模型路由要看任务预算，不是只看价格"><a href="#模型路由要看任务预算，不是只看价格" class="headerlink" title="模型路由要看任务预算，不是只看价格"></a>模型路由要看任务预算，不是只看价格</h2><p>Day 3 的 <code>ModelGateway</code> 可以在这里加入预算感知路由。路由输入至少包括：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">task_type, quality_target, context_tokens,</span><br><span class="line">remaining_budget, deadline, tenant_policy,</span><br><span class="line">data_sensitivity, tool_required, retry_count</span><br></pre></td></tr></table></figure>
+
+<p>一个简单策略如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">if data_sensitivity == HIGH:</span><br><span class="line">    choose approved_model_only</span><br><span class="line">else if remaining_budget &lt; LOW_WATERMARK:</span><br><span class="line">    choose small_model or ask_for_confirmation</span><br><span class="line">else if context_tokens &gt; large_context_threshold:</span><br><span class="line">    choose context-capable_model</span><br><span class="line">else if deadline - now &lt; short_deadline:</span><br><span class="line">    choose low-latency_model</span><br><span class="line">else:</span><br><span class="line">    choose model_from_quality_baseline</span><br></pre></td></tr></table></figure>
+
+<p>模型降级不能只改变 <code>model</code> 字段。不同模型可能支持不同上下文窗口、Schema、工具数量、缓存策略和安全等级。路由后要重新计算可用预算和能力矩阵；如果目标模型不支持当前输出 Schema，应先切换兼容的 Prompt&#x2F;解析策略，不能把不兼容请求直接发送出去。</p>
+<h2 id="Java-服务的-ContextBuilder-伪代码"><a href="#Java-服务的-ContextBuilder-伪代码" class="headerlink" title="Java 服务的 ContextBuilder 伪代码"></a>Java 服务的 ContextBuilder 伪代码</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">ContextResult</span> <span class="title function_">build</span><span class="params">(</span></span><br><span class="line"><span class="params">    TaskState task,</span></span><br><span class="line"><span class="params">    PromptTemplate prompt,</span></span><br><span class="line"><span class="params">    List&lt;Message&gt; history,</span></span><br><span class="line"><span class="params">    List&lt;Evidence&gt; evidence,</span></span><br><span class="line"><span class="params">    ContextBudget budget,</span></span><br><span class="line"><span class="params">    TokenCounter counter</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">    <span class="type">List</span>&lt;ContextBlock&gt; <span class="variable">blocks</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    blocks.add(required(prompt.renderStablePrefix()));</span><br><span class="line">    blocks.add(required(renderPolicy(task.tenantPolicy())));</span><br><span class="line">    blocks.add(required(renderTaskState(task)));</span><br><span class="line">    blocks.add(required(renderUserGoal(task.userGoal())));</span><br><span class="line"></span><br><span class="line">    addByBudget(blocks, evidence, budget.retrievedTokens(), Priority.HIGH);</span><br><span class="line">    addByBudget(blocks, recent(history), budget.recentHistoryTokens(), Priority.MEDIUM);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">estimated</span> <span class="operator">=</span> counter.count(blocks);</span><br><span class="line">    <span class="keyword">if</span> (estimated &gt; budget.usableInputTokens()) &#123;</span><br><span class="line">        blocks = compactAndExternalize(blocks, budget, counter);</span><br><span class="line">        estimated = counter.count(blocks);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (estimated + budget.maxOutputTokens() + budget.reserveTokens()</span><br><span class="line">            &gt; budget.maxInputTokens()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ContextBudgetExceeded</span>(estimated);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">ContextResult</span>(blocks, estimated, contextVersion(blocks));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>required()</code> 不是说所有必需内容都永远不能缩短，而是说其语义不能被普通裁剪删除。系统规则可以使用一个经过评测的短版本，工具结果可以外置，历史可以摘要，但任务授权和完成条件必须仍然可验证。</p>
+<h2 id="可观测性和评测：证明压缩没有把任务压坏"><a href="#可观测性和评测：证明压缩没有把任务压坏" class="headerlink" title="可观测性和评测：证明压缩没有把任务压坏"></a>可观测性和评测：证明压缩没有把任务压坏</h2><p>上下文工程要同时看三类指标：</p>
+<h3 id="资源指标"><a href="#资源指标" class="headerlink" title="资源指标"></a>资源指标</h3><ul>
+<li>输入、输出、推理和缓存命中 Token。</li>
+<li>每任务成本、每租户成本、重试成本。</li>
+<li>首 token、总延迟、上下文压缩耗时。</li>
+<li>上下文使用率、超限率、平均消息数。</li>
+</ul>
+<h3 id="行为指标"><a href="#行为指标" class="headerlink" title="行为指标"></a>行为指标</h3><ul>
+<li>结构化输出通过率。</li>
+<li>任务成功率、工具选择准确率、引用准确率。</li>
+<li>压缩前后事实保留率、数字&#x2F;实体&#x2F;权限规则错误率。</li>
+<li>模型降级后的质量差异。</li>
+</ul>
+<h3 id="运维指标"><a href="#运维指标" class="headerlink" title="运维指标"></a>运维指标</h3><ul>
+<li>Prompt&#x2F;Schema&#x2F;模型版本的失败分布。</li>
+<li>缓存命中下降、上下文超限、摘要失败告警。</li>
+<li>单租户突发 Token 消耗和预算拒绝率。</li>
+<li>长任务 P95&#x2F;P99 延迟及其阶段分解。</li>
+</ul>
+<p>为压缩单独准备回归集：长对话、多个冲突事实、包含金额和日期、长工具结果、用户修改约束、人工审批和断点恢复。分别比较“原始上下文”和“压缩上下文”的任务结果，不能只让另一个模型评价摘要是否通顺。</p>
+<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>在 Day 3 的 <code>ModelClient</code> 之上实现一个 <code>ContextBuilder</code>：</p>
+<ul>
+<li>定义固定前缀、任务状态、历史、证据和工具结果五类块。</li>
+<li>为每类块设置 Token 配额、优先级和是否必需。</li>
+<li>模拟上下文达到 70%、85% 和 100% 时的裁剪、摘要、外置和失败策略。</li>
+<li>保存 <code>prompt_version</code>、<code>context_version</code>、<code>summary_version</code> 和每次压缩的来源 ID。</li>
+<li>输出一份成本报告，至少包含输入、输出、缓存命中、压缩调用和重试成本。</li>
+<li>用 10 条长任务样本比较压缩前后的任务成功率、关键事实保留率和 P95 延迟。</li>
+</ul>
+<p>提交物是 <code>ContextBuilder</code> 接口、预算分配表、两种压缩策略的对比记录和一份可以解释“为什么删掉这段历史”的 trace。明天继续研究 Embedding、模型路由和缓存，把今天的预算接到具体的检索与模型选择上。</p>
+<h2 id="近期面试题整理（检索日期：2026-10-30）"><a href="#近期面试题整理（检索日期：2026-10-30）" class="headerlink" title="近期面试题整理（检索日期：2026-10-30）"></a>近期面试题整理（检索日期：2026-10-30）</h2><p>以下题目来自近期公开面经和题库页面，页面多数标注原始来源为牛客网；聚合页面的解析经过整理，适合练习回答结构，不能替代真实代码和评测。</p>
+<h3 id="1-Agent-上下文越来越长，应该怎样处理？"><a href="#1-Agent-上下文越来越长，应该怎样处理？" class="headerlink" title="1. Agent 上下文越来越长，应该怎样处理？"></a>1. Agent 上下文越来越长，应该怎样处理？</h3><p><strong>方向：</strong> 上下文工程；<strong>难度：</strong> 中高。</p>
+<p>先给 system、任务状态、检索证据、最近历史和工具结果分别设置 Token 配额，超过阈值按优先级处理：先裁剪重复内容，再做阶段摘要，长结果外置并保留 <code>result_id</code>、摘要和查询条件，独立子任务使用独立上下文。金额、时间、编号、权限、用户目标和未完成事项不能只放在自然语言摘要里，必须结构化保存。</p>
+<p><strong>追问：</strong> 为什么不能把 1M 上下文窗口全部用满？</p>
+<p>因为输入 Token 仍会消耗延迟和成本，噪声会稀释注意力，输出还需要预留空间；窗口大不代表把全量历史都送进去是最优方案。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/kuaishou-agent-first-round-931679347587444736/">快手 Agent 开发一面：工具兜底、多 Agent 与流式解析</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="2-上下文压缩时应该保留什么，如何证明没有压坏任务？"><a href="#2-上下文压缩时应该保留什么，如何证明没有压坏任务？" class="headerlink" title="2. 上下文压缩时应该保留什么，如何证明没有压坏任务？"></a>2. 上下文压缩时应该保留什么，如何证明没有压坏任务？</h3><p><strong>方向：</strong> Agent 记忆与可靠性；<strong>难度：</strong> 中高。</p>
+<p>保留当前目标和完成标准、硬约束与授权、已确认事实、任务状态、决策及依据、未完成事项，以及可回查的工具结果和文档引用。压缩后对数字、实体、否定关系、权限和状态做规则校验，再用长任务回归集比较任务成功率、事实保留率、引用准确率和成本，而不是只评价摘要是否通顺。</p>
+<p><strong>追问：</strong> 压缩发现新旧事实冲突怎么办？</p>
+<p>两个版本都保留来源和时间，在状态层显式标记当前生效版本；需要时回查原始事件，不能让摘要静默覆盖旧事实。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/933731739082510336?sourceSSR=dynamic&weFlow=true">阿里云 AI Agent 算法一面面经：上下文压缩时保留什么信息</a>（页面标注时间 2026-09-01、来源为牛客网）。</p>
+<h3 id="3-为什么-Prompt、工具定义和-Skill-顺序会影响缓存命中？"><a href="#3-为什么-Prompt、工具定义和-Skill-顺序会影响缓存命中？" class="headerlink" title="3. 为什么 Prompt、工具定义和 Skill 顺序会影响缓存命中？"></a>3. 为什么 Prompt、工具定义和 Skill 顺序会影响缓存命中？</h3><p><strong>方向：</strong> Prompt 版本与性能；<strong>难度：</strong> 中高。</p>
+<p>Prompt Cache 通常匹配完整的前缀。系统指令、工具 Schema、工具顺序或中间内容变化，会让后续 Token 无法复用。工程上应把稳定规则和工具定义放在前面，动态用户输入、检索结果和工具返回放在后面，并保持同一版本内的字节级稳定；同时用 <code>cached_tokens</code>、首 token 延迟和实际费用验证，而不是假设命中。</p>
+<p><strong>追问：</strong> 压缩后 Token 变少，为什么缓存命中率可能反而下降？</p>
+<p>压缩会重写早期上下文，新的前缀与旧缓存不再完全匹配。应保留稳定前缀，把变化集中在后缀，并比较“缓存损失”和“输入 Token 减少”哪个更省钱。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/tencent-marketing-backend-2916638/">腾讯营销后端一面：Agent 上下文体系与多路归并</a>（页面标注时间 2026-09、来源为牛客网）；缓存机制参考<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方文档</a>。</p>
+<h3 id="4-如何降低-Agent-的-Token-成本？"><a href="#4-如何降低-Agent-的-Token-成本？" class="headerlink" title="4. 如何降低 Agent 的 Token 成本？"></a>4. 如何降低 Agent 的 Token 成本？</h3><p><strong>方向：</strong> AI 平台与成本治理；<strong>难度：</strong> 中高。</p>
+<p>先减少输入：检索只取相关片段、工具按需加载、历史滚动摘要、去重 Few-shot；再提高稳定前缀的缓存命中；限制输出解释和 JSON 字段；合并可并行步骤、减少模型轮次；最后按任务难度路由模型。每种优化都要在固定评测集上同时看质量、P95 延迟和每成功任务成本，不能只看账单下降。</p>
+<p><strong>追问：</strong> 简单任务都切到小模型，质量下降怎么办？</p>
+<p>先定义任务分级和质量基线，使用小模型做分类&#x2F;改写&#x2F;摘要等低风险步骤；质量不达标时回退大模型或请求人工确认，并把路由版本记录在 trace 中。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/tencent-backend-social-2915915/">腾讯社招一面面经（Agent 方向）</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="5-长流程-Agent-的上下文超限和延迟如何定位？"><a href="#5-长流程-Agent-的上下文超限和延迟如何定位？" class="headerlink" title="5. 长流程 Agent 的上下文超限和延迟如何定位？"></a>5. 长流程 Agent 的上下文超限和延迟如何定位？</h3><p><strong>方向：</strong> Agent 性能与可观测性；<strong>难度：</strong> 高。</p>
+<p>用同一个 <code>trace_id</code> 拆分排队、模型首 token、模型总耗时、工具等待、重试、上下文压缩、锁和连接池等待，比较 P95&#x2F;P99 而不是只看均值。再按任务类型、模型&#x2F;Prompt&#x2F;工具版本和上下文长度切分，验证是上下文膨胀、重复工具调用、重试放大还是下游等待。修复后用相同任务集做回归。</p>
+<p><strong>追问：</strong> 1M 上下文还不够怎么办？</p>
+<p>先缩小当前任务目标，做分层摘要和外置索引，把独立工作拆给子 Agent，保留可回查的原文；如果业务仍需要全量信息，考虑专门检索、批处理或异步工作流，不能只继续提高窗口上限。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/mihoyo-ai-agent-938914757099130880/">米哈游 AI Agent 一面：代码生成链路、并发隔离与手撕 LRU</a>（页面标注时间 2026-10、来源为牛客网）；性能排查思路参考<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/bytedance-ai-agent-first-round-933733520864706560/">字节跳动 AI Agent 开发一面面经</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h2 id="今日资料"><a href="#今日资料" class="headerlink" title="今日资料"></a>今日资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方指南</a>：稳定前缀、缓存命中、缓存 Token 和监控方法。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompting">OpenAI Prompting 官方指南</a>：Prompt 组织、版本维护和缓存前缀建议。</li>
+<li><a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">Day 3：统一 ModelClient</a>：消息、结构化输出、流式事件、超时和重试边界。</li>
+</ul>
+<p>明天继续把预算接到 Embedding、模型路由和缓存实现，比较“更大模型”“更长上下文”和“更好的检索”分别解决什么问题。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Token-Context-Budget-Prompt-Version.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Prompt/" rel="tag">Prompt</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Token/" rel="tag">Token</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" rel="tag">上下文工程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/" rel="tag">成本控制</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/" rel="tag">模型工程</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Prompt-Regression-Golden-Set.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-ModelClient-Structured-Output-Streaming.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

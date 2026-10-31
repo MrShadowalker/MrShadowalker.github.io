@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="用一套可复现的 Golden Set 检查 Prompt、模型和上下文策略的改动，给企业级 Agent 建立发布门槛。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Prompt-Regression-Golden-Set"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Prompt-Regression-Golden-Set.html" class="article-date">
+  <time datetime="2026-10-31T01:00:00.000Z" itemprop="datePublished">2026-10-31</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">16 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>昨天为模型调用建立了 Token 账本和 <code>ContextBuilder</code>。它们有了版本和预算，接下来要回答上线前最关键的问题：<strong>新 Prompt 比旧版好在哪里，又把哪些原来正确的任务改坏了？</strong></p>
+<p>在普通 Java 服务里，接口字段变更有单元测试和契约测试；Prompt 改一行却可能让模型换工具、漏掉引用、把“先审批”理解成“直接执行”。只挑几道顺手的问题人工试聊，很难发现回归。今天把 Prompt 变更做成一次可复现的评测实验，再决定是否灰度发布。</p>
+<span id="more"></span>
+
+<h2 id="先固定比较对象：一次发布是一个版本组合"><a href="#先固定比较对象：一次发布是一个版本组合" class="headerlink" title="先固定比较对象：一次发布是一个版本组合"></a>先固定比较对象：一次发布是一个版本组合</h2><p>模型输出受多个变量共同影响。比较 Prompt A 和 Prompt B 时，如果同时切了模型、检索索引和工具 Schema，就无法把差异归因到 Prompt。</p>
+<p>一次评测运行至少记录：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">experiment_id</span><br><span class="line">dataset_id + dataset_version + dataset_hash</span><br><span class="line">prompt_id + prompt_version + rendered_hash</span><br><span class="line">model_provider + model_id + model_version</span><br><span class="line">generation_params + output_schema_version</span><br><span class="line">context_builder_version + knowledge_snapshot</span><br><span class="line">tool_fixture_version + policy_version</span><br><span class="line">evaluator_version + run_timestamp</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>dataset_hash</code> 和 <code>rendered_hash</code> 用于确认内容真的相同。<code>temperature=0</code> 可以减少一部分变化，却不能承诺跨服务、跨模型版本或所有硬件路径都得到逐字一样的结果。因此评测目标不是追求每个字节都相同，而是判断<strong>业务结果是否稳定满足约束</strong>。</p>
+<p>最小发布单元可以写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">release = &#123;</span><br><span class="line">  prompt: incident_triage@v4,</span><br><span class="line">  model: approved_model@2026-10,</span><br><span class="line">  schema: triage_decision@v2,</span><br><span class="line">  context: budget_policy@v3,</span><br><span class="line">  tools: incident_tools@v5,</span><br><span class="line">  policy: tenant_policy@v7</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>评测报告绑定整个组合。出问题时回滚组合，而不是只把 Prompt 字符串改回去，留下不兼容的 Schema 或工具版本。</p>
+<h2 id="Golden-Set-保存的是任务真相，不只是标准答案"><a href="#Golden-Set-保存的是任务真相，不只是标准答案" class="headerlink" title="Golden Set 保存的是任务真相，不只是标准答案"></a>Golden Set 保存的是任务真相，不只是标准答案</h2><p>“输入问题 + 一句标准回答”适合少数事实问答，不够覆盖 Agent。一个样本还需要租户身份、数据快照、工具返回、必须满足的规则和禁止行为。下面的退款 Case 是虚构示例：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;case_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;refund_approval_017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;scenario&quot;</span><span class="punctuation">:</span> <span class="string">&quot;refund_over_limit&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;risk&quot;</span><span class="punctuation">:</span> <span class="string">&quot;high&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;input&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;user_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user_A&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tenant_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tenant_1&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;帮我处理订单 O-17 的 6200 元退款&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;fixture&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;order_snapshot&quot;</span><span class="punctuation">:</span> <span class="string">&quot;orders@2026-10-31-001&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tool_results&quot;</span><span class="punctuation">:</span> <span class="string">&quot;refund_tools@fixture_12&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;policy_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;refund_policy@v7&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;expected&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;final_state&quot;</span><span class="punctuation">:</span> <span class="string">&quot;WAITING_FOR_APPROVAL&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;must_call&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;get_order&quot;</span><span class="punctuation">,</span> <span class="string">&quot;get_refund_policy&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;must_not_call&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;execute_refund&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;required_fields&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;order_id&quot;</span><span class="punctuation">,</span> <span class="string">&quot;amount&quot;</span><span class="punctuation">,</span> <span class="string">&quot;approval_reason&quot;</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;source&quot;</span><span class="punctuation">:</span> <span class="string">&quot;production_failure_2026_10_18&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;reviewed_by&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;finance_owner&quot;</span><span class="punctuation">,</span> <span class="string">&quot;ai_engineer&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;dataset_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;golden_2026_10_31&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这个样本的“正确结果”是进入 <code>WAITING_FOR_APPROVAL</code>，不是写出一段听起来合理的退款说明。评测执行器必须隔离写操作，给 <code>execute_refund</code> 注入模拟工具；否则评测本身可能影响真实订单。</p>
+<p>样本来源建议分为四类：</p>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>价值</th>
+<th>需要检查</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>生产故障</td>
+<td>真实失败和长尾条件</td>
+<td>脱敏、是否还可复现</td>
+</tr>
+<tr>
+<td>人工设计</td>
+<td>覆盖权限、边界、异常</td>
+<td>是否贴近真实任务</td>
+</tr>
+<tr>
+<td>历史工单</td>
+<td>高频场景和表达差异</td>
+<td>答案是否已过时</td>
+</tr>
+<tr>
+<td>合成样本</td>
+<td>扩大组合覆盖</td>
+<td>事实、规则和引用是否真实</td>
+</tr>
+</tbody></table>
+<p>合成样本不能直接成为“金标”。要有人工或确定性程序核对其来源、预期状态和权限规则。真实线上样本也需要脱敏，并保留能够复现的知识快照和工具夹具。</p>
+<h3 id="覆盖矩阵比堆数量更有用"><a href="#覆盖矩阵比堆数量更有用" class="headerlink" title="覆盖矩阵比堆数量更有用"></a>覆盖矩阵比堆数量更有用</h3><p>至少按四个维度分层：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">任务类型 × 难度 × 风险 × 失败方式</span><br></pre></td></tr></table></figure>
+
+<p>例如知识问答分“直接命中、证据冲突、无权限、无证据”，工具任务分“正常执行、参数缺失、超时未知、需要审批、用户取消”。每个格子记录样本数和最近一次线上出现频率。样本总数很多，但“越权拒答”只有一条，仍然是明显缺口。</p>
+<p>训练 Prompt 时会反复看见的开发集，与发布前才运行的冻结验收集应分开。若把所有错误样本都直接写入 Prompt 示例，验收集又与示例重叠，就会高估实际效果。冻结集也不是永远不变：业务规则变更时需要新版本和复核记录，但不能在看见候选结果后悄悄改预期。</p>
+<h2 id="评测器分层：规则先判，模型辅助判，人工兜底"><a href="#评测器分层：规则先判，模型辅助判，人工兜底" class="headerlink" title="评测器分层：规则先判，模型辅助判，人工兜底"></a>评测器分层：规则先判，模型辅助判，人工兜底</h2><p>一个业务任务至少有三种判分方式：</p>
+<ol>
+<li><strong>确定性规则。</strong> JSON Schema、必填字段、枚举、工具名、参数、状态迁移、禁用动作、金额计算、引用 ID 是否存在。</li>
+<li><strong>模型评审。</strong> 表达清楚程度、语义等价、解释是否覆盖关键依据等难用规则判定的维度。</li>
+<li><strong>人工复核。</strong> 高风险决策、规则与模型结论冲突、评分器低置信、线上新型失败。</li>
+</ol>
+<p>先判硬规则，再让模型评审软质量。若样本要求“不执行退款”，实际调用了 <code>execute_refund</code>，即使回答很礼貌，也应直接失败。裁判模型的评分不能覆盖安全硬失败。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">EvalResult</span> <span class="title function_">evaluate</span><span class="params">(Case sample, Trace trace)</span> &#123;</span><br><span class="line">    <span class="type">List</span>&lt;Violation&gt; <span class="variable">hard</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    hard.addAll(schemaEvaluator.check(trace.finalOutput()));</span><br><span class="line">    hard.addAll(stateEvaluator.check(sample.expected(), trace));</span><br><span class="line">    hard.addAll(toolEvaluator.check(sample.expected(), trace.toolCalls()));</span><br><span class="line">    hard.addAll(policyEvaluator.check(sample, trace));</span><br><span class="line"></span><br><span class="line">    <span class="type">JudgeScore</span> <span class="variable">soft</span> <span class="operator">=</span> hard.isEmpty()</span><br><span class="line">        ? judge.evaluate(sample.rubric(), trace.finalOutput())</span><br><span class="line">        : JudgeScore.notRun();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">EvalResult</span>(sample.caseId(), hard, soft, trace.usage());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>裁判模型也会有偏好和波动。它的 Rubric 要写清评分维度与证据要求，保存裁判 Prompt&#x2F;模型版本，并用人工标注的“金标集”测误判和漏判。对新旧版本做两两比较时，可以交换答案展示顺序，检查位置偏好；绝不能把裁判分数当成业务正确性的唯一来源。LangSmith 的<a target="_blank" rel="noopener" href="https://docs.langchain.com/langsmith/evaluation-types">评测类型文档</a>也区分代码评测、模型评审、成对评测、离线回归和线上监控；腾讯云的<a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/851/132066">评测配置文档</a>则把评测集、模板和基线作为可复用的配置资产。</p>
+<h2 id="指标要有分母和切片"><a href="#指标要有分母和切片" class="headerlink" title="指标要有分母和切片"></a>指标要有分母和切片</h2><p>只有“平均分 8.6”无法决定能否发布。建议至少报告：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>分子&#x2F;分母</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务成功率</td>
+<td>满足全部必需条件的运行 &#x2F; 有效运行</td>
+<td>判断业务结果</td>
+</tr>
+<tr>
+<td>硬规则违规率</td>
+<td>出现越权、禁用工具或非法状态的运行 &#x2F; 有效运行</td>
+<td>安全门禁</td>
+</tr>
+<tr>
+<td>Schema 通过率</td>
+<td>结构合法且完成的输出 &#x2F; 需要结构输出的运行</td>
+<td>接口可靠性</td>
+</tr>
+<tr>
+<td>工具参数正确率</td>
+<td>符合预期和权限的工具调用 &#x2F; 需要工具调用的运行</td>
+<td>Tool Calling 质量</td>
+</tr>
+<tr>
+<td>每成功任务成本</td>
+<td>全部样本实际成本 &#x2F; 成功运行数</td>
+<td>真实经济性</td>
+</tr>
+<tr>
+<td>P95 总延迟</td>
+<td>有效运行耗时的第 95 百分位</td>
+<td>长尾体验</td>
+</tr>
+</tbody></table>
+<p>要分别展示场景、难度、风险、租户策略和模型路由的切片结果。总体成功率上升 2%，但高风险审批样本从 100% 掉到 80%，不能发布。未执行、超时、拒答和人工接管要有独立状态，不能从分母里随意删掉。</p>
+<p>每条样本保存新旧版本的结果差异：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PASS -&gt; PASS：保持正确</span><br><span class="line">PASS -&gt; FAIL：回归，优先排查</span><br><span class="line">FAIL -&gt; PASS：修复</span><br><span class="line">FAIL -&gt; FAIL：仍待解决</span><br></pre></td></tr></table></figure>
+
+<p>每次 Prompt 变更先看 <code>PASS -&gt; FAIL</code> 的清单，再看总分。真实问题通常藏在几个具体的回归 Case 里。</p>
+<h2 id="随机性：做成对比较和重复运行"><a href="#随机性：做成对比较和重复运行" class="headerlink" title="随机性：做成对比较和重复运行"></a>随机性：做成对比较和重复运行</h2><p>即使冻结版本，模型输出也可能有波动。对关键样本可在同一环境里重复运行，并把旧版和候选版成对执行：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">for case in frozen_dataset:</span><br><span class="line">    for repeat in 1..3:</span><br><span class="line">        old = run(case, baseline_release, same_fixture)</span><br><span class="line">        new = run(case, candidate_release, same_fixture)</span><br><span class="line">        compare(case.id, repeat, old, new)</span><br></pre></td></tr></table></figure>
+
+<p>“重复 3 次”只是小团队的入门预算示例，不代表统计上充分。报告要给出每个 Case 的通过次数、总体差异和置信区间或至少波动范围；样本太少时，把结论写成“有待观察”，不能宣称微小提升已经被证实。高风险的确定性规则应要求每次都通过，不用平均分稀释一次严重违规。</p>
+<p>如果要评估 Prompt 一行改动，其他变量尽量固定；如果评估模型升级，则让旧模型和新模型读取同一批样本、同一知识快照和工具夹具，并保留各自原始 Trace。Google Cloud 的<a target="_blank" rel="noopener" href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/evaluation-dataset">评测数据集文档</a>说明，评测集要保存输入、可选参考答案、对话历史和 Agent 中间事件；这些字段正是复现多步任务所需的信息。</p>
+<h2 id="发布门槛：把“可以上线”写成可检查的规则"><a href="#发布门槛：把“可以上线”写成可检查的规则" class="headerlink" title="发布门槛：把“可以上线”写成可检查的规则"></a>发布门槛：把“可以上线”写成可检查的规则</h2><p>门槛应由业务风险决定。下面是一组<strong>示例</strong>，用于演示如何写规则，不是通用行业标准：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">阻断：任何高风险样本出现越权或未经审批的写操作</span><br><span class="line">阻断：候选版新增严重 PASS -&gt; FAIL，且没有业务负责人签收</span><br><span class="line">阻断：需要 JSON Schema 的样本出现未处理的非法结构</span><br><span class="line">观察：总体成功率低于旧版，或高风险切片明显下降</span><br><span class="line">观察：每成功任务成本、P95 延迟超过事先约定的预算</span><br><span class="line">放行：以上门槛通过，且回归清单已经归因</span><br></pre></td></tr></table></figure>
+
+<p>门槛不要在看完候选结果后临时调整，否则评测就变成了找理由发布。业务方、模型工程师和安全负责人应提前确认哪些错误是硬阻断，哪些可以在灰度中观察。</p>
+<p>可把评测接入 CI：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PR 修改 Prompt/Schema/模型路由</span><br><span class="line">  -&gt; 渲染并记录版本哈希</span><br><span class="line">  -&gt; 运行快速契约集（规则，秒级）</span><br><span class="line">  -&gt; 运行冻结 Golden Set（模型调用，异步）</span><br><span class="line">  -&gt; 生成逐 Case diff 和切片报告</span><br><span class="line">  -&gt; 检查发布门槛</span><br><span class="line">  -&gt; 人工审阅高风险变化</span><br></pre></td></tr></table></figure>
+
+<p>不要把每次提交都绑定巨额全量模型评测。可将快速契约集放在 PR 阶段，较大回归集放在合并前和每日任务中；但任何正式发布都要有对应的冻结集报告和版本组合。</p>
+<h2 id="灰度是离线评测后的第二道门"><a href="#灰度是离线评测后的第二道门" class="headerlink" title="灰度是离线评测后的第二道门"></a>灰度是离线评测后的第二道门</h2><p>离线样本无法覆盖所有真实输入。候选版通过回归后，先做影子运行：旧版仍给用户结果，候选版在相同请求上只生成建议和 Trace，不执行真实副作用。再按低风险任务、租户或流量比例放量。</p>
+<p>灰度面板至少看任务成功率、人工接管率、硬规则违规、Schema 失败、每成功任务成本、P95&#x2F;P99 延迟和用户反馈。比较时按相同任务类型和风险等级切片，否则新版本刚好分到简单请求，会造成虚假的改善。回滚条件和负责人在发布前写好，触发后能按版本组合切回旧版。</p>
+<p>线上低分、用户纠错和工具失败应进入候选样本池。每条样本先脱敏、复现、标注并审查，再加入下一版 Golden Set；不能把线上日志不经筛选地倒入评测集。阿里云百炼的<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/model-studio/model-evaluation-overview">模型评测文档</a>把评测数据集与已有推理结果集分开，提醒我们评测时要区分“重新调用模型”和“仅给既有输出评分”的成本。</p>
+<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>用 Day 3 的 <code>ModelClient</code> 和 Day 4 的 <code>ContextBuilder</code> 搭一个最小评测执行器，不需要接真实退款系统：</p>
+<ol>
+<li>准备 20 条 JSONL 样本：正常、缺字段、证据冲突、工具超时、越权各至少 4 条。</li>
+<li>每条样本保存 <code>case_id</code>、风险、输入、工具夹具、预期状态、禁止动作、数据版本和标注人。</li>
+<li>建立规则评分器，检查 Schema、状态、工具名、工具参数与权限。先不接裁判模型，也能跑出第一份报告。</li>
+<li>让旧版与候选 Prompt 在相同夹具上各运行 3 次，输出逐 Case 的 <code>PASS -&gt; FAIL</code> 清单。</li>
+<li>报告任务成功率、硬规则违规率、Schema 通过率、P95 延迟和每成功任务成本，并写明样本量限制。</li>
+<li>设置一个严重回归样本，验证 CI 发布门槛确实阻断候选版。</li>
+</ol>
+<p>交付物是评测集、版本清单、执行器、逐 Case diff 和一份放行&#x2F;阻断记录。Day 7 会把本周的接口、预算与评测结果做第一次复盘和小测。</p>
+<h2 id="近期面试题整理（检索日期：2026-10-31）"><a href="#近期面试题整理（检索日期：2026-10-31）" class="headerlink" title="近期面试题整理（检索日期：2026-10-31）"></a>近期面试题整理（检索日期：2026-10-31）</h2><p>以下题面来自公开面经，参考答案和追问由本文按工程实践重新整理。牛客部分原帖的直达页在检索时仅返回页面壳，题面经公开搜索索引核对；公司归属和面试日期按页面自述记录，不能视为企业官方题库。</p>
+<h3 id="1-评测集如何构建，怎样保证场景覆盖和可用性？"><a href="#1-评测集如何构建，怎样保证场景覆盖和可用性？" class="headerlink" title="1. 评测集如何构建，怎样保证场景覆盖和可用性？"></a>1. 评测集如何构建，怎样保证场景覆盖和可用性？</h3><p><strong>方向：</strong> Agent 评测集；<strong>难度：</strong> 中高。</p>
+<p><strong>参考答案：</strong> 从真实日志和业务流程抽样，再按任务类型、难度、风险、失败方式建立覆盖矩阵。每个 Case 有输入、数据快照、工具夹具、预期状态、禁止动作和判分规则；高风险样本由业务与工程人员复核。开发调参集和冻结验收集分开，防止把测试题写进 Prompt 后虚高。</p>
+<p><strong>追问（本文延伸）：</strong> 合成样本能直接放进 Golden Set 吗？</p>
+<p>不能。先核验业务事实、权限规则和引用来源，再经人工或确定性程序标注。合成样本可补覆盖，不能靠模型自己生成、自己判对。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://api-cdn.nowcoder.com/discuss/931015480939204608?sourceSSR=post">腾讯 AI Agent 开发公开面经原帖</a>（页面自述面试时间 2026-08-20，公开原帖 2026-09；题面经搜索索引及<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/tencent-ai-agent-qiuzhao-931015480939204608/">可读聚合页</a>核对）。</p>
+<h3 id="2-Agent-评测体系由哪些部分组成？"><a href="#2-Agent-评测体系由哪些部分组成？" class="headerlink" title="2. Agent 评测体系由哪些部分组成？"></a>2. Agent 评测体系由哪些部分组成？</h3><p><strong>方向：</strong> AI 平台评测流水线；<strong>难度：</strong> 中。</p>
+<p><strong>参考答案：</strong> 四个部分：版本化评测集、固定环境的执行器与 Trace、规则&#x2F;模型&#x2F;人工分层判分器、逐 Case diff 与分场景报告。执行器要冻结模型配置、知识快照和工具夹具；报告不仅给总分，还列出新出现的回归 Case。</p>
+<p><strong>追问（本文延伸）：</strong> 哪些指标应该成为硬发布门槛？</p>
+<p>越权、未经审批的副作用、非法状态、关键字段缺失等风险项应阻断；成功率、成本和延迟门槛由业务场景事先确定，不能在看到结果后修改。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/3742d4aa5a50419d94aa02d549d6aab6">作业帮 9.23 一面公开面经原帖</a>（页面自述面试时间 2026-09-23；题面经搜索索引及<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/zuoyebang-agent-dev-first-round-2916240/">可读聚合页</a>核对）。</p>
+<h3 id="3-哪些指标可以确定性计算，主观回答质量怎么评？"><a href="#3-哪些指标可以确定性计算，主观回答质量怎么评？" class="headerlink" title="3. 哪些指标可以确定性计算，主观回答质量怎么评？"></a>3. 哪些指标可以确定性计算，主观回答质量怎么评？</h3><p><strong>方向：</strong> 评测指标与裁判模型；<strong>难度：</strong> 中高。</p>
+<p><strong>参考答案：</strong> Schema、工具选择、参数、状态迁移、禁用动作、金额和引用存在性用代码判；解释清晰度、语义等价等软质量用明确 Rubric 的裁判模型和人工抽样。先用人工金标测裁判的误判、漏判和不同风险切片的一致性，安全硬失败不得被平均软分覆盖。</p>
+<p><strong>追问（本文延伸）：</strong> 裁判模型偏好较长答案怎么办？</p>
+<p>把简洁性和事实依据写入 Rubric，使用盲评与交换候选答案顺序，抽样人工复核；若裁判与人工差异大，先修评测器再比较 Prompt。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/3742d4aa5a50419d94aa02d549d6aab6">作业帮 9.23 一面公开面经原帖</a>（页面自述面试时间 2026-09-23；题面经搜索索引及<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/zuoyebang-agent-dev-first-round-2916240/">可读聚合页</a>核对）。</p>
+<h3 id="4-每个-Case-多次运行有随机性，如何判断新-Prompt-真的变好？"><a href="#4-每个-Case-多次运行有随机性，如何判断新-Prompt-真的变好？" class="headerlink" title="4. 每个 Case 多次运行有随机性，如何判断新 Prompt 真的变好？"></a>4. 每个 Case 多次运行有随机性，如何判断新 Prompt 真的变好？</h3><p><strong>方向：</strong> 回归实验设计；<strong>难度：</strong> 高。</p>
+<p><strong>参考答案：</strong> 固定可控变量，让旧版和候选版在同一数据快照、工具夹具及参数下成对运行；对关键 Case 重复执行，报告通过次数、场景切片和波动范围。先排查稳定的 <code>PASS -&gt; FAIL</code>，再评估总体差异；样本量不足时承认结论不确定，不用一次成功宣布提升。</p>
+<p><strong>追问（本文延伸）：</strong> 温度设为 0 就能完全复现吗？</p>
+<p>不能。模型服务、版本和执行环境仍可能变化；应记录完整版本组合与原始 Trace，评估业务条件是否稳定满足，而非逐字一致。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/f2233c6940df4b42b818db288d59c232">CVTE 10.24 一面公开面经</a>（页面自述面试时间 2026-10-24；<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/cvte-app-dev-first-round-2932267/">可读聚合页</a>与题面交叉核对）。</p>
+<h3 id="5-模型升级后部分-Case-与预期不同，如何定位？"><a href="#5-模型升级后部分-Case-与预期不同，如何定位？" class="headerlink" title="5. 模型升级后部分 Case 与预期不同，如何定位？"></a>5. 模型升级后部分 Case 与预期不同，如何定位？</h3><p><strong>方向：</strong> 模型与 Prompt 版本回归；<strong>难度：</strong> 中高。</p>
+<p><strong>参考答案：</strong> 先确认数据集、Prompt、Schema、模型、知识和工具夹具的版本，再对旧新版本做逐 Case 配对回放。按场景与错误类型切片：是结构不合法、工具选择变化、证据不一致，还是预期答案已经过时。对高风险差异人工复核，再决定修 Prompt、改业务规则或暂缓升级。</p>
+<p><strong>追问（本文延伸）：</strong> 灰度期间什么情况立即回滚？</p>
+<p>出现越权或未经审批的写入、严重 <code>PASS -&gt; FAIL</code>、持续的 Schema 失败或触发事先约定的成功率、成本与延迟门槛时，按完整版本组合回滚。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/f2233c6940df4b42b818db288d59c232">CVTE 10.24 一面公开面经</a>（页面自述面试时间 2026-10-24；<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/cvte-app-dev-first-round-2932267/">可读聚合页</a>与题面交叉核对）。</p>
+<h2 id="今日资料"><a href="#今日资料" class="headerlink" title="今日资料"></a>今日资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.langchain.com/langsmith/evaluation-types">LangSmith Evaluation types</a>：离线回归、线上监测、代码评测、模型评审与成对比较。</li>
+<li><a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/851/132066">腾讯云 TI-ONE 评测配置管理</a>：评测集、模板和基线的版本化资产。</li>
+<li><a target="_blank" rel="noopener" href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/evaluation-dataset">Google Cloud 评测数据集格式</a>：输入、参考答案、对话历史和 Agent 中间事件。</li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/model-studio/model-evaluation-overview">阿里云百炼模型评测</a>：评测数据集与已有推理结果集的不同调用成本。</li>
+<li><a href="/articles/AI-Token-Context-Budget-Prompt-Version.html">Day 4：Token 与上下文预算</a>：本文评测所使用的 Prompt、上下文与成本版本。</li>
+</ul>
+<p>下一篇继续实现 Token 计量与压缩实验：给 <code>ContextBuilder</code> 注入不同长度的对话和工具结果，验证预算触发、事实保留和实际调用成本。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Prompt-Regression-Golden-Set.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Prompt/" rel="tag">Prompt</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AF%84%E6%B5%8B/" rel="tag">评测</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Token-Context-Budget-Prompt-Version.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

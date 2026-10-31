@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="面向 Java/后端开发者，设计一个不绑定厂商 SDK 的 ModelClient，统一消息、结构化输出、流式事件、超时重试和模型路由。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-ModelClient-Structured-Output-Streaming"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-ModelClient-Structured-Output-Streaming.html" class="article-date">
+  <time datetime="2026-10-29T01:00:00.000Z" itemprop="datePublished">2026-10-29</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.8k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">18 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>昨天我们把 Agent Runtime 的任务、步骤、事件和状态迁移固定下来。Runtime 要继续向前走，就必须有一个稳定的模型调用边界。否则业务代码会到处出现 <code>if (provider == ...)</code>：某家模型用 <code>messages</code>，另一家模型用 <code>input</code>；某家返回 <code>choices</code>，另一家返回事件流；结构化输出、工具调用、计费字段和错误码也各不相同。</p>
+<p>今天实现第一层模型工程：**统一 <code>ModelClient</code>**。它不是把所有厂商能力抹平，而是把业务真正依赖的契约固定下来，把供应商差异收进适配器。后续切换模型、做灰度、设置超时降级和统计成本，都应在这个边界上完成。</p>
+<span id="more"></span>
+
+<h2 id="先定义边界：业务依赖什么，厂商差异放哪里"><a href="#先定义边界：业务依赖什么，厂商差异放哪里" class="headerlink" title="先定义边界：业务依赖什么，厂商差异放哪里"></a>先定义边界：业务依赖什么，厂商差异放哪里</h2><p>一个可维护的模型接入层至少分三层：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">业务 / Agent Runtime</span><br><span class="line">        |</span><br><span class="line">        v</span><br><span class="line">ModelGateway：路由、配额、超时、重试、成本、审计</span><br><span class="line">        |</span><br><span class="line">        v</span><br><span class="line">ModelClient：稳定的请求与响应契约</span><br><span class="line">        |</span><br><span class="line">        +--&gt; OpenAIAdapter</span><br><span class="line">        +--&gt; AnthropicAdapter</span><br><span class="line">        +--&gt; QwenAdapter</span><br><span class="line">        +--&gt; 本地 vLLM Adapter</span><br></pre></td></tr></table></figure>
+
+<p><code>ModelClient</code> 只关心一次模型调用的输入、输出和生命周期；<code>ModelGateway</code> 决定调用哪一个模型以及这次调用允许花多少时间和钱；供应商适配器负责把内部契约翻译成具体 SDK 请求。</p>
+<p>不要让 <code>ModelClient</code> 直接读取 HTTP Header 中的租户信息，也不要让它决定用户是否有权限调用某个工具。身份、权限和任务状态由上层 Runtime 与 Gateway 校验，模型客户端只接受已经确定的请求。这样可以避免一个“方便”的 SDK 封装逐渐变成无法测试的万能类。</p>
+<h3 id="业务真正需要的最小能力"><a href="#业务真正需要的最小能力" class="headerlink" title="业务真正需要的最小能力"></a>业务真正需要的最小能力</h3><p>第一版可以只支持四件事：</p>
+<ol>
+<li>文本消息输入。</li>
+<li>普通文本输出或 JSON Schema 输出。</li>
+<li>完整响应和增量事件两种读取方式。</li>
+<li>截止时间、取消信号、重试预算和请求追踪信息。</li>
+</ol>
+<p>工具调用和多模态可以在同一契约上扩展，但不要为了“以后可能用到”把所有供应商字段原样暴露出去。内部契约每增加一个字段，所有适配器、测试和观测面板都要维护它。</p>
+<h2 id="消息结构不要用一个大字符串糊过去"><a href="#消息结构不要用一个大字符串糊过去" class="headerlink" title="消息结构不要用一个大字符串糊过去"></a>消息结构不要用一个大字符串糊过去</h2><p>模型调用的输入应当是有角色和类型的消息，而不是拼好的长字符串。一个适合 Java 服务的最小数据模型如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">Message</span><span class="params">(</span></span><br><span class="line"><span class="params">    Role role,</span></span><br><span class="line"><span class="params">    List&lt;ContentPart&gt; parts,</span></span><br><span class="line"><span class="params">    String name,</span></span><br><span class="line"><span class="params">    String messageId</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">Role</span> &#123;</span><br><span class="line">    SYSTEM, DEVELOPER, USER, ASSISTANT, TOOL</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">sealed</span> <span class="keyword">interface</span> <span class="title class_">ContentPart</span></span><br><span class="line">    <span class="keyword">permits</span> TextPart, ImagePart, ToolResultPart &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">TextPart</span><span class="params">(String text)</span> <span class="keyword">implements</span> <span class="title class_">ContentPart</span> &#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ImagePart</span><span class="params">(String mediaType, String uri)</span> <span class="keyword">implements</span> <span class="title class_">ContentPart</span> &#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ToolResultPart</span><span class="params">(</span></span><br><span class="line"><span class="params">    String toolCallId,</span></span><br><span class="line"><span class="params">    String toolName,</span></span><br><span class="line"><span class="params">    String resultJson</span></span><br><span class="line"><span class="params">)</span> <span class="keyword">implements</span> <span class="title class_">ContentPart</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样做有三个实际好处：</p>
+<ul>
+<li><strong>可以审计。</strong> 日志能区分系统规则、用户输入、模型输出和工具结果，排查提示词注入时不会把所有内容混成一段字符串。</li>
+<li><strong>可以适配。</strong> 某些供应商没有 <code>DEVELOPER</code> 角色，适配器可以把它合并到系统消息，而业务层不需要改代码。</li>
+<li><strong>可以扩展。</strong> 图片、文件、工具结果和引用可以成为新的 <code>ContentPart</code>，不需要改变调用方的字符串拼接逻辑。</li>
+</ul>
+<p>消息还要有明确的大小策略。构造请求前统计字符数只是粗略估计，真正的 token 计数应由模型适配器或对应 tokenizer 提供。截断时要保留任务目标、权限约束、结构化结果和最后一个已确认的工具结果；不能简单地从列表头部删掉最老消息。</p>
+<h3 id="Prompt-是配置，需要版本化"><a href="#Prompt-是配置，需要版本化" class="headerlink" title="Prompt 是配置，需要版本化"></a>Prompt 是配置，需要版本化</h3><p>Prompt 不应该散落在 Java 常量、前端代码和数据库脚本里。建议把它表示成可追踪的模板记录：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">prompt_id       = invoice_extract</span><br><span class="line">prompt_version  = 2026-10-29.3</span><br><span class="line">template_hash   = sha256(...)</span><br><span class="line">input_variables = [document_text, locale]</span><br><span class="line">output_schema   = invoice_v2</span><br><span class="line">owner           = finance-ai</span><br><span class="line">status          = released</span><br></pre></td></tr></table></figure>
+
+<p>每次请求至少记录 <code>prompt_id</code>、<code>prompt_version</code>、模型名、模型版本、采样参数、输入 token、输出 token 和结果状态。问题出现时，才能回答“是模型变了、Prompt 变了、Schema 变了，还是下游数据变了”。不要只把最终文本存下来，否则无法做回归和重放。</p>
+<h2 id="一个稳定的-ModelClient-契约"><a href="#一个稳定的-ModelClient-契约" class="headerlink" title="一个稳定的 ModelClient 契约"></a>一个稳定的 ModelClient 契约</h2><p>可以把请求、响应和流事件定义成下面的内部接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">ModelClient</span> &#123;</span><br><span class="line">    <span class="type">ModelResponse</span> <span class="title function_">complete</span><span class="params">(ModelRequest request, CallContext context)</span>;</span><br><span class="line"></span><br><span class="line">    Flow.<span class="type">Publisher</span>&lt;ModelEvent&gt; <span class="title function_">stream</span><span class="params">(</span></span><br><span class="line"><span class="params">        ModelRequest request,</span></span><br><span class="line"><span class="params">        CallContext context</span></span><br><span class="line"><span class="params">    )</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ModelRequest</span><span class="params">(</span></span><br><span class="line"><span class="params">    String model,</span></span><br><span class="line"><span class="params">    List&lt;Message&gt; messages,</span></span><br><span class="line"><span class="params">    GenerationOptions generation,</span></span><br><span class="line"><span class="params">    OutputSpec output,</span></span><br><span class="line"><span class="params">    List&lt;ToolDefinition&gt; tools,</span></span><br><span class="line"><span class="params">    RequestBudget budget,</span></span><br><span class="line"><span class="params">    PromptRef prompt</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">GenerationOptions</span><span class="params">(</span></span><br><span class="line"><span class="params">    Double temperature,</span></span><br><span class="line"><span class="params">    Integer maxOutputTokens,</span></span><br><span class="line"><span class="params">    Double topP,</span></span><br><span class="line"><span class="params">    String seed</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">OutputSpec</span><span class="params">(</span></span><br><span class="line"><span class="params">    OutputMode mode,</span></span><br><span class="line"><span class="params">    JsonSchema schema,</span></span><br><span class="line"><span class="params">    String schemaName</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">OutputMode</span> &#123; TEXT, JSON_SCHEMA, TOOL_CALL &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ModelResponse</span><span class="params">(</span></span><br><span class="line"><span class="params">    String requestId,</span></span><br><span class="line"><span class="params">    String model,</span></span><br><span class="line"><span class="params">    String text,</span></span><br><span class="line"><span class="params">    JsonNode parsed,</span></span><br><span class="line"><span class="params">    FinishReason finishReason,</span></span><br><span class="line"><span class="params">    Usage usage,</span></span><br><span class="line"><span class="params">    String providerResponseId</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里有一个重要的设计取舍：<code>ModelResponse</code> 里可以同时保留原始文本和解析后的 <code>JsonNode</code>，但业务代码只能读取已经通过校验的字段。原始响应用于调试和重放，不能因为“看起来像 JSON”就直接写入数据库。</p>
+<p>流式响应不应返回一个只能拼字符串的 <code>Consumer&lt;String&gt;</code>。事件需要表达完成、用量、错误和工具参数增量：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">sealed</span> <span class="keyword">interface</span> <span class="title class_">ModelEvent</span></span><br><span class="line">    <span class="keyword">permits</span> TextDelta, JsonDelta, UsageEvent, Completed, Failed &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">TextDelta</span><span class="params">(String text, <span class="type">long</span> sequence)</span> <span class="keyword">implements</span> <span class="title class_">ModelEvent</span> &#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">JsonDelta</span><span class="params">(String partial, <span class="type">long</span> sequence)</span> <span class="keyword">implements</span> <span class="title class_">ModelEvent</span> &#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">UsageEvent</span><span class="params">(Usage usage)</span> <span class="keyword">implements</span> <span class="title class_">ModelEvent</span> &#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">Completed</span><span class="params">(FinishReason reason)</span> <span class="keyword">implements</span> <span class="title class_">ModelEvent</span> &#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">Failed</span><span class="params">(ModelError error, <span class="type">boolean</span> retryable)</span> <span class="keyword">implements</span> <span class="title class_">ModelEvent</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>sequence</code> 和 <code>requestId</code> 让客户端重连时可以去重。<code>DONE</code> 事件必须和“模型生成了一个合法结果”区分开：流结束不代表 JSON 完整，也不代表业务校验成功。</p>
+<h2 id="结构化输出：JSON-合法只是第一关"><a href="#结构化输出：JSON-合法只是第一关" class="headerlink" title="结构化输出：JSON 合法只是第一关"></a>结构化输出：JSON 合法只是第一关</h2><p>生产代码经常把下面两件事混为一谈：</p>
+<ul>
+<li><strong>JSON mode：</strong> 尽量让输出是合法 JSON，但不保证字段、类型和枚举值符合业务 Schema。</li>
+<li><strong>Structured Outputs：</strong> 让模型遵守给定的 JSON Schema；仍然需要处理拒答、截断、供应商不支持和业务规则失败。</li>
+</ul>
+<p>OpenAI 的<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">Structured Outputs 文档</a>明确区分了两者：JSON mode 只保证 JSON 形式，结构化输出才约束 Schema；流式生成时还要处理增量 JSON 和响应结束状态。其他厂商的名称不同，但内部契约应统一为“输出模式 + Schema + 校验结果”。</p>
+<p>推荐采用四层校验：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">模型原始响应</span><br><span class="line">   -&gt; 传输层完整性：是否正常结束、是否被截断、是否拒答</span><br><span class="line">   -&gt; 语法解析：是否是合法 JSON</span><br><span class="line">   -&gt; Schema 校验：字段、类型、枚举、必填项</span><br><span class="line">   -&gt; 业务校验：金额范围、权限、状态、引用是否存在</span><br></pre></td></tr></table></figure>
+
+<p>例如发票抽取的 Schema 通过了，并不表示 <code>total_amount</code> 可以直接入账。还要校验币种、税额与明细之和，检查供应商账号是否属于当前租户。模型负责提取候选值，业务服务负责决定这些值是否能产生副作用。</p>
+<h3 id="Schema-设计的四条经验"><a href="#Schema-设计的四条经验" class="headerlink" title="Schema 设计的四条经验"></a>Schema 设计的四条经验</h3><ol>
+<li><strong>输出结构服务于下游动作。</strong> 如果后端只需要 <code>answer</code> 和 <code>citations</code>，不要要求模型生成一大段无法消费的解释字段。</li>
+<li><strong>枚举要窄。</strong> <code>status</code> 使用 <code>PENDING|APPROVED|REJECTED</code>，不要让模型自由生成十几种近义词。</li>
+<li><strong>拒答和失败是显式分支。</strong> 不要用空字符串表示“模型拒绝”或“输出被截断”。</li>
+<li><strong>Schema 也要版本化。</strong> <code>invoice_v1</code> 与 <code>invoice_v2</code> 同时存在时，记录版本并让解析器按版本选择。</li>
+</ol>
+<p>一个安全的解析流程可以写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">response = provider.call(request)</span><br><span class="line">if response.refusal != null:</span><br><span class="line">    return MODEL_REFUSAL</span><br><span class="line">if response.finish_reason == LENGTH:</span><br><span class="line">    return INCOMPLETE_OUTPUT</span><br><span class="line">parsed = json.parse(response.text)</span><br><span class="line">if !schema.validate(parsed):</span><br><span class="line">    retry_with_error_feedback_once()</span><br><span class="line">if !business.validate(parsed):</span><br><span class="line">    return BUSINESS_REJECTED</span><br><span class="line">return ACCEPTED(parsed)</span><br></pre></td></tr></table></figure>
+
+<p>重试时把校验错误作为结构化反馈即可，不要把完整的内部 Prompt、权限信息或敏感数据原样回填给模型。重试必须受次数、截止时间和 token 预算限制。</p>
+<h2 id="流式输出：文本和结构化结果走两条通道"><a href="#流式输出：文本和结构化结果走两条通道" class="headerlink" title="流式输出：文本和结构化结果走两条通道"></a>流式输出：文本和结构化结果走两条通道</h2><p>流式的价值是降低首字节等待，让用户先看到进度；它不能改变最终结果仍需完整校验的事实。常见的错误是对每一个 delta 直接调用 <code>JSON.parse</code>：第一个片段只有 <code>&#123; &quot;name&quot;</code>，必然不是完整 JSON。</p>
+<p>建议分成两条通道：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">文本通道：TextDelta -&gt; 前端增量渲染 Markdown</span><br><span class="line">结构通道：JsonDelta -&gt; 服务端缓冲/增量解析 -&gt; 完整后挂载卡片</span><br></pre></td></tr></table></figure>
+
+<p>对于结构化卡片，可以在流期间展示骨架和状态，等完整 JSON 通过 Schema 与业务校验后再渲染按钮。这样即使中途断线，也不会把半个未校验的按钮展示给用户。前端组件要使用稳定的 <code>componentKey</code>，重连或补发事件时才不会把用户已经输入的表单重置。</p>
+<p>服务端应持久化流状态，而不是只在内存里转发：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">stream_message(</span><br><span class="line">  task_id,</span><br><span class="line">  request_id,</span><br><span class="line">  sequence,</span><br><span class="line">  channel,</span><br><span class="line">  delta,</span><br><span class="line">  status,       -- OPEN / COMPLETED / FAILED</span><br><span class="line">  created_at</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>客户端带上 <code>last_sequence</code> 重连时，服务端补发缺失事件；如果服务端无法补齐，返回明确的 <code>STREAM_GAP</code>，前端显示“重新生成”或“查看完整结果”，不要留下永远转圈的 loading。</p>
+<h2 id="超时与重试：按截止时间管理，而不是每层各睡几秒"><a href="#超时与重试：按截止时间管理，而不是每层各睡几秒" class="headerlink" title="超时与重试：按截止时间管理，而不是每层各睡几秒"></a>超时与重试：按截止时间管理，而不是每层各睡几秒</h2><p>一次模型请求至少有三种时间限制：</p>
+<ul>
+<li><code>connectTimeout</code>：建立连接允许多久。</li>
+<li><code>readTimeout</code>：两个响应事件之间允许多久没有数据。</li>
+<li><code>deadline</code>：从 Agent Runtime 角度，这次调用最晚何时必须结束。</li>
+</ul>
+<p>只设置 HTTP 客户端的 30 秒超时是不够的。模型网关、Runtime、工具和前端各自设置 timeout 后，容易出现上层已经取消，底层还在重试的情况。建议把 <code>deadline</code> 作为请求的一部分向下传递，所有等待和重试都计算剩余时间：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">remaining = deadline - now()</span><br><span class="line">if remaining &lt;= 0:</span><br><span class="line">    fail(TOTAL_DEADLINE_EXCEEDED)</span><br><span class="line"></span><br><span class="line">attemptTimeout = min(provider_limit, remaining)</span><br><span class="line">call(attemptTimeout)</span><br></pre></td></tr></table></figure>
+
+<p>重试策略应由错误分类驱动：</p>
+<table>
+<thead>
+<tr>
+<th>错误</th>
+<th>是否重试</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>连接重置、网关 502&#x2F;503、短暂限流</td>
+<td>有条件</td>
+<td>指数退避 + 抖动，遵守 <code>Retry-After</code></td>
+</tr>
+<tr>
+<td>请求体过大、Schema 不支持</td>
+<td>否</td>
+<td>修改请求或路由到支持的模型</td>
+</tr>
+<tr>
+<td>鉴权失败、租户配额不足</td>
+<td>否</td>
+<td>记录审计并快速失败</td>
+</tr>
+<tr>
+<td>模型拒答</td>
+<td>通常否</td>
+<td>走安全提示或业务兜底，不盲目重复</td>
+</tr>
+<tr>
+<td>达到输出长度上限</td>
+<td>一般否</td>
+<td>缩小任务、摘要上下文或提高预算</td>
+</tr>
+<tr>
+<td>流中断且结果未知</td>
+<td>有条件</td>
+<td>按 requestId 查询或重连，避免无限重放</td>
+</tr>
+</tbody></table>
+<p>模型调用本身通常没有业务副作用，但每次重试都可能产生额外 token 成本和延迟。因此还要有 <code>maxAttempts</code>、<code>maxRetryTokens</code> 和全局预算。降级到小模型前，应确认输出 Schema、上下文窗口和安全等级仍然满足要求；敏感任务不能为了成功率自动降到不合规的模型。</p>
+<h2 id="ModelGateway-的策略不能塞进适配器"><a href="#ModelGateway-的策略不能塞进适配器" class="headerlink" title="ModelGateway 的策略不能塞进适配器"></a>ModelGateway 的策略不能塞进适配器</h2><p>适配器只做翻译：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">InternalRequest</span><br><span class="line">  -&gt; provider request</span><br><span class="line">  -&gt; provider response/event</span><br><span class="line">  -&gt; InternalResponse/Event</span><br></pre></td></tr></table></figure>
+
+<p>路由、配额和降级放在 Gateway：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">ModelResponse</span> <span class="title function_">invoke</span><span class="params">(ModelRequest request, CallContext ctx)</span> &#123;</span><br><span class="line">    <span class="type">ModelRoute</span> <span class="variable">route</span> <span class="operator">=</span> router.select(request, ctx.tenant(), ctx.budget());</span><br><span class="line">    <span class="keyword">for</span> (ModelAttempt attempt : route.attempts()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> clients.get(attempt.provider())</span><br><span class="line">                .complete(request.withModel(attempt.model()),</span><br><span class="line">                          ctx.withDeadline(attempt.deadline()));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ModelError e) &#123;</span><br><span class="line">            metrics.record(attempt, e);</span><br><span class="line">            <span class="keyword">if</span> (!retryPolicy.canRetry(e, ctx)) <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ModelError</span>(<span class="string">&quot;MODEL_ROUTE_EXHAUSTED&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样可以根据任务类型、质量目标、延迟、预算和安全等级路由。比如摘要任务可以选择便宜模型，财务审批的结构化抽取要求严格 Schema 和更高质量；两者不能只靠一个全局默认模型解决。</p>
+<p>每次调用至少记录：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">trace_id, task_id, tenant_id,</span><br><span class="line">provider, model, model_version,</span><br><span class="line">prompt_id, prompt_version, schema_version,</span><br><span class="line">input_tokens, output_tokens, first_token_ms, total_ms,</span><br><span class="line">retry_count, finish_reason, error_code, degraded</span><br></pre></td></tr></table></figure>
+
+<p>不要把完整用户消息无条件写入日志。生产环境应按租户策略脱敏或只存哈希、长度和可检索的事件引用；调试需要原文时，使用受控存储和审计权限。</p>
+<h2 id="Java-后端的最小落地顺序"><a href="#Java-后端的最小落地顺序" class="headerlink" title="Java 后端的最小落地顺序"></a>Java 后端的最小落地顺序</h2><p>如果你现在有一个 Spring Boot 服务，不需要先引入复杂 Agent 框架，可以按下面顺序完成：</p>
+<ol>
+<li>定义 <code>Message</code>、<code>ModelRequest</code>、<code>ModelResponse</code> 和 <code>ModelEvent</code>，写纯单元测试。</li>
+<li>先接一个供应商适配器，禁止业务代码直接依赖供应商 SDK 的 response 类型。</li>
+<li>加入 <code>OutputSpec</code>，实现文本、JSON Schema 两种模式和四层校验。</li>
+<li>把 <code>deadline</code>、取消信号和错误分类贯穿到 HTTP 客户端。</li>
+<li>用 SSE 把 <code>ModelEvent</code> 转发给前端，同时持久化 <code>requestId + sequence</code>。</li>
+<li>再加入第二个适配器，用契约测试验证同一请求的行为一致。</li>
+<li>最后把路由、配额、成本和灰度迁移到 <code>ModelGateway</code>。</li>
+</ol>
+<p>契约测试不要只断言“返回了 200”。至少覆盖：空消息、超长消息、Schema 不支持、拒答、截断、限流、流中断、取消和模型降级。每个适配器都应该通过同一套测试，才能确认统一接口真的统一。</p>
+<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>实现一个 <code>ModelClient</code> 的内存版本，不调用真实模型也可以：</p>
+<ul>
+<li>支持 <code>TEXT</code> 和 <code>JSON_SCHEMA</code> 两种输出模式。</li>
+<li>支持完整响应和带序号的流事件。</li>
+<li>模拟 503、限流、拒答、截断和半包 JSON 五种结果。</li>
+<li>验证重试不会超过总截止时间，流重连不会重复序号。</li>
+<li>保存一条包含模型、Prompt、Schema、token 和耗时的调用记录。</li>
+</ul>
+<p>提交物包括接口定义、一个供应商适配器、错误分类表和 10 条契约测试。明天可以在这个边界上继续增加 Tool Calling，而不是把工具逻辑直接写进 HTTP 调用代码。</p>
+<h2 id="近期面试题整理（检索日期：2026-10-29）"><a href="#近期面试题整理（检索日期：2026-10-29）" class="headerlink" title="近期面试题整理（检索日期：2026-10-29）"></a>近期面试题整理（检索日期：2026-10-29）</h2><p>以下题目来自近期公开面经或题库页面，页面多数标注原始来源为牛客网；聚合站的答案经过整理，适合用来练习答题结构，不能替代你对真实代码的验证。</p>
+<h3 id="1-结构化-JSON-输出不稳定，应该怎样逐层解决？"><a href="#1-结构化-JSON-输出不稳定，应该怎样逐层解决？" class="headerlink" title="1. 结构化 JSON 输出不稳定，应该怎样逐层解决？"></a>1. 结构化 JSON 输出不稳定，应该怎样逐层解决？</h3><p><strong>方向：</strong> Prompt 与结构化输出；<strong>难度：</strong> 中。</p>
+<p>先使用模型原生的 Structured Outputs、JSON Schema 或严格的 Function Calling，而不是只在 Prompt 里写“请输出 JSON”；再用清晰的字段描述、枚举和正反例约束模型；服务端做容错解析、Schema 校验和业务校验；解析失败只允许有限次重试，最终返回结构化错误或转人工。解析失败次数和类型要埋点，否则无法证明改 Prompt 后真的变好。</p>
+<p><strong>追问：</strong> JSON mode 和 Structured Outputs 有什么差别？</p>
+<p>JSON mode 主要保证结果是合法 JSON，不能保证字段符合业务 Schema；Structured Outputs 还约束 Schema，但仍需处理拒答、截断、供应商不支持和业务校验失败。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/hundsun-ai-interview-2916445/">恒生电子 AI 面试：闭包、缓存三兄弟与 LangGraph 选型</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="2-流式-JSON-能不能每收到一个-delta-就直接-JSON-parse？"><a href="#2-流式-JSON-能不能每收到一个-delta-就直接-JSON-parse？" class="headerlink" title="2. 流式 JSON 能不能每收到一个 delta 就直接 JSON.parse？"></a>2. 流式 JSON 能不能每收到一个 delta 就直接 <code>JSON.parse</code>？</h3><p><strong>方向：</strong> 流式响应与前端交互；<strong>难度：</strong> 中高。</p>
+<p>不能。流式片段可能停在字符串、转义符或嵌套对象中间。文本通道可以增量渲染 Markdown；结构化通道应使用增量解析器或先缓冲到完整帧，完成后再做 Schema 和业务校验。前端显示骨架和状态，完整合法结果到达后再挂载交互组件，并为组件保留稳定 key。</p>
+<p><strong>追问：</strong> 流中断重连时如何避免重复渲染？</p>
+<p>服务端为每个事件保存 <code>requestId + sequence</code>，客户端携带最后序号重连，服务端只补发缺失事件；如果存在序号缺口，明确返回失败态和重试入口。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/bytedance-ai-agent-development-07-940390952902914048/">字节跳动 AI Agent 开发面经：动态 UI 渲染、MCP 与 Skill 设计</a>（页面标注面试时间 2026-10-13、来源为公开面经整理）。</p>
+<h3 id="3-工具或模型调用失败时，为什么不能一律重试？"><a href="#3-工具或模型调用失败时，为什么不能一律重试？" class="headerlink" title="3. 工具或模型调用失败时，为什么不能一律重试？"></a>3. 工具或模型调用失败时，为什么不能一律重试？</h3><p><strong>方向：</strong> 模型服务可靠性；<strong>难度：</strong> 中。</p>
+<p>网络超时、限流和短暂 5xx 可以指数退避并限制次数；参数非法应把结构化错误回填给模型修正；权限不足、资源不存在和 Schema 不支持重试没有意义；空结果还要区分“业务上确实为空”和接口异常。达到重试上限后要有降级或明确失败态，并记录 <code>retry_count</code>、错误码和成本。</p>
+<p><strong>追问：</strong> 发生超时但下游结果未知怎么办？</p>
+<p>先用 requestId 或业务幂等键查询执行状态；确认未执行才重放。对有副作用的写操作，不能因为客户端没收到响应就直接发第二次请求。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/kuaishou-agent-first-round-931679347587444736/">快手 Agent 开发一面：工具兜底、多 Agent 与流式解析</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="4-Prompt、模型和-Schema-为什么要联合版本管理？"><a href="#4-Prompt、模型和-Schema-为什么要联合版本管理？" class="headerlink" title="4. Prompt、模型和 Schema 为什么要联合版本管理？"></a>4. Prompt、模型和 Schema 为什么要联合版本管理？</h3><p><strong>方向：</strong> 模型工程与可观测性；<strong>难度：</strong> 中高。</p>
+<p>一次结果由 Prompt、模型版本、采样参数、Schema、上下文和下游数据共同决定。只记录最终文本，无法判断回归来自哪一项。应记录 <code>prompt_id/version</code>、<code>model/version</code>、<code>schema_version</code>、请求参数、输入输出 token、耗时、错误和评测结果；发布前做离线回归，线上按版本灰度，出现问题按组合回滚。</p>
+<p><strong>追问：</strong> Prompt 改一行也要新版本吗？</p>
+<p>只要可能改变输出或安全边界，就应生成新版本；可以通过内容哈希自动识别，并在评测通过后把版本标记为 released。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/916877196034048000?sourceSSR=post&weFlow=true">agent 面经：Prompt 工程与结构化输出面试问答</a>（页面标注为近期公开牛客题库，检索日期 2026-10-29）。</p>
+<h3 id="5-流式输出已经开始后，服务重启或连接断开怎么恢复？"><a href="#5-流式输出已经开始后，服务重启或连接断开怎么恢复？" class="headerlink" title="5. 流式输出已经开始后，服务重启或连接断开怎么恢复？"></a>5. 流式输出已经开始后，服务重启或连接断开怎么恢复？</h3><p><strong>方向：</strong> Agent Runtime 与流式服务；<strong>难度：</strong> 中高。</p>
+<p>把正在生成的消息当成任务状态的一部分持久化，保存 <code>task_id</code>、<code>request_id</code>、序号、已发送片段和最终状态。客户端重连时先补发断点后的事件；如果无法确认模型是否仍在生成，先查询请求状态或把这次调用标记为不确定，再决定重试。最终结果必须重新做完整解析和业务校验，不能把半句话当成成功。</p>
+<p><strong>追问：</strong> 为什么不直接让前端重新请求一次？</p>
+<p>前端重试可能产生重复 token、重复事件和不一致的最终答案；服务端保存请求身份和序号，才能去重、统计成本并在 Runtime 中继续正确的任务状态。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/zuoyebang-agent-dev-first-round-2916240/">作业帮 Agent 开发一面：评测体系与 Trace 闭环</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h2 id="今日资料"><a href="#今日资料" class="headerlink" title="今日资料"></a>今日资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs 官方指南</a>：结构化输出、JSON mode、Schema 限制和流式解析边界。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses">OpenAI Responses API 官方参考</a>：响应事件、文本增量、工具事件与 usage 字段。</li>
+<li><a href="/articles/AI-Agent-Runtime-State-Machine.html">Day 2：Agent Runtime 怎么设计</a>：任务状态、版本控制、幂等和恢复。</li>
+</ul>
+<p>明天继续把这个模型调用边界接到 Tool Calling：工具 Schema 怎么定义、调用前后如何做权限校验，以及为什么模型输出的工具参数仍然不能直接执行。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-ModelClient-Structured-Output-Streaming.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/" rel="tag">模型工程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/" rel="tag">流式响应</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA/" rel="tag">结构化输出</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Token-Context-Budget-Prompt-Version.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Agent-Runtime-State-Machine.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Agent Runtime 怎么设计：状态机、可恢复执行与幂等</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

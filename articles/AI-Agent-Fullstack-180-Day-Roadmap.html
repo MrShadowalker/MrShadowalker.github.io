@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="用 180 天把模型、Agent、RAG、平台工程、前后端和面试能力串成一个可运行的企业级项目。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>企业级 Agent 全栈开发路线图：从模型调用到可运营平台的 180 天 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Agent-Fullstack-180-Day-Roadmap"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  企业级 Agent 全栈开发路线图：从模型调用到可运营平台的 180 天
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html" class="article-date">
+  <time datetime="2026-10-28T01:00:00.000Z" itemprop="datePublished">2026-10-28</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.9k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>很多人学习大模型时，会在模型原理、Prompt、RAG、Agent 框架和各种新工具之间来回切换。每个概念都看过一些，真正面对一个企业需求时，却很难回答三个问题：任务如何可靠地完成，系统如何安全地接入业务，效果和成本如何长期运营。</p>
+<p>这组文章从一个可以持续运行的项目出发，用 180 天把模型调用、Agent Runtime、知识库、工具权限、评测观测、前后端和部署串成一条路线。目标不是把所有框架都学一遍，而是能独立完成一个有状态、可恢复、可评测、可审计的 AI 应用，并能在面试中讲清楚取舍。</p>
+<span id="more"></span>
+
+<h2 id="先确定最终要交付什么"><a href="#先确定最终要交付什么" class="headerlink" title="先确定最终要交付什么"></a>先确定最终要交付什么</h2><p>半年后的作品应该是一套“企业知识与任务协作平台”的最小实现。用户可以从网页发起任务，系统根据权限检索知识，调用受控工具，必要时等待人工审批，最后返回带证据的结果。平台还要能回答：这次任务用了哪个模型、哪份知识、哪些工具、花了多少成本，失败后能否恢复。</p>
+<p>可以把目标拆成四类产物：</p>
+<table>
+<thead>
+<tr>
+<th>产物</th>
+<th>最低要求</th>
+<th>面试时要能说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>可运行项目</td>
+<td>前端、API、任务执行器、数据库和部署脚本</td>
+<td>一次请求经过哪些组件</td>
+</tr>
+<tr>
+<td>工程文档</td>
+<td>架构图、数据模型、权限模型、故障处理</td>
+<td>为什么这样分层，哪些地方保持确定性</td>
+</tr>
+<tr>
+<td>质量证据</td>
+<td>回归集、安全样本、trace 和成本统计</td>
+<td>如何证明改动没有让系统变差</td>
+</tr>
+<tr>
+<td>面试题库</td>
+<td>模型、RAG、Agent、平台和系统设计</td>
+<td>如何从原理回答到生产取舍</td>
+</tr>
+</tbody></table>
+<p>项目不必一开始就拆成很多微服务。先把边界写成接口，再根据真实负载拆分，通常比先搭一套复杂平台更容易验证。</p>
+<h2 id="六个月的学习顺序"><a href="#六个月的学习顺序" class="headerlink" title="六个月的学习顺序"></a>六个月的学习顺序</h2><h3 id="第-1-个月：模型工程和服务基础"><a href="#第-1-个月：模型工程和服务基础" class="headerlink" title="第 1 个月：模型工程和服务基础"></a>第 1 个月：模型工程和服务基础</h3><p>先建立统一的 <code>ModelClient</code>，处理模型路由、超时、重试、流式响应、结构化输出和 token 统计。同步补齐 Python 或 TypeScript 的服务开发、异步任务、数据库和 HTTP 基础。</p>
+<p>第一个月的结果不是“会调用一个模型”，而是让任何业务代码都不需要直接依赖某一家模型供应商。每次调用都记录模型标识、提示词版本、输入输出 token、延迟和错误分类。</p>
+<h3 id="第-2-个月：Agent-核心和可恢复执行"><a href="#第-2-个月：Agent-核心和可恢复执行" class="headerlink" title="第 2 个月：Agent 核心和可恢复执行"></a>第 2 个月：Agent 核心和可恢复执行</h3><p>学习 Tool Calling、ReAct、Planner、Workflow 与 Agent 的边界、短期记忆、长期记忆和 MCP。重点实现任务状态机：任务可以暂停、补问、等待审批、重试、取消和恢复。</p>
+<p>Pi、Claude Code、ChatGPT Agent 等工具放在这一阶段对照学习。关注它们如何读写文件、调用工具、保存上下文和获得用户确认，再把这些能力抽象成自己的运行时接口。MCP 可以作为工具和数据源的连接协议来研究，而不是把它当作业务权限系统。</p>
+<h3 id="第-3-个月：RAG-和企业数据"><a href="#第-3-个月：RAG-和企业数据" class="headerlink" title="第 3 个月：RAG 和企业数据"></a>第 3 个月：RAG 和企业数据</h3><p>从文档解析、切分、元数据、向量检索、关键词检索和重排开始，逐步加入版本、租户、权限过滤和引用。每个答案中的关键结论都要能追溯到具体证据，知识快照也要可以重建。</p>
+<p>这一阶段会复用已有的<a href="/articles/AI-Knowledge-Evidence.html">知识库证据文章</a>和<a href="/articles/AI-QA-Evaluation.html">问答评测文章</a>，把“搜到相关内容”进一步变成“找到足以证明结论的内容”。</p>
+<h3 id="第-4-个月：企业-AI-平台能力"><a href="#第-4-个月：企业-AI-平台能力" class="headerlink" title="第 4 个月：企业 AI 平台能力"></a>第 4 个月：企业 AI 平台能力</h3><p>把模型注册、模型路由、限流、成本、Prompt 版本、工具注册、租户身份、队列和异步执行整理成平台能力。固定顺序的流程使用 Workflow 表达，需要根据输入选择下一步时才开放 Agent 决策。</p>
+<p>这一阶段会结合已有的<a href="/articles/Enterprise-AI-Platform-Layers.html">企业 AI 平台分层设计</a>和<a href="/articles/Enterprise-Agent-Architecture.html">企业级 Agent 架构</a>，完成项目架构图、数据表和一条端到端任务链路。</p>
+<h3 id="第-5-个月：评测、安全和运营"><a href="#第-5-个月：评测、安全和运营" class="headerlink" title="第 5 个月：评测、安全和运营"></a>第 5 个月：评测、安全和运营</h3><p>为正常任务、缺少信息、资料冲突、工具故障、提示词注入、越权和高风险写入准备评测样本。把结果指标、过程指标、风险指标、延迟和成本分开统计；用 trace 把线上失败还原到模型、检索、工具或策略层。</p>
+<p>安全控制要放在执行器和业务服务中，包括短时最小权限、参数 schema、幂等键、审批、审计和取消后的迟到结果处理。可以参考已有的<a href="/articles/Agent-Tool-Calling-Security.html">Agent 工具调用安全</a>和<a href="/articles/Agent-Evaluation-and-Operations.html">Agent 评测与运维</a>。</p>
+<h3 id="第-6-个月：全栈交付和面试表达"><a href="#第-6-个月：全栈交付和面试表达" class="headerlink" title="第 6 个月：全栈交付和面试表达"></a>第 6 个月：全栈交付和面试表达</h3><p>用 React 或 Next.js 完成任务列表、流式输出、引用展开、审批和运行详情；后端提供 SSE 或 WebSocket，数据库保存任务、步骤、证据、审批和审计记录，最后用容器和 CI 脚本部署。</p>
+<p>每周进行一次系统设计和项目复盘：先用三分钟讲清业务目标，再用五分钟讲架构和关键链路，最后主动说明一个失败场景、一个取舍和一个可观测指标。面试官关心的不只是“用了哪个框架”，还会追问并发、权限、成本、降级和数据一致性。</p>
+<h2 id="每天如何推进"><a href="#每天如何推进" class="headerlink" title="每天如何推进"></a>每天如何推进</h2><p>每天的内容固定为四部分，保证学习、实现和面试不会彼此割裂：</p>
+<ol>
+<li>一篇主文章：概念、架构、代码或伪代码、常见坑和实践任务。</li>
+<li>三到五道面试题：标注方向和难度，给出参考答案与追问。</li>
+<li>一到三条资料：优先使用官方文档、论文、公司技术博客和可核验的公开题目，记录检索日期。</li>
+<li>一项项目提交：代码、测试、架构图、评测样本或复盘记录中的一项。</li>
+</ol>
+<p>每七天做一次小测和路线复盘，每三十天交付一个阶段项目。当天没有可靠的新题目时，使用经典题并说明来源和原因，不用未经核验的“内部真题”填充数量。</p>
+<h2 id="第一天先做一个最小闭环"><a href="#第一天先做一个最小闭环" class="headerlink" title="第一天先做一个最小闭环"></a>第一天先做一个最小闭环</h2><p>今天先不要接十个工具。选一个“读取资料、生成建议、等待确认、保存结果”的任务，建立下面四个对象：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Task       目标、发起人、租户、状态、版本</span><br><span class="line">Step       步骤、输入摘要、输出摘要、重试次数、依赖</span><br><span class="line">Evidence   文档、片段、版本、权限判断、引用位置</span><br><span class="line">Trace      模型调用、工具调用、延迟、token、错误分类</span><br></pre></td></tr></table></figure>
+
+<p>最小状态流可以是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CREATED -&gt; RUNNING -&gt; WAITING_FOR_INPUT</span><br><span class="line">                   -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">                   -&gt; SUCCEEDED / FAILED / CANCELED</span><br></pre></td></tr></table></figure>
+
+<p>模型只负责提出结构化的下一步建议，执行器负责检查工具、参数、权限和状态迁移。这样以后换模型、换检索器或增加前端时，核心任务仍然有稳定的边界。</p>
+<h2 id="第一天的面试题"><a href="#第一天的面试题" class="headerlink" title="第一天的面试题"></a>第一天的面试题</h2><h3 id="1-Workflow-和-Agent-应该怎么选？"><a href="#1-Workflow-和-Agent-应该怎么选？" class="headerlink" title="1. Workflow 和 Agent 应该怎么选？"></a>1. Workflow 和 Agent 应该怎么选？</h3><p><strong>方向：</strong> Agent 设计，难度：中。</p>
+<p>固定顺序、分支规则明确、失败处理可预期的流程优先用 Workflow；需要理解自然语言目标、选择资料或决定下一步时，才把局部决策交给 Agent。两者可以组合，Workflow 负责边界，Agent 负责受约束的决策节点。</p>
+<p><strong>追问：</strong> 如果 Agent 连续调用工具失败怎么办？</p>
+<p>答题时应提到最大步数、超时、错误分类、重试预算、降级路径和人工接管，不能只回答“让模型重新规划”。</p>
+<h3 id="2-为什么不能把对话历史当作任务状态？"><a href="#2-为什么不能把对话历史当作任务状态？" class="headerlink" title="2. 为什么不能把对话历史当作任务状态？"></a>2. 为什么不能把对话历史当作任务状态？</h3><p><strong>方向：</strong> Agent Runtime，难度：中。</p>
+<p>对话历史是给模型理解语境的输入，不能保证状态迁移、幂等和并发安全。任务状态应持久化在数据库或任务存储中，每个 Step 有明确状态和版本；恢复时从最后一个已确认步骤继续，而不是让模型猜测做到哪一步。</p>
+<p><strong>追问：</strong> 取消任务后，迟到的工具结果如何处理？</p>
+<p>工具服务和执行器都要校验任务版本及可写状态，已取消的任务拒绝迟到写入；对于外部副作用，还要依靠幂等键和补偿动作。</p>
+<h3 id="3-RAG-的召回率提高了，为什么答案仍然可能错误？"><a href="#3-RAG-的召回率提高了，为什么答案仍然可能错误？" class="headerlink" title="3. RAG 的召回率提高了，为什么答案仍然可能错误？"></a>3. RAG 的召回率提高了，为什么答案仍然可能错误？</h3><p><strong>方向：</strong> RAG，难度：中。</p>
+<p>召回只说明候选里可能有相关内容，不代表材料版本、权限、适用条件和证据强度正确。还需要元数据过滤、重排、版本判断、结论与证据绑定和引用检查。评测时要分开统计检索命中、结论正确、引用支持和最终任务完成。</p>
+<p><strong>追问：</strong> 多租户知识库的权限过滤放在哪一层？</p>
+<p>权限范围应由服务端根据身份计算，并在检索候选阶段过滤；模型只能使用过滤后的证据，不能自行决定用户是否有权访问。</p>
+<h3 id="4-如何控制-Agent-的成本？"><a href="#4-如何控制-Agent-的成本？" class="headerlink" title="4. 如何控制 Agent 的成本？"></a>4. 如何控制 Agent 的成本？</h3><p><strong>方向：</strong> AI 平台，难度：中高。</p>
+<p>先记录每个任务及每个 Step 的 token、模型、工具和重试成本，再按任务类型做模型路由。对简单抽取使用低成本模型，对复杂规划使用更强模型；同时限制上下文长度、最大步数、并发和工具预算，并设置缓存、超时和降级。成本指标要与成功率、延迟和人工接管率一起看。</p>
+<p><strong>追问：</strong> 只换成更便宜的模型是否足够？</p>
+<p>不够。还要比较结构化输出通过率、工具参数错误率、任务完成率和长尾延迟，否则节省的模型费用可能被重试和人工处理抵消。</p>
+<h3 id="5-Agent-的安全边界为什么不能只写在-Prompt-里？"><a href="#5-Agent-的安全边界为什么不能只写在-Prompt-里？" class="headerlink" title="5. Agent 的安全边界为什么不能只写在 Prompt 里？"></a>5. Agent 的安全边界为什么不能只写在 Prompt 里？</h3><p><strong>方向：</strong> 安全与平台，难度：高。</p>
+<p>Prompt 可以约束模型行为，但不能提供可靠的身份认证、资源授权、参数校验和审计。执行器和业务服务必须独立校验短时能力令牌、租户资源、工具 schema、审批状态、幂等键和风险等级；外部文档只能作为不可信数据，不能覆盖系统指令。</p>
+<p><strong>追问：</strong> 如何评测安全？</p>
+<p>为越权资源、提示词注入、过期授权、缺失审批、重复写入和取消后的迟到结果准备应该拒绝的样本，并把策略版本和 trace 纳入回归测试。</p>
+<h2 id="今天的资料"><a href="#今天的资料" class="headerlink" title="今天的资料"></a>今天的资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/agents">OpenAI Agents 文档</a>：了解 Agent、工具、会话和流式事件的官方概念。</li>
+<li><a target="_blank" rel="noopener" href="https://code.claude.com/docs/en/overview">Claude Code Overview</a>：观察一个编码 Agent 如何读取代码、修改文件并调用开发工具。</li>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro">MCP 入门</a>：理解 AI 应用连接外部数据、工具和工作流的协议边界。</li>
+</ul>
+<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>在本地仓库建立 <code>agent-platform/</code> 目录，完成一个不依赖具体模型供应商的 <code>ModelClient</code> 接口、一个内存版任务状态机和一份工具契约。为任务写三条测试：正常完成、缺少信息时等待补问、取消后拒绝迟到结果。明天从 Agent Runtime 的状态机和可恢复执行开始，把这个闭环接到持久化存储。</p>
+<p>这 180 天的每一步都要留下可运行的证据。只要每天都能把一个概念变成接口、测试、文档或一次复盘，半年后就能用一个完整项目回答“你做过什么、为什么这样做、出问题时怎么处理”。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Agent-Fullstack-180-Day-Roadmap.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Agent-Runtime-State-Machine.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Agent Runtime 怎么设计：状态机、可恢复执行与幂等
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/Agent-Evaluation-and-Operations.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Agent 上线前评测什么：从离线样本到线上运维</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

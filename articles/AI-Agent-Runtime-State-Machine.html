@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="把 Agent 的长任务拆成可持久化的状态、步骤和事件，让服务重启、工具超时和重复执行都能被安全处理。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Runtime 怎么设计：状态机、可恢复执行与幂等 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Agent-Runtime-State-Machine"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Agent Runtime 怎么设计：状态机、可恢复执行与幂等
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Agent-Runtime-State-Machine.html" class="article-date">
+  <time datetime="2026-10-28T01:10:00.000Z" itemprop="datePublished">2026-10-28</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">14 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>昨天先把企业级 Agent 的目标拆成了任务、步骤、证据和 trace。今天继续往下实现运行时。很多 Agent Demo 的主循环只有几行：调用模型、执行工具、把结果放回上下文，直到模型说任务完成。</p>
+<p>这段循环可以证明模型会调用工具，却不能证明系统能处理一个运行二十分钟的真实任务。服务重启怎么办，工具超时但实际已经成功怎么办，用户取消后迟到的结果写到哪里，两个执行器同时推进同一个任务怎么办？这些问题都属于 Agent Runtime，而不是 Prompt 的细节。</p>
+<span id="more"></span>
+
+<h2 id="Runtime-负责把不确定性装进边界"><a href="#Runtime-负责把不确定性装进边界" class="headerlink" title="Runtime 负责把不确定性装进边界"></a>Runtime 负责把不确定性装进边界</h2><p>模型适合做判断：选择下一步、提取参数、解释工具结果。Runtime 负责确定性工作：保存状态、校验动作、控制循环、处理超时和重试、记录事件、恢复任务。</p>
+<p>可以把一次任务看成下面这条链路：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">用户请求</span><br><span class="line">  -&gt; Task Store：创建任务与版本</span><br><span class="line">  -&gt; Context Builder：组装当前上下文</span><br><span class="line">  -&gt; Model Gateway：生成结构化决策</span><br><span class="line">  -&gt; Policy：检查工具、权限和预算</span><br><span class="line">  -&gt; Executor：执行工具或等待输入</span><br><span class="line">  -&gt; Event Store：记录结果与状态迁移</span><br><span class="line">  -&gt; 下一步 / 完成 / 失败 / 转人工</span><br></pre></td></tr></table></figure>
+
+<p>这不是要求一开始就部署七个服务。早期可以在一个应用里实现这些模块，但它们应该有独立的接口和测试。将来模型网关、队列、策略服务或工具执行器拆出去时，任务状态不需要跟着重写。</p>
+<h2 id="先定义状态，再写-Agent-Loop"><a href="#先定义状态，再写-Agent-Loop" class="headerlink" title="先定义状态，再写 Agent Loop"></a>先定义状态，再写 Agent Loop</h2><p>状态机的价值是把“做到哪一步”从对话历史中拿出来。一个最小任务状态可以是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATED</span><br><span class="line">  -&gt; RUNNING</span><br><span class="line">  -&gt; WAITING_FOR_INPUT</span><br><span class="line">  -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">  -&gt; SUCCEEDED</span><br><span class="line">  -&gt; FAILED</span><br><span class="line">  -&gt; CANCELED</span><br></pre></td></tr></table></figure>
+
+<p>状态迁移必须有明确的前置条件。比如 <code>WAITING_FOR_APPROVAL</code> 只能由审批结果迁移到 <code>RUNNING</code>，不能让模型返回一个 <code>final=true</code> 就直接变成 <code>SUCCEEDED</code>；<code>CANCELED</code> 之后不允许再执行新的写入步骤。</p>
+<p>可以把迁移规则写成一张表：</p>
+<table>
+<thead>
+<tr>
+<th>当前状态</th>
+<th>事件</th>
+<th>下一个状态</th>
+<th>允许的副作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CREATED</code></td>
+<td><code>task_started</code></td>
+<td><code>RUNNING</code></td>
+<td>创建执行版本</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>need_input</code></td>
+<td><code>WAITING_FOR_INPUT</code></td>
+<td>保存问题，不调用写工具</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>need_approval</code></td>
+<td><code>WAITING_FOR_APPROVAL</code></td>
+<td>保存预览和审批摘要</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>step_succeeded</code></td>
+<td><code>RUNNING</code> 或 <code>SUCCEEDED</code></td>
+<td>写入步骤结果</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>retryable_error</code></td>
+<td><code>RUNNING</code></td>
+<td>增加重试计数</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>fatal_error</code></td>
+<td><code>FAILED</code></td>
+<td>保存失败原因</td>
+</tr>
+<tr>
+<td>任意可取消状态</td>
+<td><code>task_canceled</code></td>
+<td><code>CANCELED</code></td>
+<td>发送取消信号，不接受迟到写入</td>
+</tr>
+</tbody></table>
+<p>状态机只接受列举过的事件，未知事件直接拒绝。这样可以在代码审查和测试中检查边界，也能避免模型输出一句自然语言把任务跳过审批。</p>
+<h2 id="Task、Step-和-Event-要分开保存"><a href="#Task、Step-和-Event-要分开保存" class="headerlink" title="Task、Step 和 Event 要分开保存"></a>Task、Step 和 Event 要分开保存</h2><p><code>Task</code> 表示用户要完成的目标，<code>Step</code> 表示执行计划中的一个节点，<code>Event</code> 表示发生过的事实。不要只保存一份不断覆盖的 JSON，因为恢复和排查都需要知道状态是怎样变化的。</p>
+<p>一个简化的数据模型如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> agent_task (</span><br><span class="line">  task_id        <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">primary key</span>,</span><br><span class="line">  tenant_id      <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">not null</span>,</span><br><span class="line">  requester_id   <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">not null</span>,</span><br><span class="line">  status         <span class="type">varchar</span>(<span class="number">32</span>) <span class="keyword">not null</span>,</span><br><span class="line">  version        <span class="type">bigint</span> <span class="keyword">not null</span>,</span><br><span class="line">  max_steps      <span class="type">int</span> <span class="keyword">not null</span>,</span><br><span class="line">  deadline_at    <span class="type">timestamp</span> <span class="keyword">not null</span>,</span><br><span class="line">  created_at     <span class="type">timestamp</span> <span class="keyword">not null</span>,</span><br><span class="line">  updated_at     <span class="type">timestamp</span> <span class="keyword">not null</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create table</span> agent_step (</span><br><span class="line">  task_id        <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">not null</span>,</span><br><span class="line">  step_id        <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">not null</span>,</span><br><span class="line">  step_no        <span class="type">int</span> <span class="keyword">not null</span>,</span><br><span class="line">  status         <span class="type">varchar</span>(<span class="number">32</span>) <span class="keyword">not null</span>,</span><br><span class="line">  tool_name      <span class="type">varchar</span>(<span class="number">128</span>),</span><br><span class="line">  idempotency_key <span class="type">varchar</span>(<span class="number">128</span>),</span><br><span class="line">  attempt        <span class="type">int</span> <span class="keyword">not null</span>,</span><br><span class="line">  input_json     json,</span><br><span class="line">  output_json    json,</span><br><span class="line">  <span class="keyword">primary key</span> (task_id, step_id)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create table</span> agent_event (</span><br><span class="line">  event_id       <span class="type">bigint</span> <span class="keyword">primary key</span>,</span><br><span class="line">  task_id        <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">not null</span>,</span><br><span class="line">  task_version   <span class="type">bigint</span> <span class="keyword">not null</span>,</span><br><span class="line">  event_type     <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">not null</span>,</span><br><span class="line">  payload_json   json <span class="keyword">not null</span>,</span><br><span class="line">  created_at     <span class="type">timestamp</span> <span class="keyword">not null</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><code>agent_task.version</code> 用于乐观并发控制。执行器读取版本 7 后准备推进任务，提交时要求数据库仍然是版本 7；如果另一个执行器已经推进到版本 8，当前提交失败并重新读取状态。这样不需要先把整个任务锁很久。</p>
+<p>事件表保存的是“发生过什么”，步骤表保存的是“当前看到的结果”。两者一起使用，既能快速读取当前状态，又能按事件顺序重建一次任务。</p>
+<h2 id="Agent-Loop-不等于无边界循环"><a href="#Agent-Loop-不等于无边界循环" class="headerlink" title="Agent Loop 不等于无边界循环"></a>Agent Loop 不等于无边界循环</h2><p>一个可控的 Loop 至少要有四类停止条件：</p>
+<ol>
+<li>正常完成：最终结果通过 schema 和业务校验。</li>
+<li>预算耗尽：达到最大步数、token、工具次数或总时长。</li>
+<li>无进展：连续多次生成相同动作、相同参数或状态没有变化。</li>
+<li>异常终止：权限失败、任务取消、不可恢复错误或策略拒绝。</li>
+</ol>
+<p>伪代码可以写成下面这样：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">while task.status == RUNNING:</span><br><span class="line">    assert within_deadline(task)</span><br><span class="line">    context = context_builder.build(task, last_confirmed_step)</span><br><span class="line">    decision = model.plan(context, allowed_tools)</span><br><span class="line"></span><br><span class="line">    if !schema_valid(decision):</span><br><span class="line">        record(event = INVALID_DECISION)</span><br><span class="line">        retry_or_fail(task)</span><br><span class="line">        continue</span><br><span class="line"></span><br><span class="line">    if decision.type == FINAL:</span><br><span class="line">        if result_validator.accept(decision.result):</span><br><span class="line">            commit(SUCCEEDED, decision.result)</span><br><span class="line">        else:</span><br><span class="line">            feedback_and_retry_or_fail()</span><br><span class="line">        continue</span><br><span class="line"></span><br><span class="line">    if decision.type == ASK_USER:</span><br><span class="line">        commit(WAITING_FOR_INPUT, decision.question)</span><br><span class="line">        continue</span><br><span class="line"></span><br><span class="line">    policy.check(decision.tool, decision.args, task.identity)</span><br><span class="line">    result = executor.run(</span><br><span class="line">        tool=decision.tool,</span><br><span class="line">        args=decision.args,</span><br><span class="line">        idempotency_key=server_generated_key(task, decision)</span><br><span class="line">    )</span><br><span class="line">    commit_step_result(result)</span><br></pre></td></tr></table></figure>
+
+<p>这里最关键的一点是：模型只能产生候选决策，不能直接提交状态。<code>commit</code> 需要再次检查任务版本、策略结果和可写状态。</p>
+<h2 id="重试必须和幂等一起设计"><a href="#重试必须和幂等一起设计" class="headerlink" title="重试必须和幂等一起设计"></a>重试必须和幂等一起设计</h2><p>工具超时有一个危险情况：请求可能已经在下游成功，只是响应没有返回。如果执行器直接生成新请求重试，就可能重复扣款、重复发消息或重复创建资源。</p>
+<p>幂等键应由服务端根据稳定输入生成，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">idempotency_key = hash(</span><br><span class="line">  task_id + step_id + tool_name + canonical_json(args)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>模型不能自己生成这个键。模型每次重试时都可能改变输出，导致同一个业务动作得到不同 key。工具服务收到 key 后，先查询执行记录：如果已经成功，直接返回原结果；如果正在执行，返回处理中；如果上次明确失败且允许重试，再根据策略执行。</p>
+<p>重试也要分层：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>例子</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>瞬时网络错误</td>
+<td>连接重置、网关 503</td>
+<td>指数退避，限制次数</td>
+</tr>
+<tr>
+<td>工具业务错误</td>
+<td>参数非法、资源不存在</td>
+<td>返回结构化错误，让模型修正或补问</td>
+</tr>
+<tr>
+<td>权限错误</td>
+<td>没有资源 scope、审批过期</td>
+<td>直接停止或申请授权</td>
+</tr>
+<tr>
+<td>不确定结果</td>
+<td>超时但下游状态未知</td>
+<td>查询状态或人工对账，不能盲目重放</td>
+</tr>
+<tr>
+<td>不可逆失败</td>
+<td>外部发送已发生但回执丢失</td>
+<td>依靠幂等查询和补偿流程</td>
+</tr>
+</tbody></table>
+<p>读操作通常可以安全重试，写操作必须有幂等或补偿。把所有错误都交给模型“再试一次”，会把网络问题扩大成业务事故。</p>
+<h2 id="取消、超时和服务重启"><a href="#取消、超时和服务重启" class="headerlink" title="取消、超时和服务重启"></a>取消、超时和服务重启</h2><p>取消不是把前端按钮变成灰色，而是一次有版本的状态迁移。用户点击取消时，服务端应把任务从可取消状态改为 <code>CANCELED</code>，给正在运行的执行器发送取消信号，并让后续提交携带旧版本的执行器失败。</p>
+<p>工具调用本身可能无法立即中断，因此还要在写入边界做第二次检查：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">执行器准备提交工具结果</span><br><span class="line">  -&gt; 读取 task.status 与 task.version</span><br><span class="line">  -&gt; 若已 CANCELED 或版本不匹配，丢弃迟到结果</span><br><span class="line">  -&gt; 若仍可写，使用幂等键提交业务结果</span><br></pre></td></tr></table></figure>
+
+<p>总超时和单工具超时要分开。单工具超时只能结束当前调用，总任务超时则应让任务进入 <code>FAILED</code> 或 <code>WAITING_FOR_HUMAN</code>，并保存已经完成的步骤。用户再次恢复时，从最后一个确认步骤继续，而不是从头让模型重复所有副作用。</p>
+<p>如果进程重启，恢复任务的过程也应该由数据库状态驱动：扫描 <code>RUNNING</code> 且心跳过期的任务，将执行租约标记为失效；读取最后一个已确认的 Step，重新构建上下文；对处于不确定结果的工具先调用查询接口；确认没有重复副作用后再继续 Loop。</p>
+<p>长任务也可以交给专门的持久化工作流引擎。比如 <a target="_blank" rel="noopener" href="https://docs.temporal.io/workflows">Temporal Workflow</a> 用事件历史重放工作流状态，并把外部 API、数据库、文件和模型调用放进 Activity；这类设计的核心思想与我们自己实现的 Task&#x2F;Step&#x2F;Event 一致。是否引入框架，要看任务时长、并发、恢复要求和团队运维能力。</p>
+<h2 id="Context、State-和-Memory-不是一回事"><a href="#Context、State-和-Memory-不是一回事" class="headerlink" title="Context、State 和 Memory 不是一回事"></a>Context、State 和 Memory 不是一回事</h2><p>面试时经常把这三个概念混在一起，生产系统必须分开：</p>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>内容</th>
+<th>生命周期</th>
+<th>主要用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>State</td>
+<td>任务状态、步骤状态、预算、审批状态</td>
+<td>任务级，必须持久化</td>
+<td>恢复和并发控制</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>当前送入模型窗口的消息和证据</td>
+<td>单次模型调用</td>
+<td>帮模型决定下一步</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>可跨任务使用的偏好、事实和产物索引</td>
+<td>用户&#x2F;项目级</td>
+<td>提供长期背景</td>
+</tr>
+</tbody></table>
+<p>状态不能只存在 context 里；memory 也不能直接覆盖当前任务状态。上下文压缩时，可以丢掉重复日志和寒暄，但用户目标、权限、数字、时间、否定关系、未完成步骤和工具结果引用必须结构化保留。</p>
+<p>一个实用做法是“原文可回查，摘要可重建”：摘要表保存关键事实和来源 event_id，模型需要细节时再按引用读取原始消息或工具结果。这样压缩出现偏差时，可以回退到上一个摘要版本。</p>
+<h2 id="近期面试题整理（检索日期：2026-10-28）"><a href="#近期面试题整理（检索日期：2026-10-28）" class="headerlink" title="近期面试题整理（检索日期：2026-10-28）"></a>近期面试题整理（检索日期：2026-10-28）</h2><p>以下题目来自近期公开面经，页面标注的原始来源主要是牛客网；聚合页面可能经过整理，不能当作官方题库。准备时要按自己的项目经历重新组织答案。</p>
+<h3 id="1-除了步数上限，怎样防止-Agent-Loop-死循环？"><a href="#1-除了步数上限，怎样防止-Agent-Loop-死循环？" class="headerlink" title="1. 除了步数上限，怎样防止 Agent Loop 死循环？"></a>1. 除了步数上限，怎样防止 Agent Loop 死循环？</h3><p><strong>方向：</strong> Agent Runtime；<strong>难度：</strong> 中高。</p>
+<p>除了最大步数，还要检测“无进展”：对工具名和规范化参数做哈希，发现连续重复调用就中止；维护待办、已完成、已验证状态，连续多轮没有状态变化就触发重新规划或转人工；同时限制 token、总时长和单工具调用次数。最终完成条件也要由外部校验器判断，例如测试通过、文件生成或数据库状态成立，不能只看模型说“完成”。</p>
+<p><strong>追问：</strong> 如果模型一直换不同参数但任务仍然没有推进呢？</p>
+<p>把进展定义为可观测的业务状态变化，而不是动作是否不同；如果状态没有变化，仍然应触发无进展策略。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/bytedance-ai-fullstack-first-round-2925092/">字节业务中台 AI 全栈实习一面</a>（页面标注时间 2026-10、来源为牛客网）。</p>
+<h3 id="2-工具调用超时后如何重试，怎样避免重复操作？"><a href="#2-工具调用超时后如何重试，怎样避免重复操作？" class="headerlink" title="2. 工具调用超时后如何重试，怎样避免重复操作？"></a>2. 工具调用超时后如何重试，怎样避免重复操作？</h3><p><strong>方向：</strong> 工具调用与可靠性；<strong>难度：</strong> 中高。</p>
+<p>先区分工具是否幂等。读操作可以按错误类型退避重试；写操作必须携带服务端生成的幂等键。超时但结果未知时，先查询下游执行状态，再决定重试；工具服务保存 key 与结果，重复请求直接返回原结果。参数校验失败、权限失败和业务不存在都不应按网络错误重试。</p>
+<p><strong>追问：</strong> 为什么不能让模型生成幂等 key？</p>
+<p>因为模型重试时可能生成不同字符串，幂等性会被破坏。key 应由 <code>task_id + step_id + tool + canonical_args</code> 等稳定字段确定性派生。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/bytedance-agent-first-round-931893943342465024/">字节一面 Agent 岗：ReAct、幂等与上下文压缩</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="3-什么是-Agent-Harness？它与模型的职责如何划分？"><a href="#3-什么是-Agent-Harness？它与模型的职责如何划分？" class="headerlink" title="3. 什么是 Agent Harness？它与模型的职责如何划分？"></a>3. 什么是 Agent Harness？它与模型的职责如何划分？</h3><p><strong>方向：</strong> Agent 架构；<strong>难度：</strong> 中高。</p>
+<p>Harness 可以理解为包住模型的运行时控制层：它负责上下文预算、工具 schema、状态和循环控制、权限、重试、结果验证与可观测。模型负责在当前上下文中提出判断和动作。判断 Harness 是否可靠，要看工具失败、上下文超限、用户取消和权限变化时，系统能否继续安全运行。</p>
+<p><strong>追问：</strong> 如果把 Harness 的规则全部写进系统 Prompt，会怎样？</p>
+<p>提示词可以帮助模型理解规则，但不能替代服务端鉴权、状态迁移、schema 校验和幂等提交。关键边界必须由执行器和业务服务再次判断。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/bytedance-ai-agent-first-round-933733520864706560/">字节跳动 AI Agent 开发一面面经</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="4-上下文压缩怎样尽量减少信息损失？"><a href="#4-上下文压缩怎样尽量减少信息损失？" class="headerlink" title="4. 上下文压缩怎样尽量减少信息损失？"></a>4. 上下文压缩怎样尽量减少信息损失？</h3><p><strong>方向：</strong> Context Engineering；<strong>难度：</strong> 中高。</p>
+<p>先把不能丢的信息结构化抽取出来：用户目标、硬约束、授权、数字、时间、否定关系、未完成事项和步骤结果。近处保留原文，中期保留阶段摘要，长期记忆保存带来源和版本的事实；摘要中的关键事实应能回查原始 event。压缩后做数字、实体、否定词和权限条件的规则校验，并通过任务成功率回归验证，而不是只看摘要读起来是否通顺。</p>
+<p><strong>追问：</strong> 压缩后发现任务失败，如何回退？</p>
+<p>保留摘要版本和原始事件指针，失败时回退到上一个摘要版本，重新从原文构建局部上下文，并把这类样本加入压缩回归集。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://mj.mianlingai.com/interview/baidu-ai-agent-developer-05-931706698258010112/">百度 AI Agent 开发岗面经：记忆模块与上下文压缩</a>（页面标注时间 2026-09、面试时间为 2026-08，来源为牛客网）。</p>
+<h3 id="5-多-Agent-或多个执行器同时修改同一资源，怎么处理？"><a href="#5-多-Agent-或多个执行器同时修改同一资源，怎么处理？" class="headerlink" title="5. 多 Agent 或多个执行器同时修改同一资源，怎么处理？"></a>5. 多 Agent 或多个执行器同时修改同一资源，怎么处理？</h3><p><strong>方向：</strong> 分布式 Agent；<strong>难度：</strong> 高。</p>
+<p>先判断资源是否可以并行。不能并行的写操作使用资源级租约或数据库锁，并通过版本号检测冲突；所有写工具带幂等键，跨多个资源的流程使用 Saga 和补偿动作。多个 Agent 之间传递关键状态时使用结构化协议，叙述性上下文可以使用自然语言；发生冲突时回到证据和业务约束，不用简单多数投票。</p>
+<p><strong>追问：</strong> 锁超时后可以直接让另一个 Agent 重试吗？</p>
+<p>不能直接重放。要先确认原持有者是否还活跃、操作是否已经提交，以及资源版本是否变化；必要时把任务转为等待或人工处理。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://agentalpha.top/interview/company/bytedance">字节跳动大模型 Agent 面试题</a>（公开面经与岗位题目归纳，检索日期 2026-10-28）。</p>
+<h2 id="今天的资料"><a href="#今天的资料" class="headerlink" title="今天的资料"></a>今天的资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/agents">OpenAI Agents 文档</a>：文档目录包含会话状态、后台运行、追踪、错误恢复和 Agent SDK 的结果与状态等主题。</li>
+<li><a target="_blank" rel="noopener" href="https://docs.temporal.io/workflows">Temporal Workflow 文档</a>：理解事件历史、工作流重放、取消、暂停和 Activity 的持久化执行方式。</li>
+<li><a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html">系列 Day 1：企业级 Agent 全栈开发路线图</a>：回顾任务、步骤、证据和 trace 的最小对象模型。</li>
+</ul>
+<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>在 <code>agent-platform/</code> 中实现一个内存版 Runtime，不接真实模型也可以。准备三个工具：一个只读查询、一个可重复写入、一个故意超时的工具；实现任务状态、步骤版本、服务端幂等键、最大步数、无进展检测和取消后的迟到结果丢弃。至少写五个测试：正常完成、校验失败后重试、写工具重复调用、任务取消、执行器并发冲突。</p>
+<p>明天进入 Tool Calling 与工具契约：把今天 Runtime 接收的“候选动作”变成有 schema、权限、风险等级、超时和返回结构的可注册工具。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Agent-Runtime-State-Machine.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E9%9D%A0%E6%80%A7/" rel="tag">可靠性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" rel="tag">状态机</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-ModelClient-Structured-Output-Streaming.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">企业级 Agent 全栈开发路线图：从模型调用到可运营平台的 180 天</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
