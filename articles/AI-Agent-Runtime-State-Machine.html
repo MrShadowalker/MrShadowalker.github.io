@@ -293,7 +293,7 @@ var _hmt = _hmt || [];
 <li><a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html">系列 Day 1：企业级 Agent 全栈开发路线图</a>：回顾任务、步骤、证据和 trace 的最小对象模型。</li>
 </ul>
 <h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>在 <code>agent-platform/</code> 中实现一个内存版 Runtime，不接真实模型也可以。准备三个工具：一个只读查询、一个可重复写入、一个故意超时的工具；实现任务状态、步骤版本、服务端幂等键、最大步数、无进展检测和取消后的迟到结果丢弃。至少写五个测试：正常完成、校验失败后重试、写工具重复调用、任务取消、执行器并发冲突。</p>
-<p>明天进入 Tool Calling 与工具契约：把今天 Runtime 接收的“候选动作”变成有 schema、权限、风险等级、超时和返回结构的可注册工具。</p>
+<p>下一篇先把模型调用收敛为统一 ModelClient：让 Runtime 接收的“候选动作”有稳定的消息、结构化输出、流式事件与错误边界。工具契约在第 2 月专题展开。</p>
  
       <!-- reward -->
       

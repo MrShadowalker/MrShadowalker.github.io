@@ -350,7 +350,7 @@ retry_count, finish_reason, error_code, degraded
 - 验证重试不会超过总截止时间，流重连不会重复序号。
 - 保存一条包含模型、Prompt、Schema、token 和耗时的调用记录。
 
-提交物包括接口定义、一个供应商适配器、错误分类表和 10 条契约测试。明天可以在这个边界上继续增加 Tool Calling，而不是把工具逻辑直接写进 HTTP 调用代码。
+提交物包括接口定义、一个供应商适配器、错误分类表和 10 条契约测试。下一篇在这个边界上加入 Token 与上下文预算，控制每次模型调用的容量、延迟和费用。
 
 ## 近期面试题整理（检索日期：2026-10-29）
 
@@ -422,4 +422,4 @@ JSON mode 主要保证结果是合法 JSON，不能保证字段符合业务 Sche
 - [OpenAI Responses API 官方参考](https://developers.openai.com/api/reference/resources/responses)：响应事件、文本增量、工具事件与 usage 字段。
 - [Day 2：Agent Runtime 怎么设计](/articles/AI-Agent-Runtime-State-Machine.html)：任务状态、版本控制、幂等和恢复。
 
-明天继续把这个模型调用边界接到 Tool Calling：工具 Schema 怎么定义、调用前后如何做权限校验，以及为什么模型输出的工具参数仍然不能直接执行。
+下一篇继续研究 Token 与上下文预算：怎样给 Prompt、历史、检索结果和工具返回分配空间，并记录真实用量。Tool Calling 与权限校验在第 2 月专题展开。

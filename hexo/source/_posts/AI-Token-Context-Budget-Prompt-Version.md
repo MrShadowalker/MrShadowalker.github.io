@@ -26,13 +26,13 @@ tags:
 
 ## Token 是容量、延迟和费用的共同单位
 
-一次模型请求的资源账本至少包含下面几项：
+一次模型请求的资源账本至少包含下面几项。以下是 OpenAI Responses 的 usage 口径；其他供应商应由适配器归一化，不能按同名字段直接相加：
 
 ```text
-input_tokens = system + developer + tools + history
-             + retrieved_context + current_user
-output_tokens = visible_output + tool_arguments + reasoning
-billable_tokens = input_tokens + output_tokens
+reported_input_tokens  = 本次完整输入，包含可复用的缓存输入
+reported_output_tokens = 模型生成总量，包含推理与不可见格式等输出
+reported_total_tokens  = reported_input_tokens + reported_output_tokens
+缓存读写是输入的分项，推理 Token 是输出的分项；不得重复相加
 ```
 
 不同模型的计费和上下文窗口可能不同，但工程上都要回答四个问题：
@@ -111,9 +111,10 @@ Prompt 发布应该像代码发布一样经过草稿、离线评测、灰度和�
 
 ```java
 public record ContextBudget(
-    int maxInputTokens,
+    int contextWindowTokens,
+    int modelInputLimitTokens,
     int maxOutputTokens,
-    int reserveTokens,
+    int safetyMarginTokens,
     int systemTokens,
     int taskTokens,
     int recentHistoryTokens,
@@ -121,7 +122,8 @@ public record ContextBudget(
     int toolResultTokens
 ) {
     public int usableInputTokens() {
-        return maxInputTokens - reserveTokens;
+        return Math.min(modelInputLimitTokens,
+            contextWindowTokens - maxOutputTokens - safetyMarginTokens);
     }
 }
 
@@ -320,8 +322,7 @@ public ContextResult build(
         blocks = compactAndExternalize(blocks, budget, counter);
         estimated = counter.count(blocks);
     }
-    if (estimated + budget.maxOutputTokens() + budget.reserveTokens()
-            > budget.maxInputTokens()) {
+    if (estimated > budget.usableInputTokens()) {
         throw new ContextBudgetExceeded(estimated);
     }
     return new ContextResult(blocks, estimated, contextVersion(blocks));
@@ -368,7 +369,7 @@ public ContextResult build(
 - 输出一份成本报告，至少包含输入、输出、缓存命中、压缩调用和重试成本。
 - 用 10 条长任务样本比较压缩前后的任务成功率、关键事实保留率和 P95 延迟。
 
-提交物是 `ContextBuilder` 接口、预算分配表、两种压缩策略的对比记录和一份可以解释“为什么删掉这段历史”的 trace。明天继续研究 Embedding、模型路由和缓存，把今天的预算接到具体的检索与模型选择上。
+提交物是 `ContextBuilder` 接口、预算分配表、两种压缩策略的对比记录和一份可以解释“为什么删掉这段历史”的 trace。下一篇先用 Golden Set 检查 Prompt 和上下文策略的改动是否安全，再做压缩实验。
 
 ## 近期面试题整理（检索日期：2026-10-30）
 
@@ -440,4 +441,4 @@ Prompt Cache 通常匹配完整的前缀。系统指令、工具 Schema、工具
 - [OpenAI Prompting 官方指南](https://developers.openai.com/api/docs/guides/prompting)：Prompt 组织、版本维护和缓存前缀建议。
 - [Day 3：统一 ModelClient](/articles/AI-ModelClient-Structured-Output-Streaming.html)：消息、结构化输出、流式事件、超时和重试边界。
 
-明天继续把预算接到 Embedding、模型路由和缓存实现，比较“更大模型”“更长上下文”和“更好的检索”分别解决什么问题。
+下一篇用 Golden Set 建立 Prompt 回归门槛；随后用实测数据比较原始上下文、截断与结构化压缩。Embedding 和模型路由会在第 1 月后续专题展开。

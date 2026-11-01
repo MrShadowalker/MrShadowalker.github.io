@@ -38,6 +38,7 @@ comments: true
 - **Day 3｜[统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界](/articles/AI-ModelClient-Structured-Output-Streaming.html)**
 - **Day 4｜[Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控](/articles/AI-Token-Context-Budget-Prompt-Version.html)**
 - **Day 5｜[Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度](/articles/AI-Prompt-Regression-Golden-Set.html)**
+- **Day 6｜[上下文压缩到底省了什么：Token 计量、事实保留与任务成本实验](/articles/AI-Context-Compression-Token-Experiment.html)**
 
 ### 已有相关文章
 
@@ -50,17 +51,17 @@ comments: true
 - [知识库能搜到，为什么还是答不准？](/articles/AI-Knowledge-Evidence.html)
 - [给 AI 问答做测试：先把错误分清楚](/articles/AI-QA-Evaluation.html)
 
-### 后续目录
+### 课程目录
 
-后续文章会按下面的顺序追加；每天发布后把当天链接补到对应阶段。
+文章按下面的阶段推进；每天发布后把当天链接补到对应阶段。
 
 #### 第 1 月：模型工程和服务基础
 
-- Day 2：Agent Runtime 的状态机、可恢复执行与幂等（提前建立后续 Agent 文章的共同状态模型）
+- Day 2：[Agent Runtime 的状态机、可恢复执行与幂等](/articles/AI-Agent-Runtime-State-Machine.html)（提前建立后续 Agent 文章的共同状态模型）
 - Day 3：[统一 ModelClient、消息、结构化输出、流式与重试的边界](/articles/AI-ModelClient-Structured-Output-Streaming.html)
 - Day 4：[Token 与上下文预算、Prompt 版本、压缩、缓存与成本控制](/articles/AI-Token-Context-Budget-Prompt-Version.html)
 - Day 5：[Prompt 回归测试、Golden Set、评测门槛与灰度](/articles/AI-Prompt-Regression-Golden-Set.html)
-- Day 6：Token 计量与上下文压缩实验
+- Day 6：[Token 计量、事实保留与任务成本实验](/articles/AI-Context-Compression-Token-Experiment.html)
 - Day 7：首周复盘与小测
 - Day 8-14：Embedding、模型路由、缓存和成本统计
 - Day 15-21：Python/TypeScript 服务、异步任务、数据库模型和 API 设计
