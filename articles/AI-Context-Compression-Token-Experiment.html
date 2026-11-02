@@ -187,7 +187,7 @@ var _hmt = _hmt || [];
 
 <p>这里的 <code>reasoningPart</code>只用于分析输出构成，<strong>不再额外乘一次输出单价</strong>。Anthropic 适配器要单独归一化：其普通输入、缓存读取、缓存创建字段相加才是完整输入，不能复用上面的 OpenAI 减法。对于返回多轮压缩用量的接口，还要核对每次迭代 usage，避免只看顶层字段漏账。</p>
 <h2 id="执行器：先判正确，再比较成本"><a href="#执行器：先判正确，再比较成本" class="headerlink" title="执行器：先判正确，再比较成本"></a>执行器：先判正确，再比较成本</h2><p>为三种策略运行同一组样本，保持版本组合不变：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">for case in frozen_golden_set:</span><br><span class="line">    for strategy in [RAW, RECENT_ONLY, STATE_SUMMARY_POINTER]:</span><br><span class="line">        for repeat in [1, 2]:</span><br><span class="line">            request = context_builder.build(case, strategy)</span><br><span class="line">            preflight = count_complete_request(request)</span><br><span class="line">            if preflight + output_reserve &gt; context_window:</span><br><span class="line">                record(case, strategy, &quot;BUDGET_REJECTED&quot;)</span><br><span class="line">                continue</span><br><span class="line">            response = model_client.call(request)</span><br><span class="line">            verdict = deterministic_judge(case.expected, response)</span><br><span class="line">            record(preflight, usage, latency, verdict, trace_id)</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">for case in frozen_golden_set:</span><br><span class="line">    for strategy in [RAW, RECENT_ONLY, STATE_SUMMARY_POINTER]:</span><br><span class="line">        for repeat in [1, 2]:</span><br><span class="line">            request = context_builder.build(case, strategy)</span><br><span class="line">            preflight = count_complete_request(request)</span><br><span class="line">            if preflight &gt; usable_input_limit:</span><br><span class="line">                record(case, strategy, &quot;BUDGET_REJECTED&quot;)</span><br><span class="line">                continue</span><br><span class="line">            response = model_client.call(request)</span><br><span class="line">            verdict = deterministic_judge(case.expected, response)</span><br><span class="line">            record(preflight, usage, latency, verdict, trace_id)</span><br></pre></td></tr></table></figure>
 
 <p>真实执行时随机化策略顺序，避免总是让某个策略独享热缓存。记录实际缓存读写，不把“第二次请求一定命中”当作前提；按冷、热缓存状态和任务长度分别看结果。若摘要由模型生成，摘要请求本身也必须记录使用量、耗时、模型版本和失败状态。</p>
 <p>判分分两层：</p>
@@ -200,9 +200,9 @@ var _hmt = _hmt || [];
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">experiment_id, case_id, strategy_version, repeat,</span><br><span class="line">model_id, model_version, prompt_hash, context_builder_version,</span><br><span class="line">dataset_hash, tool_fixture_version, price_table_version,</span><br><span class="line">preflight_input_tokens, actual_input_tokens,</span><br><span class="line">cache_read_tokens, cache_write_tokens, output_tokens,</span><br><span class="line">reasoning_tokens_subset, summary_call_tokens, retry_tokens,</span><br><span class="line">latency_ms, first_token_ms, trace_id, verdict, failure_reason</span><br></pre></td></tr></table></figure>
 
 <p>聚合指标不要只报平均值：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">任务成功率       = 成功样本数 / 有效样本数</span><br><span class="line">关键事实保留率   = 被保留且可核验的必需事实数 / 必需事实总数</span><br><span class="line">缓存读占比       = sum(cache_read_tokens) / sum(actual_input_tokens)</span><br><span class="line">每成功任务成本   = 所有样本的总成本 / 成功样本数</span><br><span class="line">压缩净收益       = 原始策略总成本 - 压缩策略总成本</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">任务成功率       = 成功运行次数 / 计划运行次数</span><br><span class="line">关键事实保留率   = 被保留且可核验的必需事实数 / 必需事实总数</span><br><span class="line">缓存读占比       = sum(cache_read_tokens) / sum(actual_input_tokens)</span><br><span class="line">每成功任务成本   = 所有计划运行的总成本 / 成功运行次数</span><br><span class="line">压缩净收益       = 原始策略总成本 - 压缩策略总成本</span><br></pre></td></tr></table></figure>
 
-<p>成功样本数为零时，每成功任务成本记为“不适用”，不能记零。再按高风险任务、长对话、长工具结果、约束反转、冷&#x2F;热缓存切片，报告 P50&#x2F;P95 延迟和逐 Case 的 <code>PASS → FAIL</code>。样本量小就展示原始计数和不确定性，不声称“成本降低 X%”已适用于全部流量。</p>
+<p>预算拒绝、失败和超时也进入计划运行的分母，并在报告中单列原因，不能为了提高成功率悄悄剔除。成功次数为零时，每成功任务成本记为“不适用”，不能记零。再按高风险任务、长对话、长工具结果、约束反转、冷&#x2F;热缓存切片，报告 P50&#x2F;P95 延迟和逐 Case 的 <code>PASS → FAIL</code>。样本量小就展示原始计数和不确定性，不声称“成本降低 X%”已适用于全部流量。</p>
 <p>实验报告先用空表，完成真实调用后再填：</p>
 <table>
 <thead>
@@ -370,6 +370,15 @@ var _hmt = _hmt || [];
 
    
   <nav class="article-nav">
+    
+      <a href="/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环
+          
+        </div>
+      </a>
     
     
       <a href="/articles/AI-Prompt-Regression-Golden-Set.html" class="article-nav-link">

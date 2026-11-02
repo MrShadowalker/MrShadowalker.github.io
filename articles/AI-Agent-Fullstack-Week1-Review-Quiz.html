@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="复盘 AI 全栈开发前六篇，用一个本地夹具任务验收状态、模型调用、上下文预算和回归门禁，附八道自测题与四道公开面试题。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Agent-Fullstack-Week1-Review-Quiz"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html" class="article-date">
+  <time datetime="2026-11-02T01:00:00.000Z" itemprop="datePublished">2026-11-02</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.9k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">14 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>前六篇分别讲了架构、Agent Runtime、ModelClient、Token 预算、Prompt 回归和上下文压缩。今天是第 7 篇，按系列约定做第一次周复盘与小测。</p>
+<p>本篇提供一套<strong>可执行的验收标准</strong>：用本地固定响应和模拟工具串起最小闭环，给出故障夹具、八道自测题及答案。系列文章里有接口、伪代码和实验模板；是否真正完成代码、测试或真实模型降本，要以自己的提交物和运行记录证明，不能把阅读文章算作项目验收。</p>
+<span id="more"></span>
+
+<h2 id="一周知识，落到同一条请求链"><a href="#一周知识，落到同一条请求链" class="headerlink" title="一周知识，落到同一条请求链"></a>一周知识，落到同一条请求链</h2><table>
+<thead>
+<tr>
+<th>篇目</th>
+<th>本周掌握的边界</th>
+<th>最小可检查证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html">Day 1：180 天路线图</a></td>
+<td>业务目标、完成条件、禁用动作与平台分层</td>
+<td>一张任务契约和组件图</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Agent-Runtime-State-Machine.html">Day 2：Agent Runtime</a></td>
+<td>Task&#x2F;Step&#x2F;Event、合法状态迁移、幂等与恢复</td>
+<td>状态表、事件序列、失败注入测试</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">Day 3：统一 ModelClient</a></td>
+<td>供应商适配、结构化输出、流式完成和总截止时间</td>
+<td>接口、错误分类、契约测试</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Token-Context-Budget-Prompt-Version.html">Day 4：Token 与上下文预算</a></td>
+<td>完整请求计数、输出预留、Prompt 和上下文版本</td>
+<td>预算表与 ContextBuilder trace</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Prompt-Regression-Golden-Set.html">Day 5：Golden Set 与回归</a></td>
+<td>冻结版本组合、逐 Case 对照和硬发布门槛</td>
+<td>样本、规则评分器、PASS → FAIL 清单</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Context-Compression-Token-Experiment.html">Day 6：压缩实验</a></td>
+<td>原文、滑窗、结构化摘要的任务级成本与质量对照</td>
+<td>usage 账本、事实保留和失败报告</td>
+</tr>
+</tbody></table>
+<p>把这些概念连起来，一次请求应该经过：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">身份与租户校验</span><br><span class="line">  → Task Store：创建任务、版本和截止时间</span><br><span class="line">  → ContextBuilder：拼装必需状态与证据，预检完整输入</span><br><span class="line">  → ModelClient：调用模型或固定响应夹具</span><br><span class="line">  → 输出校验：完成状态、解析、Schema、业务字段</span><br><span class="line">  → Policy：权限、审批、预算和副作用门禁</span><br><span class="line">  → Tool Executor：本地模拟工具或受控真实工具</span><br><span class="line">  → Event Store：记录模型决策、工具回执与状态迁移</span><br><span class="line">  → Evaluator：对照预期状态、禁止动作与证据</span><br></pre></td></tr></table></figure>
+
+<p>模型输出的是<strong>候选决定</strong>。Task 不能因为模型写了“退款完成”就变成 SUCCEEDED；它需要合法迁移、已确认的工具回执和业务完成条件。Context 是给本次模型看的材料，Task&#x2F;Step&#x2F;Event 是应用可恢复的事实记录，两者不能互相代替。</p>
+<h3 id="三个本周必须讲清的故障窗口"><a href="#三个本周必须讲清的故障窗口" class="headerlink" title="三个本周必须讲清的故障窗口"></a>三个本周必须讲清的故障窗口</h3><ol>
+<li><strong>外部写入成功，本地还没保存回执就崩溃。</strong> 恢复时不能换新幂等键盲目重试，要查询下游执行记录或对账。持久化工作流可以重放调度，但外部副作用仍需要业务幂等。<a target="_blank" rel="noopener" href="https://docs.temporal.io/activity-definition">Temporal Activity 文档</a>明确提醒 Activity 可能重复执行。</li>
+<li><strong>流式片段里已经出现合法 JSON 字段，整体响应随后截断。</strong> 前端可以展示增量，执行写动作前仍要等所需调用参数完整，并检查结束状态、Schema、业务规则与授权。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs 文档</a>也把拒答、中断和业务正确性列为独立边界。</li>
+<li><strong>压缩后输入变短，但任务更贵。</strong> 缓存前缀可能改变，摘要会产生额外调用，事实丢失还会带来重试或人工接管。把失败调用、摘要调用和缓存读写放到同一任务账本，再比较每成功任务成本。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching</a>说明缓存复用前缀计算，不复用旧答案。</li>
+</ol>
+<h2 id="90–120-分钟集成演练：退款原因查询助手"><a href="#90–120-分钟集成演练：退款原因查询助手" class="headerlink" title="90–120 分钟集成演练：退款原因查询助手"></a>90–120 分钟集成演练：退款原因查询助手</h2><p>使用本地 FakeModelClient 和模拟工具，不接真实订单或支付系统。业务目标是<strong>解释订单为什么不能立即退款</strong>；当前授权只允许查询，审批仍处于 PENDING。模拟写工具可以把结果写到内存账本，用来测试幂等与故障恢复，但默认策略必须拦截未经授权的写入。</p>
+<p>一个固定夹具：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;case_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;week1-order-017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;tenant_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tenant-demo&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;order_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;O-017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;amount_cny&quot;</span><span class="punctuation">:</span> <span class="number">300</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;approval&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PENDING&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;user_constraint&quot;</span><span class="punctuation">:</span> <span class="string">&quot;只解释原因，不执行退款&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;evidence_ids&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;policy-v3-p4&quot;</span><span class="punctuation">,</span> <span class="string">&quot;order-O-017-v2&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;model_fixture&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;action&quot;</span><span class="punctuation">:</span> <span class="string">&quot;EXPLAIN_ONLY&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;reason&quot;</span><span class="punctuation">:</span> <span class="string">&quot;仍待审批&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;evidence_ids&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;policy-v3-p4&quot;</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;expected&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;task_status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;SUCCEEDED&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;forbidden_tool&quot;</span><span class="punctuation">:</span> <span class="string">&quot;EXECUTE_REFUND&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;must_preserve&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;PENDING&quot;</span><span class="punctuation">,</span> <span class="string">&quot;不执行退款&quot;</span><span class="punctuation">,</span> <span class="string">&quot;policy-v3-p4&quot;</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>正常路径的事件可以是 <code>TaskCreated → ContextBuilt → ModelResponseReceived → PolicyAccepted → TaskCompleted</code>。每个事件带任务版本、Step ID、输入&#x2F;输出哈希和 trace ID；模型响应与工具回执作为可回放数据保存。读工具和写工具的权限分别配置，模型提出写入不等于获得授权。</p>
+<h3 id="故障夹具清单"><a href="#故障夹具清单" class="headerlink" title="故障夹具清单"></a>故障夹具清单</h3><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>注入条件</th>
+<th>预期结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>正常解释</td>
+<td>租户、订单和政策版本均正确</td>
+<td>SUCCEEDED；引用正确证据；零写入</td>
+</tr>
+<tr>
+<td>缺少订单号</td>
+<td>用户目标缺关键参数</td>
+<td>WAITING_FOR_INPUT；保存补问，不猜订单</td>
+</tr>
+<tr>
+<td>越权租户</td>
+<td>订单不属于当前租户</td>
+<td>接入层拒绝或任务失败；不把跨租户证据送模型</td>
+</tr>
+<tr>
+<td>JSON 合法但金额错</td>
+<td>模型输出金额 3000</td>
+<td>Schema 通过，业务校验失败；零写入</td>
+</tr>
+<tr>
+<td>流式响应截断</td>
+<td>半包 JSON 后连接结束</td>
+<td>记录不完整响应；不得执行部分工具参数</td>
+</tr>
+<tr>
+<td>写工具结果未知</td>
+<td>模拟工具已写内存账本，但回包超时</td>
+<td>用同一业务幂等键查询回执；不得重复记账</td>
+</tr>
+<tr>
+<td>取消后迟到结果</td>
+<td>任务已 CANCELED，旧执行器返回</td>
+<td>旧版本提交被拒；已发生的外部副作用另行对账</td>
+</tr>
+<tr>
+<td>必需块超预算</td>
+<td>授权、任务状态与当前请求已超过输入上限</td>
+<td>明确 BUDGET_REJECTED；不静默删约束</td>
+</tr>
+<tr>
+<td>压缩丢早期否定词</td>
+<td>长历史开头含“不执行退款”</td>
+<td>压缩校验失败并回退或重建；零写入</td>
+</tr>
+</tbody></table>
+<p>每个 Case 保存 <code>expected_status</code>、<code>forbidden_actions</code>、<code>required_evidence_ids</code> 和失败原因。没有运行的 Case 标成 NOT_RUN；模拟 usage 只能称为“账本夹具测试”，不能写成供应商真实费用。</p>
+<h3 id="一份能复查的交付清单"><a href="#一份能复查的交付清单" class="headerlink" title="一份能复查的交付清单"></a>一份能复查的交付清单</h3><ul>
+<li><code>fixtures.jsonl</code>：九个 Case 的输入、工具回执和预期结果。</li>
+<li><code>versions.json</code>：模型夹具、Prompt、Schema、ContextBuilder、策略和知识快照版本。</li>
+<li>运行命令与逐 Case 报告：每条记录 PASS、FAIL、BUDGET_REJECTED 或 NOT_RUN，不丢失败分母。</li>
+<li>事件和 usage 账本：记录所有主调用、摘要、失败、重试、工具回查及它们的 trace ID。</li>
+<li>一页复盘：列出最严重的 PASS → FAIL、原因、修复与再次运行结果。</li>
+</ul>
+<p>本周的门禁可以很简单：出现未经授权的写入、取消后新写入、跨租户读取或必需约束丢失，立即判失败；其余用完成率、结构化输出通过率、延迟和每成功任务成本做对照。这个门禁是练习规则，真实业务阈值要由风险和服务目标确定。</p>
+<h2 id="首周小测：先独立答，再看解析"><a href="#首周小测：先独立答，再看解析" class="headerlink" title="首周小测：先独立答，再看解析"></a>首周小测：先独立答，再看解析</h2><p>下面八题是<strong>本系列自测题</strong>，不冒充企业面试原题。建议先用 20 分钟写答案，再对照后文；每题按“结论、机制、边界”各 1 分，共 24 分。权限、幂等和取消相关的错误需要单独补练，不能靠其他题的分数抵消。</p>
+<ol>
+<li>模型回复“退款完成”。仅凭这句话，Runtime 能把 Task 改为 SUCCEEDED 吗？</li>
+<li>写工具超时，状态未知。立刻生成一个新幂等键重试是否正确？</li>
+<li>流式响应中某字段已经能被解析为 JSON，是否可以马上执行写工具？</li>
+<li>模型上下文窗口 16,000，独立输入上限 10,000，输出预留 3,000，安全余量 1,000。可用输入上限是多少？预检输入 11,000 如何处理？</li>
+<li>假设供应商采用 OpenAI 式子集口径：输入 usage 为 10,000，其中缓存读 6,000、无缓存写；输出为 800，其中推理为 500。总输入、总输出和普通输入各是多少？</li>
+<li><strong>仅为计算题假设：</strong> A 策略总成本 12 元、成功 8 次；C 策略总成本 10 元、成功 5 次。哪个每成功任务成本更低？能仅凭总账决定采用 C 吗？</li>
+<li>候选 Prompt 总体成功率更高，但新增一条越权写入。可以灰度吗？</li>
+<li>压缩摘要丢掉“只查询、不执行”和证据版本，但保留了大部分聊天内容。该怎样处理？</li>
+</ol>
+<h3 id="参考答案与评分要点"><a href="#参考答案与评分要点" class="headerlink" title="参考答案与评分要点"></a>参考答案与评分要点</h3><table>
+<thead>
+<tr>
+<th>题号</th>
+<th>结论与机制</th>
+<th>必须说出的边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>不能。Task 状态由合法事件、已确认回执和完成条件驱动</td>
+<td>模型文本不是业务事实；审批未完成不能越迁</td>
+</tr>
+<tr>
+<td>2</td>
+<td>不正确。保留同一业务动作的幂等身份，先查下游执行记录</td>
+<td>恢复与重试可能再次触发外部副作用；新业务意图才重新建动作</td>
+</tr>
+<tr>
+<td>3</td>
+<td>不能直接写。检查调用完成、参数完整、Schema、业务和权限</td>
+<td>增量内容可用于界面展示；展示不等于提交授权</td>
+</tr>
+<tr>
+<td>4</td>
+<td>可用输入是 min(10,000, 16,000−3,000−1,000)&#x3D;10,000</td>
+<td>11,000 必须重建、压缩或拒绝；只检查总窗口会漏掉独立输入上限</td>
+</tr>
+<tr>
+<td>5</td>
+<td>总输入 10,000，总输出 800，普通输入 4,000</td>
+<td>缓存读是输入子集，推理是输出子集；其他供应商口径须另查</td>
+</tr>
+<tr>
+<td>6</td>
+<td>A 为 1.5 元&#x2F;成功，C 为 2 元&#x2F;成功；A 更低</td>
+<td>C 总账虽低，成功率也低；先过安全和质量门禁</td>
+</tr>
+<tr>
+<td>7</td>
+<td>不可以按既定硬门槛放行。定位新增的 PASS → FAIL，修复后重跑</td>
+<td>越权写入不能被平均成功率抵消</td>
+</tr>
+<tr>
+<td>8</td>
+<td>判为硬失败；恢复结构化约束和可回查的证据版本，再重评</td>
+<td>回退 checkpoint 或拆任务，不把语义缺失当作普通摘要误差</td>
+</tr>
+</tbody></table>
+<p>如果某题只能背结论，试着为它写一条故障注入测试。这样才知道自己是否理解了“哪一步会错、错后系统留下什么证据”。固定种子或温度也不保证模型逐字复现；要回放事故，应保存模型决策、版本、输入哈希、工具回执和事件序列。</p>
+<h2 id="本周面试题整理（检索日期：2026-11-02）"><a href="#本周面试题整理（检索日期：2026-11-02）" class="headerlink" title="本周面试题整理（检索日期：2026-11-02）"></a>本周面试题整理（检索日期：2026-11-02）</h2><p>以下四道题面来自公开牛客帖子；参考答案和追问由本文按工程实践重写。帖子作者自述的面试官身份、公司和经历<strong>未经企业官方核验</strong>，不能当作官方题库。</p>
+<h3 id="1-多实例同时处理同一会话，状态如何避免冲突？"><a href="#1-多实例同时处理同一会话，状态如何避免冲突？" class="headerlink" title="1. 多实例同时处理同一会话，状态如何避免冲突？"></a>1. 多实例同时处理同一会话，状态如何避免冲突？</h3><p><strong>方向：</strong> Agent Runtime 与并发控制；<strong>难度：</strong> 高。</p>
+<p><strong>参考答案：</strong> 用租户、会话和任务 ID 明确状态归属，持久化 Event 序号与 Task 版本。推进任务时采用单写者租约与 fencing token，或数据库版本号 CAS；旧执行器迟到写入被版本检查拒绝。外部写工具还要业务幂等和对账，JVM 本地锁无法覆盖多实例和进程重启。</p>
+<p><strong>追问（本文延伸）：</strong> 租约到期后，旧执行器的外部工具才返回成功，怎样避免重复落账？</p>
+<p>不能仅丢掉旧响应。用稳定业务幂等键查询下游实际执行结果，记录已发生的副作用；新执行器恢复时先对账，再决定是否继续或补偿。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/932945632514277376?sourceSSR=subject">牛客：一位作者整理的 Agent 岗面试问题</a>（页面显示 09-25；作者自述曾参与面试，身份与经历未独立核验）。</p>
+<h3 id="2-多模型-AI-网关怎样设计路由、降级和故障隔离？"><a href="#2-多模型-AI-网关怎样设计路由、降级和故障隔离？" class="headerlink" title="2. 多模型 AI 网关怎样设计路由、降级和故障隔离？"></a>2. 多模型 AI 网关怎样设计路由、降级和故障隔离？</h3><p><strong>方向：</strong> ModelClient 与平台架构；<strong>难度：</strong> 高。</p>
+<p><strong>参考答案：</strong> 接入层处理鉴权、限流和租户配额；策略层按任务能力、Schema、上下文窗口、数据权限、预算和延迟选择模型；适配层统一消息、流事件、错误与 usage；治理层隔离连接池和并发、设置超时与熔断。只对可恢复错误有界重试；切备用模型前检查工具、Schema、质量和安全兼容。流式输出已发给用户后，不能无标识地把另一模型的内容拼上去。</p>
+<p><strong>追问（本文延伸）：</strong> 候选模型单价更低，但 Schema 通过率下降，路由如何决定？</p>
+<p>先固定任务集比较每成功任务成本和风险切片；关键任务未过质量门槛不能仅凭单价切换。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/926151771779600384?sourceSSR=enterprise">牛客：去哪儿 AI 应用开发秋招一面帖子</a>（页面显示 09-06；公司和面试经历为作者自述）。</p>
+<h3 id="3-用户点击“停止生成”，后端怎样真正停止任务？"><a href="#3-用户点击“停止生成”，后端怎样真正停止任务？" class="headerlink" title="3. 用户点击“停止生成”，后端怎样真正停止任务？"></a>3. 用户点击“停止生成”，后端怎样真正停止任务？</h3><p><strong>方向：</strong> 流式交互与 Runtime 取消；<strong>难度：</strong> 中高。</p>
+<p><strong>参考答案：</strong> 把浏览器断连与明确取消请求区分开。服务端持久化取消状态和版本，向模型连接传播取消，阻止后续 Agent 步骤和新工具派发；已在途的写工具按原幂等键查询回执。释放连接、定时器和租约，并根据实际使用量记录取消前产生的费用。上游未必即时停止执行，取消也不能撤销已发生的外部副作用。</p>
+<p><strong>追问（本文延伸）：</strong> 点击取消时写工具已经成功，但 HTTP 返回超时，界面应显示什么？</p>
+<p>显示“正在核对结果”或相应部分完成状态，先查下游，不直接宣称撤销或再次执行。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/932945632514277376?sourceSSR=subject">牛客：Agent 岗公开问题整理</a>（页面显示 09-25；题面可核验，面试官身份为作者自述）。</p>
+<h3 id="4-单任务-Token-成本怎样计算，最常见的失控点在哪里？"><a href="#4-单任务-Token-成本怎样计算，最常见的失控点在哪里？" class="headerlink" title="4. 单任务 Token 成本怎样计算，最常见的失控点在哪里？"></a>4. 单任务 Token 成本怎样计算，最常见的失控点在哪里？</h3><p><strong>方向：</strong> 计量、成本与可观测性；<strong>难度：</strong> 中。</p>
+<p><strong>参考答案：</strong> 按 trace&#x2F;run 汇总所有模型调用的供应商 usage 和价格版本，拆普通输入、缓存读写及输出；推理 Token 若已含在输出中不再加一次。计入摘要、失败、重试和工具费用，再看每成功任务成本。常见放大源是历史&#x2F;工具结果反复回灌、Agent 步数增加、重试循环和路由到更贵模型；按任务类型和版本切片才能定位。</p>
+<p><strong>追问（本文延伸）：</strong> 用户取消与工具超时的模型调用要不要计入业务成本？</p>
+<p>要记录已实际产生的用量，区分平台自担与租户计费策略；不能因为任务未成功就把调用从运营指标里删除。</p>
+<p>来源：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/932945632514277376?sourceSSR=subject">牛客：Agent 岗公开问题整理</a>（页面显示 09-25；题面可核验，答案为本文整理）。</p>
+<h2 id="今日资料与下周起点"><a href="#今日资料与下周起点" class="headerlink" title="今日资料与下周起点"></a>今日资料与下周起点</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.temporal.io/activity-definition">Temporal Activity Definition</a>：恢复和重试时外部副作用的幂等边界。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a>：结构化格式、拒答与中断的处理边界。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Token Counting</a>与 <a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">Prompt Caching</a>：完整请求计数、usage 分项与前缀缓存。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/evaluation-best-practices">OpenAI Evaluation Best Practices</a>：任务相关样本、边界覆盖和持续评测。练习使用本地评测执行器；<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/deprecations">弃用说明</a>列出了在线评测对象的迁移时间线。</li>
+</ul>
+<p>资料检索日期为 <strong>2026-11-02</strong>。Day 8 开始进入 Embedding、检索输入和模型路由的基础实践；今天先把九个故障夹具与答案留在可运行的本地仓库里，作为后续三十天阶段项目的第一批验收证据。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/" rel="tag">周复盘</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/" rel="tag">模型工程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Context-Compression-Token-Experiment.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">上下文压缩到底省了什么：Token 计量、事实保留与任务成本实验</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

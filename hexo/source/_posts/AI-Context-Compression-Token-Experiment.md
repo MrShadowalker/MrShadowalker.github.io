@@ -147,7 +147,7 @@ for case in frozen_golden_set:
         for repeat in [1, 2]:
             request = context_builder.build(case, strategy)
             preflight = count_complete_request(request)
-            if preflight + output_reserve > context_window:
+            if preflight > usable_input_limit:
                 record(case, strategy, "BUDGET_REJECTED")
                 continue
             response = model_client.call(request)
@@ -181,14 +181,14 @@ latency_ms, first_token_ms, trace_id, verdict, failure_reason
 聚合指标不要只报平均值：
 
 ~~~text
-任务成功率       = 成功样本数 / 有效样本数
+任务成功率       = 成功运行次数 / 计划运行次数
 关键事实保留率   = 被保留且可核验的必需事实数 / 必需事实总数
 缓存读占比       = sum(cache_read_tokens) / sum(actual_input_tokens)
-每成功任务成本   = 所有样本的总成本 / 成功样本数
+每成功任务成本   = 所有计划运行的总成本 / 成功运行次数
 压缩净收益       = 原始策略总成本 - 压缩策略总成本
 ~~~
 
-成功样本数为零时，每成功任务成本记为“不适用”，不能记零。再按高风险任务、长对话、长工具结果、约束反转、冷/热缓存切片，报告 P50/P95 延迟和逐 Case 的 <code>PASS → FAIL</code>。样本量小就展示原始计数和不确定性，不声称“成本降低 X%”已适用于全部流量。
+预算拒绝、失败和超时也进入计划运行的分母，并在报告中单列原因，不能为了提高成功率悄悄剔除。成功次数为零时，每成功任务成本记为“不适用”，不能记零。再按高风险任务、长对话、长工具结果、约束反转、冷/热缓存切片，报告 P50/P95 延迟和逐 Case 的 <code>PASS → FAIL</code>。样本量小就展示原始计数和不确定性，不声称“成本降低 X%”已适用于全部流量。
 
 实验报告先用空表，完成真实调用后再填：
 

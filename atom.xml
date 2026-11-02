@@ -10,7 +10,24 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-01T01:00:00.000Z</updated>
+  <updated>2026-11-02T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
+    <category term="模型工程" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html"/>
+    <published>2026-11-02T01:00:00.000Z</published>
+    <summary>复盘 AI 全栈开发前六篇，用一个本地夹具任务验收状态、模型调用、上下文预算和回归门禁，附八道自测题与四道公开面试题。</summary>
+    <title>AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环</title>
+    <updated>2026-11-02T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -51,10 +68,10 @@
     </author>
     <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="模型工程" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/"/>
     <category term="Token" scheme="https://chenzihao.me/tags/Token/"/>
     <category term="上下文工程" scheme="https://chenzihao.me/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"/>
     <category term="成本控制" scheme="https://chenzihao.me/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/"/>
-    <category term="模型工程" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/"/>
     <category term="Prompt" scheme="https://chenzihao.me/tags/Prompt/"/>
     <id>https://chenzihao.me/articles/AI-Token-Context-Budget-Prompt-Version.html</id>
     <link href="https://chenzihao.me/articles/AI-Token-Context-Budget-Prompt-Version.html"/>
@@ -139,9 +156,9 @@
     <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
     <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
     <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="企业架构" scheme="https://chenzihao.me/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/"/>
     <category term="信息安全" scheme="https://chenzihao.me/tags/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/"/>
     <category term="权限" scheme="https://chenzihao.me/tags/%E6%9D%83%E9%99%90/"/>
+    <category term="企业架构" scheme="https://chenzihao.me/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/"/>
     <id>https://chenzihao.me/articles/Agent-Tool-Calling-Security.html</id>
     <link href="https://chenzihao.me/articles/Agent-Tool-Calling-Security.html"/>
     <published>2026-10-24T02:20:00.000Z</published>
@@ -326,19 +343,5 @@
     <summary>秒杀系列开篇文章，整理分布式微服务设计中，面对高并发场景的一系列潜在问题和处理思路。</summary>
     <title>秒杀系列（零）高并发设计</title>
     <updated>2021-07-26T03:02:55.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="高并发" scheme="https://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
-    <id>https://chenzihao.me/articles/Java-Idempotent-Design.html</id>
-    <link href="https://chenzihao.me/articles/Java-Idempotent-Design.html"/>
-    <published>2021-07-26T01:39:55.000Z</published>
-    <summary>Java 幂等设计，很重要的一项基本功和意识。</summary>
-    <title>Java 幂等设计</title>
-    <updated>2021-07-26T01:39:55.000Z</updated>
   </entry>
 </feed>

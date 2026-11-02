@@ -49,6 +49,7 @@ CREATED
   -> RUNNING
   -> WAITING_FOR_INPUT
   -> WAITING_FOR_APPROVAL
+  -> WAITING_FOR_HUMAN
   -> SUCCEEDED
   -> FAILED
   -> CANCELED
@@ -63,6 +64,8 @@ CREATED
 | `CREATED` | `task_started` | `RUNNING` | 创建执行版本 |
 | `RUNNING` | `need_input` | `WAITING_FOR_INPUT` | 保存问题，不调用写工具 |
 | `RUNNING` | `need_approval` | `WAITING_FOR_APPROVAL` | 保存预览和审批摘要 |
+| `RUNNING` | `handoff_requested` | `WAITING_FOR_HUMAN` | 保存接管原因与已完成步骤 |
+| `WAITING_FOR_HUMAN` | `human_resolved` | `RUNNING` 或 `FAILED` | 保存人工结论，恢复前重验权限 |
 | `RUNNING` | `step_succeeded` | `RUNNING` 或 `SUCCEEDED` | 写入步骤结果 |
 | `RUNNING` | `retryable_error` | `RUNNING` | 增加重试计数 |
 | `RUNNING` | `fatal_error` | `FAILED` | 保存失败原因 |
@@ -198,6 +201,8 @@ idempotency_key = hash(
   -> 若已 CANCELED 或版本不匹配，丢弃迟到结果
   -> 若仍可写，使用幂等键提交业务结果
 ```
+
+丢弃迟到结果只能阻止本系统继续提交，不能撤销外部服务已经完成的写入。对结果未知的写工具，要用同一业务幂等键查询下游执行记录；确认已生效就记账，必要时走补偿或人工处理。
 
 总超时和单工具超时要分开。单工具超时只能结束当前调用，总任务超时则应让任务进入 `FAILED` 或 `WAITING_FOR_HUMAN`，并保存已经完成的步骤。用户再次恢复时，从最后一个确认步骤继续，而不是从头让模型重复所有副作用。
 

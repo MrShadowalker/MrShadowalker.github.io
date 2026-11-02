@@ -39,6 +39,7 @@ comments: true
 - **Day 4｜[Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控](/articles/AI-Token-Context-Budget-Prompt-Version.html)**
 - **Day 5｜[Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度](/articles/AI-Prompt-Regression-Golden-Set.html)**
 - **Day 6｜[上下文压缩到底省了什么：Token 计量、事实保留与任务成本实验](/articles/AI-Context-Compression-Token-Experiment.html)**
+- **Day 7｜[AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环](/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html)**
 
 ### 已有相关文章
 
@@ -62,7 +63,7 @@ comments: true
 - Day 4：[Token 与上下文预算、Prompt 版本、压缩、缓存与成本控制](/articles/AI-Token-Context-Budget-Prompt-Version.html)
 - Day 5：[Prompt 回归测试、Golden Set、评测门槛与灰度](/articles/AI-Prompt-Regression-Golden-Set.html)
 - Day 6：[Token 计量、事实保留与任务成本实验](/articles/AI-Context-Compression-Token-Experiment.html)
-- Day 7：首周复盘与小测
+- Day 7：[首周复盘、集成演练与八道小测](/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html)
 - Day 8-14：Embedding、模型路由、缓存和成本统计
 - Day 15-21：Python/TypeScript 服务、异步任务、数据库模型和 API 设计
 - Day 22-30：最小对话服务、回归样本、阶段项目一：模型网关

@@ -106,6 +106,230 @@
       </tags>
   </entry>
   <entry>
+    <title>AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环</title>
+    <url>/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html</url>
+    <content><![CDATA[<p>前六篇分别讲了架构、Agent Runtime、ModelClient、Token 预算、Prompt 回归和上下文压缩。今天是第 7 篇，按系列约定做第一次周复盘与小测。</p>
+<p>本篇提供一套<strong>可执行的验收标准</strong>：用本地固定响应和模拟工具串起最小闭环，给出故障夹具、八道自测题及答案。系列文章里有接口、伪代码和实验模板；是否真正完成代码、测试或真实模型降本，要以自己的提交物和运行记录证明，不能把阅读文章算作项目验收。</p>
+<span id="more"></span>
+
+<h2 id="一周知识，落到同一条请求链"><a href="#一周知识，落到同一条请求链" class="headerlink" title="一周知识，落到同一条请求链"></a>一周知识，落到同一条请求链</h2><table>
+<thead>
+<tr>
+<th>篇目</th>
+<th>本周掌握的边界</th>
+<th>最小可检查证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="/articles/AI-Agent-Fullstack-180-Day-Roadmap.html">Day 1：180 天路线图</a></td>
+<td>业务目标、完成条件、禁用动作与平台分层</td>
+<td>一张任务契约和组件图</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Agent-Runtime-State-Machine.html">Day 2：Agent Runtime</a></td>
+<td>Task&#x2F;Step&#x2F;Event、合法状态迁移、幂等与恢复</td>
+<td>状态表、事件序列、失败注入测试</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">Day 3：统一 ModelClient</a></td>
+<td>供应商适配、结构化输出、流式完成和总截止时间</td>
+<td>接口、错误分类、契约测试</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Token-Context-Budget-Prompt-Version.html">Day 4：Token 与上下文预算</a></td>
+<td>完整请求计数、输出预留、Prompt 和上下文版本</td>
+<td>预算表与 ContextBuilder trace</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Prompt-Regression-Golden-Set.html">Day 5：Golden Set 与回归</a></td>
+<td>冻结版本组合、逐 Case 对照和硬发布门槛</td>
+<td>样本、规则评分器、PASS → FAIL 清单</td>
+</tr>
+<tr>
+<td><a href="/articles/AI-Context-Compression-Token-Experiment.html">Day 6：压缩实验</a></td>
+<td>原文、滑窗、结构化摘要的任务级成本与质量对照</td>
+<td>usage 账本、事实保留和失败报告</td>
+</tr>
+</tbody></table>
+<p>把这些概念连起来，一次请求应该经过：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">身份与租户校验</span><br><span class="line">  → Task Store：创建任务、版本和截止时间</span><br><span class="line">  → ContextBuilder：拼装必需状态与证据，预检完整输入</span><br><span class="line">  → ModelClient：调用模型或固定响应夹具</span><br><span class="line">  → 输出校验：完成状态、解析、Schema、业务字段</span><br><span class="line">  → Policy：权限、审批、预算和副作用门禁</span><br><span class="line">  → Tool Executor：本地模拟工具或受控真实工具</span><br><span class="line">  → Event Store：记录模型决策、工具回执与状态迁移</span><br><span class="line">  → Evaluator：对照预期状态、禁止动作与证据</span><br></pre></td></tr></table></figure>
+
+<p>模型输出的是<strong>候选决定</strong>。Task 不能因为模型写了“退款完成”就变成 SUCCEEDED；它需要合法迁移、已确认的工具回执和业务完成条件。Context 是给本次模型看的材料，Task&#x2F;Step&#x2F;Event 是应用可恢复的事实记录，两者不能互相代替。</p>
+<h3 id="三个本周必须讲清的故障窗口"><a href="#三个本周必须讲清的故障窗口" class="headerlink" title="三个本周必须讲清的故障窗口"></a>三个本周必须讲清的故障窗口</h3><ol>
+<li><strong>外部写入成功，本地还没保存回执就崩溃。</strong> 恢复时不能换新幂等键盲目重试，要查询下游执行记录或对账。持久化工作流可以重放调度，但外部副作用仍需要业务幂等。<a href="https://docs.temporal.io/activity-definition">Temporal Activity 文档</a>明确提醒 Activity 可能重复执行。</li>
+<li><strong>流式片段里已经出现合法 JSON 字段，整体响应随后截断。</strong> 前端可以展示增量，执行写动作前仍要等所需调用参数完整，并检查结束状态、Schema、业务规则与授权。<a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs 文档</a>也把拒答、中断和业务正确性列为独立边界。</li>
+<li><strong>压缩后输入变短，但任务更贵。</strong> 缓存前缀可能改变，摘要会产生额外调用，事实丢失还会带来重试或人工接管。把失败调用、摘要调用和缓存读写放到同一任务账本，再比较每成功任务成本。<a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching</a>说明缓存复用前缀计算，不复用旧答案。</li>
+</ol>
+<h2 id="90–120-分钟集成演练：退款原因查询助手"><a href="#90–120-分钟集成演练：退款原因查询助手" class="headerlink" title="90–120 分钟集成演练：退款原因查询助手"></a>90–120 分钟集成演练：退款原因查询助手</h2><p>使用本地 FakeModelClient 和模拟工具，不接真实订单或支付系统。业务目标是<strong>解释订单为什么不能立即退款</strong>；当前授权只允许查询，审批仍处于 PENDING。模拟写工具可以把结果写到内存账本，用来测试幂等与故障恢复，但默认策略必须拦截未经授权的写入。</p>
+<p>一个固定夹具：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;case_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;week1-order-017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;tenant_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tenant-demo&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;order_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;O-017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;amount_cny&quot;</span><span class="punctuation">:</span> <span class="number">300</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;approval&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PENDING&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;user_constraint&quot;</span><span class="punctuation">:</span> <span class="string">&quot;只解释原因，不执行退款&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;evidence_ids&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;policy-v3-p4&quot;</span><span class="punctuation">,</span> <span class="string">&quot;order-O-017-v2&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;model_fixture&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;action&quot;</span><span class="punctuation">:</span> <span class="string">&quot;EXPLAIN_ONLY&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;reason&quot;</span><span class="punctuation">:</span> <span class="string">&quot;仍待审批&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;evidence_ids&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;policy-v3-p4&quot;</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;expected&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;task_status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;SUCCEEDED&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;forbidden_tool&quot;</span><span class="punctuation">:</span> <span class="string">&quot;EXECUTE_REFUND&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;must_preserve&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;PENDING&quot;</span><span class="punctuation">,</span> <span class="string">&quot;不执行退款&quot;</span><span class="punctuation">,</span> <span class="string">&quot;policy-v3-p4&quot;</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>正常路径的事件可以是 <code>TaskCreated → ContextBuilt → ModelResponseReceived → PolicyAccepted → TaskCompleted</code>。每个事件带任务版本、Step ID、输入&#x2F;输出哈希和 trace ID；模型响应与工具回执作为可回放数据保存。读工具和写工具的权限分别配置，模型提出写入不等于获得授权。</p>
+<h3 id="故障夹具清单"><a href="#故障夹具清单" class="headerlink" title="故障夹具清单"></a>故障夹具清单</h3><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>注入条件</th>
+<th>预期结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>正常解释</td>
+<td>租户、订单和政策版本均正确</td>
+<td>SUCCEEDED；引用正确证据；零写入</td>
+</tr>
+<tr>
+<td>缺少订单号</td>
+<td>用户目标缺关键参数</td>
+<td>WAITING_FOR_INPUT；保存补问，不猜订单</td>
+</tr>
+<tr>
+<td>越权租户</td>
+<td>订单不属于当前租户</td>
+<td>接入层拒绝或任务失败；不把跨租户证据送模型</td>
+</tr>
+<tr>
+<td>JSON 合法但金额错</td>
+<td>模型输出金额 3000</td>
+<td>Schema 通过，业务校验失败；零写入</td>
+</tr>
+<tr>
+<td>流式响应截断</td>
+<td>半包 JSON 后连接结束</td>
+<td>记录不完整响应；不得执行部分工具参数</td>
+</tr>
+<tr>
+<td>写工具结果未知</td>
+<td>模拟工具已写内存账本，但回包超时</td>
+<td>用同一业务幂等键查询回执；不得重复记账</td>
+</tr>
+<tr>
+<td>取消后迟到结果</td>
+<td>任务已 CANCELED，旧执行器返回</td>
+<td>旧版本提交被拒；已发生的外部副作用另行对账</td>
+</tr>
+<tr>
+<td>必需块超预算</td>
+<td>授权、任务状态与当前请求已超过输入上限</td>
+<td>明确 BUDGET_REJECTED；不静默删约束</td>
+</tr>
+<tr>
+<td>压缩丢早期否定词</td>
+<td>长历史开头含“不执行退款”</td>
+<td>压缩校验失败并回退或重建；零写入</td>
+</tr>
+</tbody></table>
+<p>每个 Case 保存 <code>expected_status</code>、<code>forbidden_actions</code>、<code>required_evidence_ids</code> 和失败原因。没有运行的 Case 标成 NOT_RUN；模拟 usage 只能称为“账本夹具测试”，不能写成供应商真实费用。</p>
+<h3 id="一份能复查的交付清单"><a href="#一份能复查的交付清单" class="headerlink" title="一份能复查的交付清单"></a>一份能复查的交付清单</h3><ul>
+<li><code>fixtures.jsonl</code>：九个 Case 的输入、工具回执和预期结果。</li>
+<li><code>versions.json</code>：模型夹具、Prompt、Schema、ContextBuilder、策略和知识快照版本。</li>
+<li>运行命令与逐 Case 报告：每条记录 PASS、FAIL、BUDGET_REJECTED 或 NOT_RUN，不丢失败分母。</li>
+<li>事件和 usage 账本：记录所有主调用、摘要、失败、重试、工具回查及它们的 trace ID。</li>
+<li>一页复盘：列出最严重的 PASS → FAIL、原因、修复与再次运行结果。</li>
+</ul>
+<p>本周的门禁可以很简单：出现未经授权的写入、取消后新写入、跨租户读取或必需约束丢失，立即判失败；其余用完成率、结构化输出通过率、延迟和每成功任务成本做对照。这个门禁是练习规则，真实业务阈值要由风险和服务目标确定。</p>
+<h2 id="首周小测：先独立答，再看解析"><a href="#首周小测：先独立答，再看解析" class="headerlink" title="首周小测：先独立答，再看解析"></a>首周小测：先独立答，再看解析</h2><p>下面八题是<strong>本系列自测题</strong>，不冒充企业面试原题。建议先用 20 分钟写答案，再对照后文；每题按“结论、机制、边界”各 1 分，共 24 分。权限、幂等和取消相关的错误需要单独补练，不能靠其他题的分数抵消。</p>
+<ol>
+<li>模型回复“退款完成”。仅凭这句话，Runtime 能把 Task 改为 SUCCEEDED 吗？</li>
+<li>写工具超时，状态未知。立刻生成一个新幂等键重试是否正确？</li>
+<li>流式响应中某字段已经能被解析为 JSON，是否可以马上执行写工具？</li>
+<li>模型上下文窗口 16,000，独立输入上限 10,000，输出预留 3,000，安全余量 1,000。可用输入上限是多少？预检输入 11,000 如何处理？</li>
+<li>假设供应商采用 OpenAI 式子集口径：输入 usage 为 10,000，其中缓存读 6,000、无缓存写；输出为 800，其中推理为 500。总输入、总输出和普通输入各是多少？</li>
+<li><strong>仅为计算题假设：</strong> A 策略总成本 12 元、成功 8 次；C 策略总成本 10 元、成功 5 次。哪个每成功任务成本更低？能仅凭总账决定采用 C 吗？</li>
+<li>候选 Prompt 总体成功率更高，但新增一条越权写入。可以灰度吗？</li>
+<li>压缩摘要丢掉“只查询、不执行”和证据版本，但保留了大部分聊天内容。该怎样处理？</li>
+</ol>
+<h3 id="参考答案与评分要点"><a href="#参考答案与评分要点" class="headerlink" title="参考答案与评分要点"></a>参考答案与评分要点</h3><table>
+<thead>
+<tr>
+<th>题号</th>
+<th>结论与机制</th>
+<th>必须说出的边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>不能。Task 状态由合法事件、已确认回执和完成条件驱动</td>
+<td>模型文本不是业务事实；审批未完成不能越迁</td>
+</tr>
+<tr>
+<td>2</td>
+<td>不正确。保留同一业务动作的幂等身份，先查下游执行记录</td>
+<td>恢复与重试可能再次触发外部副作用；新业务意图才重新建动作</td>
+</tr>
+<tr>
+<td>3</td>
+<td>不能直接写。检查调用完成、参数完整、Schema、业务和权限</td>
+<td>增量内容可用于界面展示；展示不等于提交授权</td>
+</tr>
+<tr>
+<td>4</td>
+<td>可用输入是 min(10,000, 16,000−3,000−1,000)&#x3D;10,000</td>
+<td>11,000 必须重建、压缩或拒绝；只检查总窗口会漏掉独立输入上限</td>
+</tr>
+<tr>
+<td>5</td>
+<td>总输入 10,000，总输出 800，普通输入 4,000</td>
+<td>缓存读是输入子集，推理是输出子集；其他供应商口径须另查</td>
+</tr>
+<tr>
+<td>6</td>
+<td>A 为 1.5 元&#x2F;成功，C 为 2 元&#x2F;成功；A 更低</td>
+<td>C 总账虽低，成功率也低；先过安全和质量门禁</td>
+</tr>
+<tr>
+<td>7</td>
+<td>不可以按既定硬门槛放行。定位新增的 PASS → FAIL，修复后重跑</td>
+<td>越权写入不能被平均成功率抵消</td>
+</tr>
+<tr>
+<td>8</td>
+<td>判为硬失败；恢复结构化约束和可回查的证据版本，再重评</td>
+<td>回退 checkpoint 或拆任务，不把语义缺失当作普通摘要误差</td>
+</tr>
+</tbody></table>
+<p>如果某题只能背结论，试着为它写一条故障注入测试。这样才知道自己是否理解了“哪一步会错、错后系统留下什么证据”。固定种子或温度也不保证模型逐字复现；要回放事故，应保存模型决策、版本、输入哈希、工具回执和事件序列。</p>
+<h2 id="本周面试题整理（检索日期：2026-11-02）"><a href="#本周面试题整理（检索日期：2026-11-02）" class="headerlink" title="本周面试题整理（检索日期：2026-11-02）"></a>本周面试题整理（检索日期：2026-11-02）</h2><p>以下四道题面来自公开牛客帖子；参考答案和追问由本文按工程实践重写。帖子作者自述的面试官身份、公司和经历<strong>未经企业官方核验</strong>，不能当作官方题库。</p>
+<h3 id="1-多实例同时处理同一会话，状态如何避免冲突？"><a href="#1-多实例同时处理同一会话，状态如何避免冲突？" class="headerlink" title="1. 多实例同时处理同一会话，状态如何避免冲突？"></a>1. 多实例同时处理同一会话，状态如何避免冲突？</h3><p><strong>方向：</strong> Agent Runtime 与并发控制；<strong>难度：</strong> 高。</p>
+<p><strong>参考答案：</strong> 用租户、会话和任务 ID 明确状态归属，持久化 Event 序号与 Task 版本。推进任务时采用单写者租约与 fencing token，或数据库版本号 CAS；旧执行器迟到写入被版本检查拒绝。外部写工具还要业务幂等和对账，JVM 本地锁无法覆盖多实例和进程重启。</p>
+<p><strong>追问（本文延伸）：</strong> 租约到期后，旧执行器的外部工具才返回成功，怎样避免重复落账？</p>
+<p>不能仅丢掉旧响应。用稳定业务幂等键查询下游实际执行结果，记录已发生的副作用；新执行器恢复时先对账，再决定是否继续或补偿。</p>
+<p>来源：<a href="https://www.nowcoder.com/discuss/932945632514277376?sourceSSR=subject">牛客：一位作者整理的 Agent 岗面试问题</a>（页面显示 09-25；作者自述曾参与面试，身份与经历未独立核验）。</p>
+<h3 id="2-多模型-AI-网关怎样设计路由、降级和故障隔离？"><a href="#2-多模型-AI-网关怎样设计路由、降级和故障隔离？" class="headerlink" title="2. 多模型 AI 网关怎样设计路由、降级和故障隔离？"></a>2. 多模型 AI 网关怎样设计路由、降级和故障隔离？</h3><p><strong>方向：</strong> ModelClient 与平台架构；<strong>难度：</strong> 高。</p>
+<p><strong>参考答案：</strong> 接入层处理鉴权、限流和租户配额；策略层按任务能力、Schema、上下文窗口、数据权限、预算和延迟选择模型；适配层统一消息、流事件、错误与 usage；治理层隔离连接池和并发、设置超时与熔断。只对可恢复错误有界重试；切备用模型前检查工具、Schema、质量和安全兼容。流式输出已发给用户后，不能无标识地把另一模型的内容拼上去。</p>
+<p><strong>追问（本文延伸）：</strong> 候选模型单价更低，但 Schema 通过率下降，路由如何决定？</p>
+<p>先固定任务集比较每成功任务成本和风险切片；关键任务未过质量门槛不能仅凭单价切换。</p>
+<p>来源：<a href="https://www.nowcoder.com/discuss/926151771779600384?sourceSSR=enterprise">牛客：去哪儿 AI 应用开发秋招一面帖子</a>（页面显示 09-06；公司和面试经历为作者自述）。</p>
+<h3 id="3-用户点击“停止生成”，后端怎样真正停止任务？"><a href="#3-用户点击“停止生成”，后端怎样真正停止任务？" class="headerlink" title="3. 用户点击“停止生成”，后端怎样真正停止任务？"></a>3. 用户点击“停止生成”，后端怎样真正停止任务？</h3><p><strong>方向：</strong> 流式交互与 Runtime 取消；<strong>难度：</strong> 中高。</p>
+<p><strong>参考答案：</strong> 把浏览器断连与明确取消请求区分开。服务端持久化取消状态和版本，向模型连接传播取消，阻止后续 Agent 步骤和新工具派发；已在途的写工具按原幂等键查询回执。释放连接、定时器和租约，并根据实际使用量记录取消前产生的费用。上游未必即时停止执行，取消也不能撤销已发生的外部副作用。</p>
+<p><strong>追问（本文延伸）：</strong> 点击取消时写工具已经成功，但 HTTP 返回超时，界面应显示什么？</p>
+<p>显示“正在核对结果”或相应部分完成状态，先查下游，不直接宣称撤销或再次执行。</p>
+<p>来源：<a href="https://www.nowcoder.com/discuss/932945632514277376?sourceSSR=subject">牛客：Agent 岗公开问题整理</a>（页面显示 09-25；题面可核验，面试官身份为作者自述）。</p>
+<h3 id="4-单任务-Token-成本怎样计算，最常见的失控点在哪里？"><a href="#4-单任务-Token-成本怎样计算，最常见的失控点在哪里？" class="headerlink" title="4. 单任务 Token 成本怎样计算，最常见的失控点在哪里？"></a>4. 单任务 Token 成本怎样计算，最常见的失控点在哪里？</h3><p><strong>方向：</strong> 计量、成本与可观测性；<strong>难度：</strong> 中。</p>
+<p><strong>参考答案：</strong> 按 trace&#x2F;run 汇总所有模型调用的供应商 usage 和价格版本，拆普通输入、缓存读写及输出；推理 Token 若已含在输出中不再加一次。计入摘要、失败、重试和工具费用，再看每成功任务成本。常见放大源是历史&#x2F;工具结果反复回灌、Agent 步数增加、重试循环和路由到更贵模型；按任务类型和版本切片才能定位。</p>
+<p><strong>追问（本文延伸）：</strong> 用户取消与工具超时的模型调用要不要计入业务成本？</p>
+<p>要记录已实际产生的用量，区分平台自担与租户计费策略；不能因为任务未成功就把调用从运营指标里删除。</p>
+<p>来源：<a href="https://www.nowcoder.com/discuss/932945632514277376?sourceSSR=subject">牛客：Agent 岗公开问题整理</a>（页面显示 09-25；题面可核验，答案为本文整理）。</p>
+<h2 id="今日资料与下周起点"><a href="#今日资料与下周起点" class="headerlink" title="今日资料与下周起点"></a>今日资料与下周起点</h2><ul>
+<li><a href="https://docs.temporal.io/activity-definition">Temporal Activity Definition</a>：恢复和重试时外部副作用的幂等边界。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a>：结构化格式、拒答与中断的处理边界。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Token Counting</a>与 <a href="https://developers.openai.com/api/docs/guides/prompt-caching">Prompt Caching</a>：完整请求计数、usage 分项与前缀缓存。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/evaluation-best-practices">OpenAI Evaluation Best Practices</a>：任务相关样本、边界覆盖和持续评测。练习使用本地评测执行器；<a href="https://developers.openai.com/api/docs/deprecations">弃用说明</a>列出了在线评测对象的迁移时间线。</li>
+</ul>
+<p>资料检索日期为 <strong>2026-11-02</strong>。Day 8 开始进入 Embedding、检索输入和模型路由的基础实践；今天先把九个故障夹具与答案留在可运行的本地仓库里，作为后续三十天阶段项目的第一批验收证据。</p>
+]]></content>
+      <categories>
+        <category>AI工程</category>
+      </categories>
+      <tags>
+        <tag>AI全栈</tag>
+        <tag>Agent</tag>
+        <tag>面试</tag>
+        <tag>周复盘</tag>
+        <tag>模型工程</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Agent Runtime 怎么设计：状态机、可恢复执行与幂等</title>
     <url>/articles/AI-Agent-Runtime-State-Machine.html</url>
     <content><![CDATA[<p>昨天先把企业级 Agent 的目标拆成了任务、步骤、证据和 trace。今天继续往下实现运行时。很多 Agent Demo 的主循环只有几行：调用模型、执行工具、把结果放回上下文，直到模型说任务完成。</p>
@@ -118,7 +342,7 @@
 
 <p>这不是要求一开始就部署七个服务。早期可以在一个应用里实现这些模块，但它们应该有独立的接口和测试。将来模型网关、队列、策略服务或工具执行器拆出去时，任务状态不需要跟着重写。</p>
 <h2 id="先定义状态，再写-Agent-Loop"><a href="#先定义状态，再写-Agent-Loop" class="headerlink" title="先定义状态，再写 Agent Loop"></a>先定义状态，再写 Agent Loop</h2><p>状态机的价值是把“做到哪一步”从对话历史中拿出来。一个最小任务状态可以是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">CREATED</span><br><span class="line">  -&gt; RUNNING</span><br><span class="line">  -&gt; WAITING_FOR_INPUT</span><br><span class="line">  -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">  -&gt; SUCCEEDED</span><br><span class="line">  -&gt; FAILED</span><br><span class="line">  -&gt; CANCELED</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">CREATED</span><br><span class="line">  -&gt; RUNNING</span><br><span class="line">  -&gt; WAITING_FOR_INPUT</span><br><span class="line">  -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">  -&gt; WAITING_FOR_HUMAN</span><br><span class="line">  -&gt; SUCCEEDED</span><br><span class="line">  -&gt; FAILED</span><br><span class="line">  -&gt; CANCELED</span><br></pre></td></tr></table></figure>
 
 <p>状态迁移必须有明确的前置条件。比如 <code>WAITING_FOR_APPROVAL</code> 只能由审批结果迁移到 <code>RUNNING</code>，不能让模型返回一个 <code>final=true</code> 就直接变成 <code>SUCCEEDED</code>；<code>CANCELED</code> 之后不允许再执行新的写入步骤。</p>
 <p>可以把迁移规则写成一张表：</p>
@@ -148,6 +372,18 @@
 <td><code>need_approval</code></td>
 <td><code>WAITING_FOR_APPROVAL</code></td>
 <td>保存预览和审批摘要</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>handoff_requested</code></td>
+<td><code>WAITING_FOR_HUMAN</code></td>
+<td>保存接管原因与已完成步骤</td>
+</tr>
+<tr>
+<td><code>WAITING_FOR_HUMAN</code></td>
+<td><code>human_resolved</code></td>
+<td><code>RUNNING</code> 或 <code>FAILED</code></td>
+<td>保存人工结论，恢复前重验权限</td>
 </tr>
 <tr>
 <td><code>RUNNING</code></td>
@@ -237,6 +473,7 @@
 <p>工具调用本身可能无法立即中断，因此还要在写入边界做第二次检查：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">执行器准备提交工具结果</span><br><span class="line">  -&gt; 读取 task.status 与 task.version</span><br><span class="line">  -&gt; 若已 CANCELED 或版本不匹配，丢弃迟到结果</span><br><span class="line">  -&gt; 若仍可写，使用幂等键提交业务结果</span><br></pre></td></tr></table></figure>
 
+<p>丢弃迟到结果只能阻止本系统继续提交，不能撤销外部服务已经完成的写入。对结果未知的写工具，要用同一业务幂等键查询下游执行记录；确认已生效就记账，必要时走补偿或人工处理。</p>
 <p>总超时和单工具超时要分开。单工具超时只能结束当前调用，总任务超时则应让任务进入 <code>FAILED</code> 或 <code>WAITING_FOR_HUMAN</code>，并保存已经完成的步骤。用户再次恢复时，从最后一个确认步骤继续，而不是从头让模型重复所有副作用。</p>
 <p>如果进程重启，恢复任务的过程也应该由数据库状态驱动：扫描 <code>RUNNING</code> 且心跳过期的任务，将执行租约标记为失效；读取最后一个已确认的 Step，重新构建上下文；对处于不确定结果的工具先调用查询接口；确认没有重复副作用后再继续 Loop。</p>
 <p>长任务也可以交给专门的持久化工作流引擎。比如 <a href="https://docs.temporal.io/workflows">Temporal Workflow</a> 用事件历史重放工作流状态，并把外部 API、数据库、文件和模型调用放进 Activity；这类设计的核心思想与我们自己实现的 Task&#x2F;Step&#x2F;Event 一致。是否引入框架，要看任务时长、并发、恢复要求和团队运维能力。</p>
@@ -408,7 +645,7 @@
 
 <p>这里的 <code>reasoningPart</code>只用于分析输出构成，<strong>不再额外乘一次输出单价</strong>。Anthropic 适配器要单独归一化：其普通输入、缓存读取、缓存创建字段相加才是完整输入，不能复用上面的 OpenAI 减法。对于返回多轮压缩用量的接口，还要核对每次迭代 usage，避免只看顶层字段漏账。</p>
 <h2 id="执行器：先判正确，再比较成本"><a href="#执行器：先判正确，再比较成本" class="headerlink" title="执行器：先判正确，再比较成本"></a>执行器：先判正确，再比较成本</h2><p>为三种策略运行同一组样本，保持版本组合不变：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">for case in frozen_golden_set:</span><br><span class="line">    for strategy in [RAW, RECENT_ONLY, STATE_SUMMARY_POINTER]:</span><br><span class="line">        for repeat in [1, 2]:</span><br><span class="line">            request = context_builder.build(case, strategy)</span><br><span class="line">            preflight = count_complete_request(request)</span><br><span class="line">            if preflight + output_reserve &gt; context_window:</span><br><span class="line">                record(case, strategy, &quot;BUDGET_REJECTED&quot;)</span><br><span class="line">                continue</span><br><span class="line">            response = model_client.call(request)</span><br><span class="line">            verdict = deterministic_judge(case.expected, response)</span><br><span class="line">            record(preflight, usage, latency, verdict, trace_id)</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">for case in frozen_golden_set:</span><br><span class="line">    for strategy in [RAW, RECENT_ONLY, STATE_SUMMARY_POINTER]:</span><br><span class="line">        for repeat in [1, 2]:</span><br><span class="line">            request = context_builder.build(case, strategy)</span><br><span class="line">            preflight = count_complete_request(request)</span><br><span class="line">            if preflight &gt; usable_input_limit:</span><br><span class="line">                record(case, strategy, &quot;BUDGET_REJECTED&quot;)</span><br><span class="line">                continue</span><br><span class="line">            response = model_client.call(request)</span><br><span class="line">            verdict = deterministic_judge(case.expected, response)</span><br><span class="line">            record(preflight, usage, latency, verdict, trace_id)</span><br></pre></td></tr></table></figure>
 
 <p>真实执行时随机化策略顺序，避免总是让某个策略独享热缓存。记录实际缓存读写，不把“第二次请求一定命中”当作前提；按冷、热缓存状态和任务长度分别看结果。若摘要由模型生成，摘要请求本身也必须记录使用量、耗时、模型版本和失败状态。</p>
 <p>判分分两层：</p>
@@ -421,9 +658,9 @@
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">experiment_id, case_id, strategy_version, repeat,</span><br><span class="line">model_id, model_version, prompt_hash, context_builder_version,</span><br><span class="line">dataset_hash, tool_fixture_version, price_table_version,</span><br><span class="line">preflight_input_tokens, actual_input_tokens,</span><br><span class="line">cache_read_tokens, cache_write_tokens, output_tokens,</span><br><span class="line">reasoning_tokens_subset, summary_call_tokens, retry_tokens,</span><br><span class="line">latency_ms, first_token_ms, trace_id, verdict, failure_reason</span><br></pre></td></tr></table></figure>
 
 <p>聚合指标不要只报平均值：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">任务成功率       = 成功样本数 / 有效样本数</span><br><span class="line">关键事实保留率   = 被保留且可核验的必需事实数 / 必需事实总数</span><br><span class="line">缓存读占比       = sum(cache_read_tokens) / sum(actual_input_tokens)</span><br><span class="line">每成功任务成本   = 所有样本的总成本 / 成功样本数</span><br><span class="line">压缩净收益       = 原始策略总成本 - 压缩策略总成本</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">任务成功率       = 成功运行次数 / 计划运行次数</span><br><span class="line">关键事实保留率   = 被保留且可核验的必需事实数 / 必需事实总数</span><br><span class="line">缓存读占比       = sum(cache_read_tokens) / sum(actual_input_tokens)</span><br><span class="line">每成功任务成本   = 所有计划运行的总成本 / 成功运行次数</span><br><span class="line">压缩净收益       = 原始策略总成本 - 压缩策略总成本</span><br></pre></td></tr></table></figure>
 
-<p>成功样本数为零时，每成功任务成本记为“不适用”，不能记零。再按高风险任务、长对话、长工具结果、约束反转、冷&#x2F;热缓存切片，报告 P50&#x2F;P95 延迟和逐 Case 的 <code>PASS → FAIL</code>。样本量小就展示原始计数和不确定性，不声称“成本降低 X%”已适用于全部流量。</p>
+<p>预算拒绝、失败和超时也进入计划运行的分母，并在报告中单列原因，不能为了提高成功率悄悄剔除。成功次数为零时，每成功任务成本记为“不适用”，不能记零。再按高风险任务、长对话、长工具结果、约束反转、冷&#x2F;热缓存切片，报告 P50&#x2F;P95 延迟和逐 Case 的 <code>PASS → FAIL</code>。样本量小就展示原始计数和不确定性，不声称“成本降低 X%”已适用于全部流量。</p>
 <p>实验报告先用空表，完成真实调用后再填：</p>
 <table>
 <thead>
@@ -519,6 +756,77 @@
         <tag>上下文工程</tag>
         <tag>评测</tag>
         <tag>成本控制</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>知识库能搜到，为什么还是答不准？</title>
+    <url>/articles/AI-Knowledge-Evidence.html</url>
+    <content><![CDATA[<p>假设有人问：“我们正在用的这个版本，能不能处理扫描件？”</p>
+<p>知识库搜到了三份材料：一份产品介绍、一份新版本说明，还有一份测试记录。模型读完以后回答：“支持，上传文件即可。”</p>
+<p>听起来很顺。但再看一眼，产品介绍没有写版本，新版本说明说的是下个月准备发布的功能，测试记录只覆盖了一种文档。</p>
+<p>问题出在哪里？材料确实找到了，可它们还不足以回答眼前这个问题。</p>
+<span id="more"></span>
+
+<h2 id="先把“相关”和“能证明”分开"><a href="#先把“相关”和“能证明”分开" class="headerlink" title="先把“相关”和“能证明”分开"></a>先把“相关”和“能证明”分开</h2><p>向量检索擅长寻找语义相近的内容。“扫描件识别”和“图片文字提取”即使没有共同关键词，也有机会被放到一起。</p>
+<p>但语义相近不代表条件相同。用户问的是当前版本，而搜索结果可能属于另一个版本；用户问能否投入使用，资料可能只是概念验证。</p>
+<p>因此，一条候选材料至少要过两道判断：它是否在谈这个问题，它是否能证明这个问题下的具体结论。</p>
+<p>第一道判断适合交给检索和重排。第二道判断还需要版本、环境、适用范围和材料状态。</p>
+<h2 id="给知识补上使用条件"><a href="#给知识补上使用条件" class="headerlink" title="给知识补上使用条件"></a>给知识补上使用条件</h2><p>可以给文档或知识条目增加一些简单的字段：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">product:</span> <span class="string">example-product</span></span><br><span class="line"><span class="attr">version:</span> <span class="string">&quot;2.3&quot;</span></span><br><span class="line"><span class="attr">environment:</span> <span class="string">self-hosted</span></span><br><span class="line"><span class="attr">status:</span> <span class="string">approved</span></span><br><span class="line"><span class="attr">source_type:</span> <span class="string">release-note</span></span><br><span class="line"><span class="attr">effective_from:</span> <span class="string">&quot;2026-08-01&quot;</span></span><br><span class="line"><span class="attr">source_url:</span> <span class="string">&quot;https://example.com/releases/2.3&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>这只是示例结构，不是某个框架的固定配置。</p>
+<p>其中 <code>status</code> 表示材料是否经过确认；它不能替代访问权限。访问范围应由服务端根据用户身份计算，并在检索前执行过滤，不能让模型自行决定哪些资料可以展示。</p>
+<p>日期也有区别：文件上传日期、最近编辑日期和功能生效日期并不总是一回事。排序时只看“最近修改”，很容易让一篇刚修正错别字的旧文档压过新的发布说明。</p>
+<h2 id="把问题也拆成条件"><a href="#把问题也拆成条件" class="headerlink" title="把问题也拆成条件"></a>把问题也拆成条件</h2><p>面对“这个版本支持吗”，系统首先要知道“这个版本”是什么。</p>
+<p>如果会话里已经提供了版本，可以继续使用，并在答案中写明。如果没有上下文，就先问一句版本号；也可以给出明确标注条件的分支回答。</p>
+<p>一个最小处理过程可以是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">用户问题</span><br><span class="line">  → 提取产品、版本、部署方式和任务</span><br><span class="line">  → 按身份及已知条件筛选可用资料</span><br><span class="line">  → 检索并重排</span><br><span class="line">  → 检查每个结论是否有对应依据</span><br><span class="line">  → 回答，或补问缺少的条件</span><br></pre></td></tr></table></figure>
+
+<p>遇到两份材料冲突时，不要单纯选得分高的一份。先核对适用条件和来源权威性；无法消除冲突，就把冲突和缺少的信息说清楚。</p>
+<h2 id="引用应该跟着结论走"><a href="#引用应该跟着结论走" class="headerlink" title="引用应该跟着结论走"></a>引用应该跟着结论走</h2><p>“支持扫描件，最大 200 页，处理速度很快。[1]”这样的答案可能只有前半句能在引用里找到。</p>
+<p>可以在内部先组织一个结论与证据的对应表：</p>
+<table>
+<thead>
+<tr>
+<th>待回答的内容</th>
+<th>已有证据</th>
+<th>合适的回答</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>是否支持扫描件</td>
+<td>对应版本的发布说明明确支持</td>
+<td>在指定版本与部署方式下支持</td>
+</tr>
+<tr>
+<td>最多多少页</td>
+<td>没找到适用配置说明</td>
+<td>暂不能确认上限</td>
+</tr>
+<tr>
+<td>处理速度</td>
+<td>只有一份样本测试记录</td>
+<td>给出测试条件及结果，不扩展为通用承诺</td>
+</tr>
+</tbody></table>
+<p>用户不一定需要看这张内部表，但最终答案应该保留这些边界。引用最好直接定位到相应章节，减少用户再次翻文档的成本。</p>
+<h2 id="没找到依据时，也可以给出有用的回答"><a href="#没找到依据时，也可以给出有用的回答" class="headerlink" title="没找到依据时，也可以给出有用的回答"></a>没找到依据时，也可以给出有用的回答</h2><p>只有一句“无法回答”，帮助不大。更好的回答可以是：</p>
+<blockquote>
+<p>目前找到的说明适用于 2.3 版本，明确支持扫描件。你正在使用的版本还不清楚，因此暂时不能确认适用性。提供版本号后，可以继续核对。</p>
+</blockquote>
+<p>这段话交代了已知事实、未确定的条件和下一步。模型没有必要靠补全一个看似完整的答案来结束对话。</p>
+<p>另一个容易忽略的问题是资料里的指令。检索到的文档可能包含“忽略之前的规则”之类文本；文档只能作为数据使用，不能覆盖系统指令或授予工具权限。OWASP 的 <a target="_blank" rel="noopener" href="https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html">RAG 安全指南</a> 对权限隔离和检索内容的信任边界有更系统的说明。</p>
+<h2 id="从一个问题做起"><a href="#从一个问题做起" class="headerlink" title="从一个问题做起"></a>从一个问题做起</h2><p>刚开始不必收集几万份资料。选一个真实问题，把对应版本说明、可用证据、缺失条件和最终答案整理清楚，再检查另一个身份是否应该看到相同材料。</p>
+<p>当这个过程可以重复，扩展资料范围才有意义。知识库的价值最终落在用户能否据此做出正确判断上，而不只是搜索结果里出现了多少段相关文字。</p>
+]]></content>
+      <categories>
+        <category>AI工程</category>
+      </categories>
+      <tags>
+        <tag>工程实践</tag>
+        <tag>AI</tag>
+        <tag>RAG</tag>
+        <tag>知识库</tag>
       </tags>
   </entry>
   <entry>
@@ -716,297 +1024,6 @@
         <tag>结构化输出</tag>
         <tag>流式响应</tag>
         <tag>模型网关</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>知识库能搜到，为什么还是答不准？</title>
-    <url>/articles/AI-Knowledge-Evidence.html</url>
-    <content><![CDATA[<p>假设有人问：“我们正在用的这个版本，能不能处理扫描件？”</p>
-<p>知识库搜到了三份材料：一份产品介绍、一份新版本说明，还有一份测试记录。模型读完以后回答：“支持，上传文件即可。”</p>
-<p>听起来很顺。但再看一眼，产品介绍没有写版本，新版本说明说的是下个月准备发布的功能，测试记录只覆盖了一种文档。</p>
-<p>问题出在哪里？材料确实找到了，可它们还不足以回答眼前这个问题。</p>
-<span id="more"></span>
-
-<h2 id="先把“相关”和“能证明”分开"><a href="#先把“相关”和“能证明”分开" class="headerlink" title="先把“相关”和“能证明”分开"></a>先把“相关”和“能证明”分开</h2><p>向量检索擅长寻找语义相近的内容。“扫描件识别”和“图片文字提取”即使没有共同关键词，也有机会被放到一起。</p>
-<p>但语义相近不代表条件相同。用户问的是当前版本，而搜索结果可能属于另一个版本；用户问能否投入使用，资料可能只是概念验证。</p>
-<p>因此，一条候选材料至少要过两道判断：它是否在谈这个问题，它是否能证明这个问题下的具体结论。</p>
-<p>第一道判断适合交给检索和重排。第二道判断还需要版本、环境、适用范围和材料状态。</p>
-<h2 id="给知识补上使用条件"><a href="#给知识补上使用条件" class="headerlink" title="给知识补上使用条件"></a>给知识补上使用条件</h2><p>可以给文档或知识条目增加一些简单的字段：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">product:</span> <span class="string">example-product</span></span><br><span class="line"><span class="attr">version:</span> <span class="string">&quot;2.3&quot;</span></span><br><span class="line"><span class="attr">environment:</span> <span class="string">self-hosted</span></span><br><span class="line"><span class="attr">status:</span> <span class="string">approved</span></span><br><span class="line"><span class="attr">source_type:</span> <span class="string">release-note</span></span><br><span class="line"><span class="attr">effective_from:</span> <span class="string">&quot;2026-08-01&quot;</span></span><br><span class="line"><span class="attr">source_url:</span> <span class="string">&quot;https://example.com/releases/2.3&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>这只是示例结构，不是某个框架的固定配置。</p>
-<p>其中 <code>status</code> 表示材料是否经过确认；它不能替代访问权限。访问范围应由服务端根据用户身份计算，并在检索前执行过滤，不能让模型自行决定哪些资料可以展示。</p>
-<p>日期也有区别：文件上传日期、最近编辑日期和功能生效日期并不总是一回事。排序时只看“最近修改”，很容易让一篇刚修正错别字的旧文档压过新的发布说明。</p>
-<h2 id="把问题也拆成条件"><a href="#把问题也拆成条件" class="headerlink" title="把问题也拆成条件"></a>把问题也拆成条件</h2><p>面对“这个版本支持吗”，系统首先要知道“这个版本”是什么。</p>
-<p>如果会话里已经提供了版本，可以继续使用，并在答案中写明。如果没有上下文，就先问一句版本号；也可以给出明确标注条件的分支回答。</p>
-<p>一个最小处理过程可以是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">用户问题</span><br><span class="line">  → 提取产品、版本、部署方式和任务</span><br><span class="line">  → 按身份及已知条件筛选可用资料</span><br><span class="line">  → 检索并重排</span><br><span class="line">  → 检查每个结论是否有对应依据</span><br><span class="line">  → 回答，或补问缺少的条件</span><br></pre></td></tr></table></figure>
-
-<p>遇到两份材料冲突时，不要单纯选得分高的一份。先核对适用条件和来源权威性；无法消除冲突，就把冲突和缺少的信息说清楚。</p>
-<h2 id="引用应该跟着结论走"><a href="#引用应该跟着结论走" class="headerlink" title="引用应该跟着结论走"></a>引用应该跟着结论走</h2><p>“支持扫描件，最大 200 页，处理速度很快。[1]”这样的答案可能只有前半句能在引用里找到。</p>
-<p>可以在内部先组织一个结论与证据的对应表：</p>
-<table>
-<thead>
-<tr>
-<th>待回答的内容</th>
-<th>已有证据</th>
-<th>合适的回答</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>是否支持扫描件</td>
-<td>对应版本的发布说明明确支持</td>
-<td>在指定版本与部署方式下支持</td>
-</tr>
-<tr>
-<td>最多多少页</td>
-<td>没找到适用配置说明</td>
-<td>暂不能确认上限</td>
-</tr>
-<tr>
-<td>处理速度</td>
-<td>只有一份样本测试记录</td>
-<td>给出测试条件及结果，不扩展为通用承诺</td>
-</tr>
-</tbody></table>
-<p>用户不一定需要看这张内部表，但最终答案应该保留这些边界。引用最好直接定位到相应章节，减少用户再次翻文档的成本。</p>
-<h2 id="没找到依据时，也可以给出有用的回答"><a href="#没找到依据时，也可以给出有用的回答" class="headerlink" title="没找到依据时，也可以给出有用的回答"></a>没找到依据时，也可以给出有用的回答</h2><p>只有一句“无法回答”，帮助不大。更好的回答可以是：</p>
-<blockquote>
-<p>目前找到的说明适用于 2.3 版本，明确支持扫描件。你正在使用的版本还不清楚，因此暂时不能确认适用性。提供版本号后，可以继续核对。</p>
-</blockquote>
-<p>这段话交代了已知事实、未确定的条件和下一步。模型没有必要靠补全一个看似完整的答案来结束对话。</p>
-<p>另一个容易忽略的问题是资料里的指令。检索到的文档可能包含“忽略之前的规则”之类文本；文档只能作为数据使用，不能覆盖系统指令或授予工具权限。OWASP 的 <a target="_blank" rel="noopener" href="https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html">RAG 安全指南</a> 对权限隔离和检索内容的信任边界有更系统的说明。</p>
-<h2 id="从一个问题做起"><a href="#从一个问题做起" class="headerlink" title="从一个问题做起"></a>从一个问题做起</h2><p>刚开始不必收集几万份资料。选一个真实问题，把对应版本说明、可用证据、缺失条件和最终答案整理清楚，再检查另一个身份是否应该看到相同材料。</p>
-<p>当这个过程可以重复，扩展资料范围才有意义。知识库的价值最终落在用户能否据此做出正确判断上，而不只是搜索结果里出现了多少段相关文字。</p>
-]]></content>
-      <categories>
-        <category>AI工程</category>
-      </categories>
-      <tags>
-        <tag>工程实践</tag>
-        <tag>AI</tag>
-        <tag>RAG</tag>
-        <tag>知识库</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控</title>
-    <url>/articles/AI-Token-Context-Budget-Prompt-Version.html</url>
-    <content><![CDATA[<p>昨天把模型调用收敛成了 <code>ModelClient</code>。今天继续解决一个很容易被 Demo 掩盖的问题：<strong>Agent 为什么越跑越慢、越跑越贵，而且还可能答得更差？</strong></p>
-<p>原因通常不是某一个模型突然变笨，而是每一轮都把系统指令、工具定义、历史消息、检索结果和上一次工具输出重新送进上下文。输入 Token 增长会带来更高的首 token 延迟和费用，也会让真正有用的信息在注意力里被稀释。上下文窗口变大只能延后问题，不能代替预算设计。</p>
-<p>今天把 Token 当成一种需要分配、计量和回收的资源，建立一套适合 Java&#x2F;后端服务的上下文预算方案：Prompt 有版本，消息有优先级，压缩有可回查指针，缓存有命中指标，租户有硬上限。</p>
-<span id="more"></span>
-
-<h2 id="Token-是容量、延迟和费用的共同单位"><a href="#Token-是容量、延迟和费用的共同单位" class="headerlink" title="Token 是容量、延迟和费用的共同单位"></a>Token 是容量、延迟和费用的共同单位</h2><p>一次模型请求的资源账本至少包含下面几项。以下是 OpenAI Responses 的 usage 口径；其他供应商应由适配器归一化，不能按同名字段直接相加：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">reported_input_tokens  = 本次完整输入，包含可复用的缓存输入</span><br><span class="line">reported_output_tokens = 模型生成总量，包含推理与不可见格式等输出</span><br><span class="line">reported_total_tokens  = reported_input_tokens + reported_output_tokens</span><br><span class="line">缓存读写是输入的分项，推理 Token 是输出的分项；不得重复相加</span><br></pre></td></tr></table></figure>
-
-<p>不同模型的计费和上下文窗口可能不同，但工程上都要回答四个问题：</p>
-<ol>
-<li>这次请求最多允许使用多少输入和输出 Token？</li>
-<li>哪些内容必须保留，哪些内容可以裁剪、摘要或外置？</li>
-<li>发生重试、压缩或模型降级时，剩余预算是多少？</li>
-<li>成本应该归属哪个租户、用户、任务和版本？</li>
-</ol>
-<p>不要用字符数直接代替 Token。中文、代码、JSON、URL、图片和不同模型的分词结果差异很大。早期可以用字符数做快速保护，正式计费和边界判断应使用目标模型的 tokenizer 或供应商提供的 usage 字段，并在实际调用后用真实值校正估算器。</p>
-<h3 id="输入预算和输出预算要分开"><a href="#输入预算和输出预算要分开" class="headerlink" title="输入预算和输出预算要分开"></a>输入预算和输出预算要分开</h3><figure class="highlight text"><table><tr><td class="code"><pre><span class="line">context_window &gt;= input_tokens</span><br><span class="line">                 + max_output_tokens</span><br><span class="line">                 + reasoning_reserve</span><br><span class="line">                 + safety_margin</span><br></pre></td></tr></table></figure>
-
-<p><code>max_output_tokens</code> 不是“模型一定会输出这么多”，而是要为最坏情况预留的上限。Agent 还要给工具参数、错误修正和最终答案预留空间；如果把整个窗口都填满输入，模型可能还没开始回答就因为输出空间不足而截断。</p>
-<p>可以为一次任务建立预算账本：</p>
-<table>
-<thead>
-<tr>
-<th>项目</th>
-<th>例子</th>
-<th>处理方式</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>固定前缀</td>
-<td>系统规则、稳定示例、工具契约</td>
-<td>版本化，尽量保持字节不变</td>
-</tr>
-<tr>
-<td>当前任务</td>
-<td>用户目标、当前约束、待办</td>
-<td>必须保留，结构化表达</td>
-</tr>
-<tr>
-<td>历史上下文</td>
-<td>最近消息、阶段摘要</td>
-<td>按 token 阈值滚动压缩</td>
-</tr>
-<tr>
-<td>外部证据</td>
-<td>检索片段、工具结果</td>
-<td>只放相关片段，保留引用 ID</td>
-</tr>
-<tr>
-<td>输出预留</td>
-<td>最终答案、工具参数、推理预算</td>
-<td>设置硬上限，留安全余量</td>
-</tr>
-<tr>
-<td>预算余量</td>
-<td>重试、澄清、错误修正</td>
-<td>到阈值时停止扩张</td>
-</tr>
-</tbody></table>
-<h2 id="Prompt-是可发布的软件资产"><a href="#Prompt-是可发布的软件资产" class="headerlink" title="Prompt 是可发布的软件资产"></a>Prompt 是可发布的软件资产</h2><p>Prompt 版本化不是给文本加一个日期后缀，而是要让一次模型调用能够重现。建议把 Prompt 作为独立记录管理：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">prompt_id       = incident_triage</span><br><span class="line">prompt_version  = 2026-10-30.2</span><br><span class="line">content_hash    = sha256(rendered_template)</span><br><span class="line">input_schema    = incident_request_v3</span><br><span class="line">output_schema   = triage_decision_v2</span><br><span class="line">model_policy    = support-agent-default</span><br><span class="line">status          = draft | evaluated | released | retired</span><br><span class="line">owner           = sre-ai</span><br></pre></td></tr></table></figure>
-
-<p>每一次请求记录 <code>prompt_id</code>、<code>prompt_version</code>、模板哈希、输入 Schema、输出 Schema、模型版本、采样参数、上下文构造策略和评测版本。这样排查线上波动时，可以区分：</p>
-<ul>
-<li>Prompt 改动导致指令顺序变化。</li>
-<li>工具定义或字段描述变化导致 Token 和选择率变化。</li>
-<li>模型路由变化导致质量或延迟变化。</li>
-<li>上下文压缩版本变化导致事实丢失。</li>
-<li>用户输入或检索数据本身发生变化。</li>
-</ul>
-<p>Prompt 发布应该像代码发布一样经过草稿、离线评测、灰度和回滚。至少保留一组固定样本，比较任务成功率、Schema 通过率、引用准确率、P95 延迟和每任务成本。只看“回答读起来不错”无法判断一行 Prompt 是否让工具调用或长尾任务退化。</p>
-<h3 id="Prompt-的稳定前缀和动态后缀"><a href="#Prompt-的稳定前缀和动态后缀" class="headerlink" title="Prompt 的稳定前缀和动态后缀"></a>Prompt 的稳定前缀和动态后缀</h3><p>如果供应商支持 Prompt Caching，通常只会复用完整匹配的前缀。建议按下面顺序组织请求：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">稳定前缀：系统规则 + 版本化示例 + 稳定工具定义</span><br><span class="line">可替换区：租户级策略 + 当前 Skill</span><br><span class="line">动态后缀：用户消息 + 当前检索结果 + 最新工具结果</span><br></pre></td></tr></table></figure>
-
-<p><a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方文档</a>说明，缓存复用依赖前缀匹配，工具名称、描述、Schema 和顺序变化都可能破坏命中；缓存减少的是重复处理前缀的成本和延迟，不会复用旧答案，也不代表每次请求都一定命中。</p>
-<p>所以不要为了“看起来模块化”而每轮随机排序工具、插入当前时间或重新渲染同一段 Markdown。稳定内容保持字节级一致，动态内容放在后面；同时记录 <code>cached_tokens</code>、总输入 Token、首 token 延迟和实际费用，用数据验证缓存是否真的有效。</p>
-<h2 id="上下文拼装要有预算分配器"><a href="#上下文拼装要有预算分配器" class="headerlink" title="上下文拼装要有预算分配器"></a>上下文拼装要有预算分配器</h2><p>把所有消息直接 <code>messages.addAll()</code> 是上下文失控的起点。应该先定义每类内容的上限和优先级，再由 <code>ContextBuilder</code> 组装一次请求。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ContextBudget</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="type">int</span> contextWindowTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> modelInputLimitTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> maxOutputTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> safetyMarginTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> systemTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> taskTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> recentHistoryTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> retrievedTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> toolResultTokens</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">usableInputTokens</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Math.min(modelInputLimitTokens,</span><br><span class="line">            contextWindowTokens - maxOutputTokens - safetyMarginTokens);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ContextBlock</span><span class="params">(</span></span><br><span class="line"><span class="params">    String id,</span></span><br><span class="line"><span class="params">    BlockType type,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> estimatedTokens,</span></span><br><span class="line"><span class="params">    Priority priority,</span></span><br><span class="line"><span class="params">    <span class="type">boolean</span> required,</span></span><br><span class="line"><span class="params">    String content</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">BlockType</span> &#123;</span><br><span class="line">    SYSTEM, POLICY, TASK, STATE, HISTORY, EVIDENCE, TOOL_RESULT, MEMORY</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">Priority</span> &#123; REQUIRED, HIGH, MEDIUM, LOW &#125;</span><br></pre></td></tr></table></figure>
-
-<p>拼装步骤可以是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1. 放入 SYSTEM、租户策略、权限和任务状态</span><br><span class="line">2. 放入当前用户目标与完成标准</span><br><span class="line">3. 按相关性选择证据和工具结果</span><br><span class="line">4. 从最近消息向前加入历史，直到达到 history 配额</span><br><span class="line">5. 如果超过总预算，依次执行裁剪、摘要、外置和分流</span><br><span class="line">6. 计算真实/估算 Token，确认仍为 input + output + reserve &lt;= window</span><br><span class="line">7. 固化 context_version，写入 trace</span><br></pre></td></tr></table></figure>
-
-<p><code>required=true</code> 的块不能因为普通历史变长而被挤掉。权限范围、审批状态、金额、日期、租户 ID、资源版本和任务完成条件都属于硬约束；超过预算时应减少低优先级历史或降低任务范围，而不是删除这些字段。</p>
-<h3 id="不是越多信息越好"><a href="#不是越多信息越好" class="headerlink" title="不是越多信息越好"></a>不是越多信息越好</h3><p>上下文有三个常见的质量风险：</p>
-<ul>
-<li><strong>噪声：</strong> 无关的检索片段和工具日志让模型把注意力放在错误位置。</li>
-<li><strong>冲突：</strong> 旧消息和新数据库状态同时出现，但没有标记哪个版本生效。</li>
-<li><strong>污染：</strong> 一个子 Agent 收到主 Agent 的全部中间推理和不相关历史，产生错误的委派或重复工作。</li>
-</ul>
-<p>每个子 Agent 只接受完成自己任务所需的输入，返回结构化交付物和证据 ID。不要把一个大上下文复制给所有节点；这既浪费 Token，也让责任边界变模糊。</p>
-<h2 id="上下文压缩：先保存可恢复状态，再生成摘要"><a href="#上下文压缩：先保存可恢复状态，再生成摘要" class="headerlink" title="上下文压缩：先保存可恢复状态，再生成摘要"></a>上下文压缩：先保存可恢复状态，再生成摘要</h2><p>上下文压缩的目标不是把文字变短，而是保留下一步决策所需的最小状态。建议按四种动作从低成本到高成本处理：</p>
-<ol>
-<li><strong>裁剪：</strong> 丢弃寒暄、重复日志、已经确认且不再影响决策的旧内容。</li>
-<li><strong>摘要：</strong> 把一组消息或工具调用结果压缩成阶段结论。</li>
-<li><strong>外置：</strong> 将大段文档、完整工具结果、代码 diff 和附件落到数据库或对象存储，给模型保留索引与关键片段。</li>
-<li><strong>分流：</strong> 把独立子任务交给独立上下文，只返回结构化结果，不共享整段历史。</li>
-</ol>
-<p>压缩前先抽取一个结构化状态，而不是直接让模型“总结一下”：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;goal&quot;</span><span class="punctuation">:</span> <span class="string">&quot;为订单 20261030-001 生成退款审批建议&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;completion_criteria&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;核对支付状态&quot;</span><span class="punctuation">,</span> <span class="string">&quot;确认租户权限&quot;</span><span class="punctuation">,</span> <span class="string">&quot;输出审批结论&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;constraints&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;金额超过 5000 需要人工审批&quot;</span><span class="punctuation">,</span> <span class="string">&quot;不得修改订单&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;confirmed_facts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;key&quot;</span><span class="punctuation">:</span> <span class="string">&quot;payment_status&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;value&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PAID&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;source&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tool_call_17&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;pending_steps&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;查询退款历史&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;decisions&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;artifacts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tool_result_17&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;location&quot;</span><span class="punctuation">:</span> <span class="string">&quot;s3://...&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;支付状态查询结果&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">4</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>摘要正文可以变化，但 <code>goal</code>、<code>constraints</code>、<code>confirmed_facts</code>、<code>pending_steps</code> 和 <code>artifacts</code> 要有 Schema、版本和来源。金额、编号、时间、权限、否定关系和状态迁移不能只存在自然语言摘要里。</p>
-<h3 id="什么时候触发压缩"><a href="#什么时候触发压缩" class="headerlink" title="什么时候触发压缩"></a>什么时候触发压缩</h3><p>按对话轮数触发不可靠：一轮可能只有十几个 Token，也可能包含一个很长的工具结果。更合理的触发条件是预算和风险的组合：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">if estimated_input_tokens &gt; 0.70 * max_input_tokens:</span><br><span class="line">    prepare_compaction()</span><br><span class="line"></span><br><span class="line">if estimated_input_tokens &gt; 0.85 * max_input_tokens:</span><br><span class="line">    compact_before_next_model_call()</span><br><span class="line"></span><br><span class="line">if context_loss_risk &gt; threshold:</span><br><span class="line">    stop_and_ask_user_or_externalize()</span><br></pre></td></tr></table></figure>
-
-<p>提前压缩可以避免下一轮已经没有空间才匆忙总结。每次压缩生成 <code>summary_version</code>，并记录它基于哪些 <code>message_id</code>、<code>tool_result_id</code> 和事件版本。压缩后仍然可以根据引用读取原文，出现摘要错误时能回退和重建。</p>
-<h3 id="长工具结果怎么压缩"><a href="#长工具结果怎么压缩" class="headerlink" title="长工具结果怎么压缩"></a>长工具结果怎么压缩</h3><p>工具返回一万行日志时，不要直接把全文塞回下一轮。推荐保存三层内容：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">原始结果：对象存储/数据库，可按权限回查</span><br><span class="line">结构化元数据：查询条件、时间范围、总条数、是否截断、版本</span><br><span class="line">模型摘要：结论、异常行、下一步建议、原文引用 ID</span><br></pre></td></tr></table></figure>
-
-<p>摘要必须明确“这是前 1000 条中的摘要”还是“完整结果的统计”，否则模型会把截断数据当成全量数据。对于金额、错误码、资源 ID 等关键字段，保留原始片段或确定性聚合结果，不要只依赖模型重述。</p>
-<h2 id="Token-预算要贯穿-Agent-的每一层"><a href="#Token-预算要贯穿-Agent-的每一层" class="headerlink" title="Token 预算要贯穿 Agent 的每一层"></a>Token 预算要贯穿 Agent 的每一层</h2><p>只在 API 网关记录总费用不够。一次任务可能有多个模型调用、重试、摘要调用、子 Agent 和工具结果。需要把预算从租户到步骤逐层传递：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">租户月度额度</span><br><span class="line">  -&gt; 用户/项目额度</span><br><span class="line">      -&gt; Task 总预算</span><br><span class="line">          -&gt; Step 预算</span><br><span class="line">              -&gt; Model Call input/output/retry 预算</span><br></pre></td></tr></table></figure>
-
-<p>每层都有硬上限和软上限：</p>
-<ul>
-<li><strong>硬上限：</strong> 达到后拒绝新调用、转异步或转人工，不能由模型请求覆盖。</li>
-<li><strong>软上限：</strong> 触发小模型、摘要、减少检索 TopK 或缩短输出。</li>
-<li><strong>保留额度：</strong> 为错误修正、审批和最终答案保留，不允许前面的历史无限消耗。</li>
-</ul>
-<p>一次模型调用的计量记录可以是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">trace_id, task_id, step_id, tenant_id,</span><br><span class="line">model, model_version, prompt_version, context_version,</span><br><span class="line">input_tokens, cached_tokens, output_tokens, reasoning_tokens,</span><br><span class="line">retry_count, latency_ms, first_token_ms,</span><br><span class="line">unit_price, estimated_cost, actual_cost,</span><br><span class="line">budget_before, budget_after, finish_reason</span><br></pre></td></tr></table></figure>
-
-<p>成本不能只除以请求数。至少要按“成功任务”统计平均成本和 P95 成本；失败重试、压缩调用、路由降级和子 Agent 都要算入同一条任务账单。这样才能比较“多花一次摘要调用是否减少了后续五轮输入”这种真实决策。</p>
-<h3 id="成本控制的顺序"><a href="#成本控制的顺序" class="headerlink" title="成本控制的顺序"></a>成本控制的顺序</h3><p>建议按下面顺序优化：</p>
-<ol>
-<li>先移除无关上下文和重复工具结果。</li>
-<li>再用结构化输出减少无用解释和重复文本。</li>
-<li>合并可并行的判断，减少模型轮次。</li>
-<li>稳定前缀，测量 Prompt Cache 命中和实际费用。</li>
-<li>按任务难度路由模型，小模型处理分类、改写和摘要。</li>
-<li>最后才调低输出上限或强行截断，因为这可能直接损害任务成功率。</li>
-</ol>
-<p>优化前后必须使用同一评测集比较质量、延迟和成本。只有成本下降而任务成功率明显下降，不能算优化。</p>
-<h2 id="模型路由要看任务预算，不是只看价格"><a href="#模型路由要看任务预算，不是只看价格" class="headerlink" title="模型路由要看任务预算，不是只看价格"></a>模型路由要看任务预算，不是只看价格</h2><p>Day 3 的 <code>ModelGateway</code> 可以在这里加入预算感知路由。路由输入至少包括：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">task_type, quality_target, context_tokens,</span><br><span class="line">remaining_budget, deadline, tenant_policy,</span><br><span class="line">data_sensitivity, tool_required, retry_count</span><br></pre></td></tr></table></figure>
-
-<p>一个简单策略如下：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">if data_sensitivity == HIGH:</span><br><span class="line">    choose approved_model_only</span><br><span class="line">else if remaining_budget &lt; LOW_WATERMARK:</span><br><span class="line">    choose small_model or ask_for_confirmation</span><br><span class="line">else if context_tokens &gt; large_context_threshold:</span><br><span class="line">    choose context-capable_model</span><br><span class="line">else if deadline - now &lt; short_deadline:</span><br><span class="line">    choose low-latency_model</span><br><span class="line">else:</span><br><span class="line">    choose model_from_quality_baseline</span><br></pre></td></tr></table></figure>
-
-<p>模型降级不能只改变 <code>model</code> 字段。不同模型可能支持不同上下文窗口、Schema、工具数量、缓存策略和安全等级。路由后要重新计算可用预算和能力矩阵；如果目标模型不支持当前输出 Schema，应先切换兼容的 Prompt&#x2F;解析策略，不能把不兼容请求直接发送出去。</p>
-<h2 id="Java-服务的-ContextBuilder-伪代码"><a href="#Java-服务的-ContextBuilder-伪代码" class="headerlink" title="Java 服务的 ContextBuilder 伪代码"></a>Java 服务的 ContextBuilder 伪代码</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">ContextResult</span> <span class="title function_">build</span><span class="params">(</span></span><br><span class="line"><span class="params">    TaskState task,</span></span><br><span class="line"><span class="params">    PromptTemplate prompt,</span></span><br><span class="line"><span class="params">    List&lt;Message&gt; history,</span></span><br><span class="line"><span class="params">    List&lt;Evidence&gt; evidence,</span></span><br><span class="line"><span class="params">    ContextBudget budget,</span></span><br><span class="line"><span class="params">    TokenCounter counter</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">    <span class="type">List</span>&lt;ContextBlock&gt; <span class="variable">blocks</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    blocks.add(required(prompt.renderStablePrefix()));</span><br><span class="line">    blocks.add(required(renderPolicy(task.tenantPolicy())));</span><br><span class="line">    blocks.add(required(renderTaskState(task)));</span><br><span class="line">    blocks.add(required(renderUserGoal(task.userGoal())));</span><br><span class="line"></span><br><span class="line">    addByBudget(blocks, evidence, budget.retrievedTokens(), Priority.HIGH);</span><br><span class="line">    addByBudget(blocks, recent(history), budget.recentHistoryTokens(), Priority.MEDIUM);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">estimated</span> <span class="operator">=</span> counter.count(blocks);</span><br><span class="line">    <span class="keyword">if</span> (estimated &gt; budget.usableInputTokens()) &#123;</span><br><span class="line">        blocks = compactAndExternalize(blocks, budget, counter);</span><br><span class="line">        estimated = counter.count(blocks);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (estimated &gt; budget.usableInputTokens()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ContextBudgetExceeded</span>(estimated);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">ContextResult</span>(blocks, estimated, contextVersion(blocks));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里的 <code>required()</code> 不是说所有必需内容都永远不能缩短，而是说其语义不能被普通裁剪删除。系统规则可以使用一个经过评测的短版本，工具结果可以外置，历史可以摘要，但任务授权和完成条件必须仍然可验证。</p>
-<h2 id="可观测性和评测：证明压缩没有把任务压坏"><a href="#可观测性和评测：证明压缩没有把任务压坏" class="headerlink" title="可观测性和评测：证明压缩没有把任务压坏"></a>可观测性和评测：证明压缩没有把任务压坏</h2><p>上下文工程要同时看三类指标：</p>
-<h3 id="资源指标"><a href="#资源指标" class="headerlink" title="资源指标"></a>资源指标</h3><ul>
-<li>输入、输出、推理和缓存命中 Token。</li>
-<li>每任务成本、每租户成本、重试成本。</li>
-<li>首 token、总延迟、上下文压缩耗时。</li>
-<li>上下文使用率、超限率、平均消息数。</li>
-</ul>
-<h3 id="行为指标"><a href="#行为指标" class="headerlink" title="行为指标"></a>行为指标</h3><ul>
-<li>结构化输出通过率。</li>
-<li>任务成功率、工具选择准确率、引用准确率。</li>
-<li>压缩前后事实保留率、数字&#x2F;实体&#x2F;权限规则错误率。</li>
-<li>模型降级后的质量差异。</li>
-</ul>
-<h3 id="运维指标"><a href="#运维指标" class="headerlink" title="运维指标"></a>运维指标</h3><ul>
-<li>Prompt&#x2F;Schema&#x2F;模型版本的失败分布。</li>
-<li>缓存命中下降、上下文超限、摘要失败告警。</li>
-<li>单租户突发 Token 消耗和预算拒绝率。</li>
-<li>长任务 P95&#x2F;P99 延迟及其阶段分解。</li>
-</ul>
-<p>为压缩单独准备回归集：长对话、多个冲突事实、包含金额和日期、长工具结果、用户修改约束、人工审批和断点恢复。分别比较“原始上下文”和“压缩上下文”的任务结果，不能只让另一个模型评价摘要是否通顺。</p>
-<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>在 Day 3 的 <code>ModelClient</code> 之上实现一个 <code>ContextBuilder</code>：</p>
-<ul>
-<li>定义固定前缀、任务状态、历史、证据和工具结果五类块。</li>
-<li>为每类块设置 Token 配额、优先级和是否必需。</li>
-<li>模拟上下文达到 70%、85% 和 100% 时的裁剪、摘要、外置和失败策略。</li>
-<li>保存 <code>prompt_version</code>、<code>context_version</code>、<code>summary_version</code> 和每次压缩的来源 ID。</li>
-<li>输出一份成本报告，至少包含输入、输出、缓存命中、压缩调用和重试成本。</li>
-<li>用 10 条长任务样本比较压缩前后的任务成功率、关键事实保留率和 P95 延迟。</li>
-</ul>
-<p>提交物是 <code>ContextBuilder</code> 接口、预算分配表、两种压缩策略的对比记录和一份可以解释“为什么删掉这段历史”的 trace。下一篇先用 Golden Set 检查 Prompt 和上下文策略的改动是否安全，再做压缩实验。</p>
-<h2 id="近期面试题整理（检索日期：2026-10-30）"><a href="#近期面试题整理（检索日期：2026-10-30）" class="headerlink" title="近期面试题整理（检索日期：2026-10-30）"></a>近期面试题整理（检索日期：2026-10-30）</h2><p>以下题目来自近期公开面经和题库页面，页面多数标注原始来源为牛客网；聚合页面的解析经过整理，适合练习回答结构，不能替代真实代码和评测。</p>
-<h3 id="1-Agent-上下文越来越长，应该怎样处理？"><a href="#1-Agent-上下文越来越长，应该怎样处理？" class="headerlink" title="1. Agent 上下文越来越长，应该怎样处理？"></a>1. Agent 上下文越来越长，应该怎样处理？</h3><p><strong>方向：</strong> 上下文工程；<strong>难度：</strong> 中高。</p>
-<p>先给 system、任务状态、检索证据、最近历史和工具结果分别设置 Token 配额，超过阈值按优先级处理：先裁剪重复内容，再做阶段摘要，长结果外置并保留 <code>result_id</code>、摘要和查询条件，独立子任务使用独立上下文。金额、时间、编号、权限、用户目标和未完成事项不能只放在自然语言摘要里，必须结构化保存。</p>
-<p><strong>追问：</strong> 为什么不能把 1M 上下文窗口全部用满？</p>
-<p>因为输入 Token 仍会消耗延迟和成本，噪声会稀释注意力，输出还需要预留空间；窗口大不代表把全量历史都送进去是最优方案。</p>
-<p>来源：<a href="https://mj.mianlingai.com/interview/kuaishou-agent-first-round-931679347587444736/">快手 Agent 开发一面：工具兜底、多 Agent 与流式解析</a>（页面标注时间 2026-09、来源为牛客网）。</p>
-<h3 id="2-上下文压缩时应该保留什么，如何证明没有压坏任务？"><a href="#2-上下文压缩时应该保留什么，如何证明没有压坏任务？" class="headerlink" title="2. 上下文压缩时应该保留什么，如何证明没有压坏任务？"></a>2. 上下文压缩时应该保留什么，如何证明没有压坏任务？</h3><p><strong>方向：</strong> Agent 记忆与可靠性；<strong>难度：</strong> 中高。</p>
-<p>保留当前目标和完成标准、硬约束与授权、已确认事实、任务状态、决策及依据、未完成事项，以及可回查的工具结果和文档引用。压缩后对数字、实体、否定关系、权限和状态做规则校验，再用长任务回归集比较任务成功率、事实保留率、引用准确率和成本，而不是只评价摘要是否通顺。</p>
-<p><strong>追问：</strong> 压缩发现新旧事实冲突怎么办？</p>
-<p>两个版本都保留来源和时间，在状态层显式标记当前生效版本；需要时回查原始事件，不能让摘要静默覆盖旧事实。</p>
-<p>来源：<a href="https://www.nowcoder.com/discuss/933731739082510336?sourceSSR=dynamic&weFlow=true">阿里云 AI Agent 算法一面面经：上下文压缩时保留什么信息</a>（页面标注时间 2026-09-01、来源为牛客网）。</p>
-<h3 id="3-为什么-Prompt、工具定义和-Skill-顺序会影响缓存命中？"><a href="#3-为什么-Prompt、工具定义和-Skill-顺序会影响缓存命中？" class="headerlink" title="3. 为什么 Prompt、工具定义和 Skill 顺序会影响缓存命中？"></a>3. 为什么 Prompt、工具定义和 Skill 顺序会影响缓存命中？</h3><p><strong>方向：</strong> Prompt 版本与性能；<strong>难度：</strong> 中高。</p>
-<p>Prompt Cache 通常匹配完整的前缀。系统指令、工具 Schema、工具顺序或中间内容变化，会让后续 Token 无法复用。工程上应把稳定规则和工具定义放在前面，动态用户输入、检索结果和工具返回放在后面，并保持同一版本内的字节级稳定；同时用 <code>cached_tokens</code>、首 token 延迟和实际费用验证，而不是假设命中。</p>
-<p><strong>追问：</strong> 压缩后 Token 变少，为什么缓存命中率可能反而下降？</p>
-<p>压缩会重写早期上下文，新的前缀与旧缓存不再完全匹配。应保留稳定前缀，把变化集中在后缀，并比较“缓存损失”和“输入 Token 减少”哪个更省钱。</p>
-<p>来源：<a href="https://mj.mianlingai.com/interview/tencent-marketing-backend-2916638/">腾讯营销后端一面：Agent 上下文体系与多路归并</a>（页面标注时间 2026-09、来源为牛客网）；缓存机制参考<a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方文档</a>。</p>
-<h3 id="4-如何降低-Agent-的-Token-成本？"><a href="#4-如何降低-Agent-的-Token-成本？" class="headerlink" title="4. 如何降低 Agent 的 Token 成本？"></a>4. 如何降低 Agent 的 Token 成本？</h3><p><strong>方向：</strong> AI 平台与成本治理；<strong>难度：</strong> 中高。</p>
-<p>先减少输入：检索只取相关片段、工具按需加载、历史滚动摘要、去重 Few-shot；再提高稳定前缀的缓存命中；限制输出解释和 JSON 字段；合并可并行步骤、减少模型轮次；最后按任务难度路由模型。每种优化都要在固定评测集上同时看质量、P95 延迟和每成功任务成本，不能只看账单下降。</p>
-<p><strong>追问：</strong> 简单任务都切到小模型，质量下降怎么办？</p>
-<p>先定义任务分级和质量基线，使用小模型做分类&#x2F;改写&#x2F;摘要等低风险步骤；质量不达标时回退大模型或请求人工确认，并把路由版本记录在 trace 中。</p>
-<p>来源：<a href="https://mj.mianlingai.com/interview/tencent-backend-social-2915915/">腾讯社招一面面经（Agent 方向）</a>（页面标注时间 2026-09、来源为牛客网）。</p>
-<h3 id="5-长流程-Agent-的上下文超限和延迟如何定位？"><a href="#5-长流程-Agent-的上下文超限和延迟如何定位？" class="headerlink" title="5. 长流程 Agent 的上下文超限和延迟如何定位？"></a>5. 长流程 Agent 的上下文超限和延迟如何定位？</h3><p><strong>方向：</strong> Agent 性能与可观测性；<strong>难度：</strong> 高。</p>
-<p>用同一个 <code>trace_id</code> 拆分排队、模型首 token、模型总耗时、工具等待、重试、上下文压缩、锁和连接池等待，比较 P95&#x2F;P99 而不是只看均值。再按任务类型、模型&#x2F;Prompt&#x2F;工具版本和上下文长度切分，验证是上下文膨胀、重复工具调用、重试放大还是下游等待。修复后用相同任务集做回归。</p>
-<p><strong>追问：</strong> 1M 上下文还不够怎么办？</p>
-<p>先缩小当前任务目标，做分层摘要和外置索引，把独立工作拆给子 Agent，保留可回查的原文；如果业务仍需要全量信息，考虑专门检索、批处理或异步工作流，不能只继续提高窗口上限。</p>
-<p>来源：<a href="https://mj.mianlingai.com/interview/mihoyo-ai-agent-938914757099130880/">米哈游 AI Agent 一面：代码生成链路、并发隔离与手撕 LRU</a>（页面标注时间 2026-10、来源为牛客网）；性能排查思路参考<a href="https://mj.mianlingai.com/interview/bytedance-ai-agent-first-round-933733520864706560/">字节跳动 AI Agent 开发一面面经</a>（页面标注时间 2026-09、来源为牛客网）。</p>
-<h2 id="今日资料"><a href="#今日资料" class="headerlink" title="今日资料"></a>今日资料</h2><ul>
-<li><a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方指南</a>：稳定前缀、缓存命中、缓存 Token 和监控方法。</li>
-<li><a href="https://developers.openai.com/api/docs/guides/prompting">OpenAI Prompting 官方指南</a>：Prompt 组织、版本维护和缓存前缀建议。</li>
-<li><a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">Day 3：统一 ModelClient</a>：消息、结构化输出、流式事件、超时和重试边界。</li>
-</ul>
-<p>下一篇用 Golden Set 建立 Prompt 回归门槛；随后用实测数据比较原始上下文、截断与结构化压缩。Embedding 和模型路由会在第 1 月后续专题展开。</p>
-]]></content>
-      <categories>
-        <category>AI工程</category>
-      </categories>
-      <tags>
-        <tag>AI全栈</tag>
-        <tag>Token</tag>
-        <tag>上下文工程</tag>
-        <tag>成本控制</tag>
-        <tag>模型工程</tag>
-        <tag>Prompt</tag>
       </tags>
   </entry>
   <entry>
@@ -1336,6 +1353,58 @@
       </tags>
   </entry>
   <entry>
+    <title>Agent 工具调用怎么做才安全：权限、审批与审计</title>
+    <url>/articles/Agent-Tool-Calling-Security.html</url>
+    <content><![CDATA[<p>Agent 一旦可以查询订单、修改配置或发送消息，工具调用就不再是普通的函数调用，而是一次由自然语言触发的业务操作。模型可能误解用户意图，外部材料可能包含恶意指令，工具返回的数据也可能被拼接到下一轮提示词中。</p>
+<p>因此，安全边界不能只写在系统提示词里。模型可以提出动作，但真正决定“能不能做、对什么对象做、做完是否生效”的，应该是独立于模型的策略和执行层。</p>
+<span id="more"></span>
+
+<h2 id="先画出工具调用的信任边界"><a href="#先画出工具调用的信任边界" class="headerlink" title="先画出工具调用的信任边界"></a>先画出工具调用的信任边界</h2><p>一次调用至少经过四个主体：用户、Agent 编排器、策略引擎和业务工具。用户身份决定任务范围，编排器负责组织步骤，策略引擎负责授权，工具服务负责最后的业务校验。任何一层都不应假设前一层已经做完全部检查。</p>
+<p>可以把工具按照风险分为三类：</p>
+<ul>
+<li>只读工具，例如查询知识和读取订单。</li>
+<li>可逆写入工具，例如创建草稿、生成待审批配置。</li>
+<li>不可逆或外部影响工具，例如付款、删除数据、发布内容和向外部发送消息。</li>
+</ul>
+<p>风险等级应决定授权方式、审计粒度和是否需要人工确认，而不是决定模型能否调用某个函数名。</p>
+<h2 id="工具契约要写清楚"><a href="#工具契约要写清楚" class="headerlink" title="工具契约要写清楚"></a>工具契约要写清楚</h2><p>工具定义需要同时描述机器可校验的 schema 和人可以理解的语义。例如：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ticket.comment.create&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span> <span class="string">&quot;在指定工单下创建内部评论，不会对客户可见&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;input_schema&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;object&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;required&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;ticket_id&quot;</span><span class="punctuation">,</span> <span class="string">&quot;body&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;properties&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;ticket_id&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;body&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;maxLength&quot;</span><span class="punctuation">:</span> <span class="number">4000</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;risk&quot;</span><span class="punctuation">:</span> <span class="string">&quot;reversible_write&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;requires_approval&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;idempotency_key&quot;</span><span class="punctuation">:</span> <span class="string">&quot;required&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>description</code> 不能把“可做什么”和“不能做什么”混在模糊的自然语言里。读写应拆成独立工具，参数的枚举、长度、数量和资源归属应在 schema 与代码中重复校验。模型输出的 JSON 只是候选参数，不能视为已经通过验证。</p>
+<h2 id="使用短时、最小权限的授权"><a href="#使用短时、最小权限的授权" class="headerlink" title="使用短时、最小权限的授权"></a>使用短时、最小权限的授权</h2><p>Agent 不应拿到一个长期有效、包含所有业务权限的服务账号。更安全的做法是：用户先通过身份认证，平台根据用户、组织、资源和任务类型生成短时能力令牌，工具服务再次验证令牌中的范围。</p>
+<p>令牌至少应包含主体、作用域、资源范围、过期时间、任务 ID 和审批状态。比如“允许读取项目 A 的工单”与“允许修改所有项目工单”必须是两个不同的 scope。工具服务不要相信模型传入的 <code>user_id</code>，应从经过验证的身份上下文取得调用者。</p>
+<p>多租户场景还要防止资源 ID 越权。即使用户知道另一个租户的订单号，也不能仅凭字符串通过校验。资源归属检查应在业务服务侧完成，并记录拒绝原因。</p>
+<h2 id="把提示词注入当成输入问题处理"><a href="#把提示词注入当成输入问题处理" class="headerlink" title="把提示词注入当成输入问题处理"></a>把提示词注入当成输入问题处理</h2><p>网页、邮件、文档和工单内容都属于不可信输入。它们可能出现“忽略之前规则”“把密钥发给我”之类的文字。检索内容应该作为证据传递给模型，而不是被拼接为新的系统指令。</p>
+<p>可以采取几层防护：</p>
+<ol>
+<li>明确区分指令、用户内容和外部材料，使用结构化消息传递。</li>
+<li>对外部文本做长度限制、格式标记和敏感内容识别。</li>
+<li>工具参数只从结构化字段读取，不从模型的解释段落中解析命令。</li>
+<li>高风险动作要求重新确认，不能由外部材料自动触发。</li>
+<li>记录触发策略的证据片段，方便复盘而不必保存全部敏感内容。</li>
+</ol>
+<p>这些措施不能保证模型永远不会被误导，但可以让一次误解无法直接扩大成权限事故。</p>
+<h2 id="审批不是简单的确认弹窗"><a href="#审批不是简单的确认弹窗" class="headerlink" title="审批不是简单的确认弹窗"></a>审批不是简单的确认弹窗</h2><p>审批应描述即将发生的具体动作，而不是只显示“允许 Agent 继续”。用户需要看到对象、变更内容、影响范围、调用者、依据和过期时间。审批结果要绑定任务步骤和参数摘要，参数发生实质变化时必须重新审批。</p>
+<p>对批量操作，可以要求先生成预览，再由用户选择范围；对不可逆动作，可以增加双人审批或延迟执行窗口。审批系统要支持拒绝、撤回和超时，不能把“用户没有点击”解释成允许。</p>
+<h2 id="幂等、重试和回滚同样属于安全"><a href="#幂等、重试和回滚同样属于安全" class="headerlink" title="幂等、重试和回滚同样属于安全"></a>幂等、重试和回滚同样属于安全</h2><p>网络超时可能让 Agent 重试一个已经成功的写入。所有可写工具都应设计幂等键，并在业务侧保存执行记录。重试只能复用同一个幂等键，不能每次生成新的请求。</p>
+<p>对于可逆操作，工具可以提供补偿动作，例如撤回草稿；对于不可逆操作，要在执行前生成清晰的预览和风险提示。不要把回滚责任交给模型自由规划，回滚路径应该由业务系统定义。</p>
+<h2 id="审计记录要能回答五个问题"><a href="#审计记录要能回答五个问题" class="headerlink" title="审计记录要能回答五个问题"></a>审计记录要能回答五个问题</h2><p>一次工具调用至少要能回答：谁发起、模型建议了什么、策略依据是什么、实际执行了什么、结果影响了哪些资源。建议用任务 ID 串起用户消息、模型请求摘要、检索证据、策略决策、审批记录和工具结果。</p>
+<p>日志中避免直接写入完整密码、令牌和敏感正文，可以保存哈希、字段摘要和受控引用。审计数据本身也需要访问权限和保留期限，否则为了追查问题反而制造新的泄露面。</p>
+<h2 id="先做拒绝测试，再做成功测试"><a href="#先做拒绝测试，再做成功测试" class="headerlink" title="先做拒绝测试，再做成功测试"></a>先做拒绝测试，再做成功测试</h2><p>工具安全测试不能只验证“正确参数能执行”。还要覆盖越权资源、过期令牌、缺失审批、参数边界、重复请求、恶意文档、超时重试和取消后的迟到结果。对每个高风险工具，至少准备一组应该拒绝的样例，并将策略版本纳入回归测试。</p>
+<p>Agent 的自主性应随着证据和控制能力一起增加。能安全读资料，不代表可以安全写入；能生成建议，也不代表可以直接替用户做出不可逆决定。把工具当成受控的业务 API，Agent 才能在企业环境中长期运行。</p>
+]]></content>
+      <categories>
+        <category>AI工程</category>
+      </categories>
+      <tags>
+        <tag>Agent</tag>
+        <tag>工程实践</tag>
+        <tag>信息安全</tag>
+        <tag>权限</tag>
+        <tag>企业架构</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>区块链系列——密码学与安全技术</title>
     <url>/articles/Blockchain-Cryptography-and-Network-Security.html</url>
     <content><![CDATA[<h1 id="密码学与安全技术"><a href="#密码学与安全技术" class="headerlink" title="密码学与安全技术"></a>密码学与安全技术</h1><p>工程领域从来没有黑科技；密码学不仅是工程。</p>
@@ -1596,6 +1665,226 @@
       </tags>
   </entry>
   <entry>
+    <title>Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控</title>
+    <url>/articles/AI-Token-Context-Budget-Prompt-Version.html</url>
+    <content><![CDATA[<p>昨天把模型调用收敛成了 <code>ModelClient</code>。今天继续解决一个很容易被 Demo 掩盖的问题：<strong>Agent 为什么越跑越慢、越跑越贵，而且还可能答得更差？</strong></p>
+<p>原因通常不是某一个模型突然变笨，而是每一轮都把系统指令、工具定义、历史消息、检索结果和上一次工具输出重新送进上下文。输入 Token 增长会带来更高的首 token 延迟和费用，也会让真正有用的信息在注意力里被稀释。上下文窗口变大只能延后问题，不能代替预算设计。</p>
+<p>今天把 Token 当成一种需要分配、计量和回收的资源，建立一套适合 Java&#x2F;后端服务的上下文预算方案：Prompt 有版本，消息有优先级，压缩有可回查指针，缓存有命中指标，租户有硬上限。</p>
+<span id="more"></span>
+
+<h2 id="Token-是容量、延迟和费用的共同单位"><a href="#Token-是容量、延迟和费用的共同单位" class="headerlink" title="Token 是容量、延迟和费用的共同单位"></a>Token 是容量、延迟和费用的共同单位</h2><p>一次模型请求的资源账本至少包含下面几项。以下是 OpenAI Responses 的 usage 口径；其他供应商应由适配器归一化，不能按同名字段直接相加：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">reported_input_tokens  = 本次完整输入，包含可复用的缓存输入</span><br><span class="line">reported_output_tokens = 模型生成总量，包含推理与不可见格式等输出</span><br><span class="line">reported_total_tokens  = reported_input_tokens + reported_output_tokens</span><br><span class="line">缓存读写是输入的分项，推理 Token 是输出的分项；不得重复相加</span><br></pre></td></tr></table></figure>
+
+<p>不同模型的计费和上下文窗口可能不同，但工程上都要回答四个问题：</p>
+<ol>
+<li>这次请求最多允许使用多少输入和输出 Token？</li>
+<li>哪些内容必须保留，哪些内容可以裁剪、摘要或外置？</li>
+<li>发生重试、压缩或模型降级时，剩余预算是多少？</li>
+<li>成本应该归属哪个租户、用户、任务和版本？</li>
+</ol>
+<p>不要用字符数直接代替 Token。中文、代码、JSON、URL、图片和不同模型的分词结果差异很大。早期可以用字符数做快速保护，正式计费和边界判断应使用目标模型的 tokenizer 或供应商提供的 usage 字段，并在实际调用后用真实值校正估算器。</p>
+<h3 id="输入预算和输出预算要分开"><a href="#输入预算和输出预算要分开" class="headerlink" title="输入预算和输出预算要分开"></a>输入预算和输出预算要分开</h3><figure class="highlight text"><table><tr><td class="code"><pre><span class="line">context_window &gt;= input_tokens</span><br><span class="line">                 + max_output_tokens</span><br><span class="line">                 + reasoning_reserve</span><br><span class="line">                 + safety_margin</span><br></pre></td></tr></table></figure>
+
+<p><code>max_output_tokens</code> 不是“模型一定会输出这么多”，而是要为最坏情况预留的上限。Agent 还要给工具参数、错误修正和最终答案预留空间；如果把整个窗口都填满输入，模型可能还没开始回答就因为输出空间不足而截断。</p>
+<p>可以为一次任务建立预算账本：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>例子</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>固定前缀</td>
+<td>系统规则、稳定示例、工具契约</td>
+<td>版本化，尽量保持字节不变</td>
+</tr>
+<tr>
+<td>当前任务</td>
+<td>用户目标、当前约束、待办</td>
+<td>必须保留，结构化表达</td>
+</tr>
+<tr>
+<td>历史上下文</td>
+<td>最近消息、阶段摘要</td>
+<td>按 token 阈值滚动压缩</td>
+</tr>
+<tr>
+<td>外部证据</td>
+<td>检索片段、工具结果</td>
+<td>只放相关片段，保留引用 ID</td>
+</tr>
+<tr>
+<td>输出预留</td>
+<td>最终答案、工具参数、推理预算</td>
+<td>设置硬上限，留安全余量</td>
+</tr>
+<tr>
+<td>预算余量</td>
+<td>重试、澄清、错误修正</td>
+<td>到阈值时停止扩张</td>
+</tr>
+</tbody></table>
+<h2 id="Prompt-是可发布的软件资产"><a href="#Prompt-是可发布的软件资产" class="headerlink" title="Prompt 是可发布的软件资产"></a>Prompt 是可发布的软件资产</h2><p>Prompt 版本化不是给文本加一个日期后缀，而是要让一次模型调用能够重现。建议把 Prompt 作为独立记录管理：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">prompt_id       = incident_triage</span><br><span class="line">prompt_version  = 2026-10-30.2</span><br><span class="line">content_hash    = sha256(rendered_template)</span><br><span class="line">input_schema    = incident_request_v3</span><br><span class="line">output_schema   = triage_decision_v2</span><br><span class="line">model_policy    = support-agent-default</span><br><span class="line">status          = draft | evaluated | released | retired</span><br><span class="line">owner           = sre-ai</span><br></pre></td></tr></table></figure>
+
+<p>每一次请求记录 <code>prompt_id</code>、<code>prompt_version</code>、模板哈希、输入 Schema、输出 Schema、模型版本、采样参数、上下文构造策略和评测版本。这样排查线上波动时，可以区分：</p>
+<ul>
+<li>Prompt 改动导致指令顺序变化。</li>
+<li>工具定义或字段描述变化导致 Token 和选择率变化。</li>
+<li>模型路由变化导致质量或延迟变化。</li>
+<li>上下文压缩版本变化导致事实丢失。</li>
+<li>用户输入或检索数据本身发生变化。</li>
+</ul>
+<p>Prompt 发布应该像代码发布一样经过草稿、离线评测、灰度和回滚。至少保留一组固定样本，比较任务成功率、Schema 通过率、引用准确率、P95 延迟和每任务成本。只看“回答读起来不错”无法判断一行 Prompt 是否让工具调用或长尾任务退化。</p>
+<h3 id="Prompt-的稳定前缀和动态后缀"><a href="#Prompt-的稳定前缀和动态后缀" class="headerlink" title="Prompt 的稳定前缀和动态后缀"></a>Prompt 的稳定前缀和动态后缀</h3><p>如果供应商支持 Prompt Caching，通常只会复用完整匹配的前缀。建议按下面顺序组织请求：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">稳定前缀：系统规则 + 版本化示例 + 稳定工具定义</span><br><span class="line">可替换区：租户级策略 + 当前 Skill</span><br><span class="line">动态后缀：用户消息 + 当前检索结果 + 最新工具结果</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方文档</a>说明，缓存复用依赖前缀匹配，工具名称、描述、Schema 和顺序变化都可能破坏命中；缓存减少的是重复处理前缀的成本和延迟，不会复用旧答案，也不代表每次请求都一定命中。</p>
+<p>所以不要为了“看起来模块化”而每轮随机排序工具、插入当前时间或重新渲染同一段 Markdown。稳定内容保持字节级一致，动态内容放在后面；同时记录 <code>cached_tokens</code>、总输入 Token、首 token 延迟和实际费用，用数据验证缓存是否真的有效。</p>
+<h2 id="上下文拼装要有预算分配器"><a href="#上下文拼装要有预算分配器" class="headerlink" title="上下文拼装要有预算分配器"></a>上下文拼装要有预算分配器</h2><p>把所有消息直接 <code>messages.addAll()</code> 是上下文失控的起点。应该先定义每类内容的上限和优先级，再由 <code>ContextBuilder</code> 组装一次请求。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ContextBudget</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="type">int</span> contextWindowTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> modelInputLimitTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> maxOutputTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> safetyMarginTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> systemTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> taskTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> recentHistoryTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> retrievedTokens,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> toolResultTokens</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">usableInputTokens</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Math.min(modelInputLimitTokens,</span><br><span class="line">            contextWindowTokens - maxOutputTokens - safetyMarginTokens);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">ContextBlock</span><span class="params">(</span></span><br><span class="line"><span class="params">    String id,</span></span><br><span class="line"><span class="params">    BlockType type,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> estimatedTokens,</span></span><br><span class="line"><span class="params">    Priority priority,</span></span><br><span class="line"><span class="params">    <span class="type">boolean</span> required,</span></span><br><span class="line"><span class="params">    String content</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">BlockType</span> &#123;</span><br><span class="line">    SYSTEM, POLICY, TASK, STATE, HISTORY, EVIDENCE, TOOL_RESULT, MEMORY</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">Priority</span> &#123; REQUIRED, HIGH, MEDIUM, LOW &#125;</span><br></pre></td></tr></table></figure>
+
+<p>拼装步骤可以是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1. 放入 SYSTEM、租户策略、权限和任务状态</span><br><span class="line">2. 放入当前用户目标与完成标准</span><br><span class="line">3. 按相关性选择证据和工具结果</span><br><span class="line">4. 从最近消息向前加入历史，直到达到 history 配额</span><br><span class="line">5. 如果超过总预算，依次执行裁剪、摘要、外置和分流</span><br><span class="line">6. 计算真实/估算 Token，确认仍为 input + output + reserve &lt;= window</span><br><span class="line">7. 固化 context_version，写入 trace</span><br></pre></td></tr></table></figure>
+
+<p><code>required=true</code> 的块不能因为普通历史变长而被挤掉。权限范围、审批状态、金额、日期、租户 ID、资源版本和任务完成条件都属于硬约束；超过预算时应减少低优先级历史或降低任务范围，而不是删除这些字段。</p>
+<h3 id="不是越多信息越好"><a href="#不是越多信息越好" class="headerlink" title="不是越多信息越好"></a>不是越多信息越好</h3><p>上下文有三个常见的质量风险：</p>
+<ul>
+<li><strong>噪声：</strong> 无关的检索片段和工具日志让模型把注意力放在错误位置。</li>
+<li><strong>冲突：</strong> 旧消息和新数据库状态同时出现，但没有标记哪个版本生效。</li>
+<li><strong>污染：</strong> 一个子 Agent 收到主 Agent 的全部中间推理和不相关历史，产生错误的委派或重复工作。</li>
+</ul>
+<p>每个子 Agent 只接受完成自己任务所需的输入，返回结构化交付物和证据 ID。不要把一个大上下文复制给所有节点；这既浪费 Token，也让责任边界变模糊。</p>
+<h2 id="上下文压缩：先保存可恢复状态，再生成摘要"><a href="#上下文压缩：先保存可恢复状态，再生成摘要" class="headerlink" title="上下文压缩：先保存可恢复状态，再生成摘要"></a>上下文压缩：先保存可恢复状态，再生成摘要</h2><p>上下文压缩的目标不是把文字变短，而是保留下一步决策所需的最小状态。建议按四种动作从低成本到高成本处理：</p>
+<ol>
+<li><strong>裁剪：</strong> 丢弃寒暄、重复日志、已经确认且不再影响决策的旧内容。</li>
+<li><strong>摘要：</strong> 把一组消息或工具调用结果压缩成阶段结论。</li>
+<li><strong>外置：</strong> 将大段文档、完整工具结果、代码 diff 和附件落到数据库或对象存储，给模型保留索引与关键片段。</li>
+<li><strong>分流：</strong> 把独立子任务交给独立上下文，只返回结构化结果，不共享整段历史。</li>
+</ol>
+<p>压缩前先抽取一个结构化状态，而不是直接让模型“总结一下”：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;goal&quot;</span><span class="punctuation">:</span> <span class="string">&quot;为订单 20261030-001 生成退款审批建议&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;completion_criteria&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;核对支付状态&quot;</span><span class="punctuation">,</span> <span class="string">&quot;确认租户权限&quot;</span><span class="punctuation">,</span> <span class="string">&quot;输出审批结论&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;constraints&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;金额超过 5000 需要人工审批&quot;</span><span class="punctuation">,</span> <span class="string">&quot;不得修改订单&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;confirmed_facts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;key&quot;</span><span class="punctuation">:</span> <span class="string">&quot;payment_status&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;value&quot;</span><span class="punctuation">:</span> <span class="string">&quot;PAID&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;source&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tool_call_17&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;pending_steps&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;查询退款历史&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;decisions&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;artifacts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tool_result_17&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;location&quot;</span><span class="punctuation">:</span> <span class="string">&quot;s3://...&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;支付状态查询结果&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">4</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>摘要正文可以变化，但 <code>goal</code>、<code>constraints</code>、<code>confirmed_facts</code>、<code>pending_steps</code> 和 <code>artifacts</code> 要有 Schema、版本和来源。金额、编号、时间、权限、否定关系和状态迁移不能只存在自然语言摘要里。</p>
+<h3 id="什么时候触发压缩"><a href="#什么时候触发压缩" class="headerlink" title="什么时候触发压缩"></a>什么时候触发压缩</h3><p>按对话轮数触发不可靠：一轮可能只有十几个 Token，也可能包含一个很长的工具结果。更合理的触发条件是预算和风险的组合：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">if estimated_input_tokens &gt; 0.70 * max_input_tokens:</span><br><span class="line">    prepare_compaction()</span><br><span class="line"></span><br><span class="line">if estimated_input_tokens &gt; 0.85 * max_input_tokens:</span><br><span class="line">    compact_before_next_model_call()</span><br><span class="line"></span><br><span class="line">if context_loss_risk &gt; threshold:</span><br><span class="line">    stop_and_ask_user_or_externalize()</span><br></pre></td></tr></table></figure>
+
+<p>提前压缩可以避免下一轮已经没有空间才匆忙总结。每次压缩生成 <code>summary_version</code>，并记录它基于哪些 <code>message_id</code>、<code>tool_result_id</code> 和事件版本。压缩后仍然可以根据引用读取原文，出现摘要错误时能回退和重建。</p>
+<h3 id="长工具结果怎么压缩"><a href="#长工具结果怎么压缩" class="headerlink" title="长工具结果怎么压缩"></a>长工具结果怎么压缩</h3><p>工具返回一万行日志时，不要直接把全文塞回下一轮。推荐保存三层内容：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">原始结果：对象存储/数据库，可按权限回查</span><br><span class="line">结构化元数据：查询条件、时间范围、总条数、是否截断、版本</span><br><span class="line">模型摘要：结论、异常行、下一步建议、原文引用 ID</span><br></pre></td></tr></table></figure>
+
+<p>摘要必须明确“这是前 1000 条中的摘要”还是“完整结果的统计”，否则模型会把截断数据当成全量数据。对于金额、错误码、资源 ID 等关键字段，保留原始片段或确定性聚合结果，不要只依赖模型重述。</p>
+<h2 id="Token-预算要贯穿-Agent-的每一层"><a href="#Token-预算要贯穿-Agent-的每一层" class="headerlink" title="Token 预算要贯穿 Agent 的每一层"></a>Token 预算要贯穿 Agent 的每一层</h2><p>只在 API 网关记录总费用不够。一次任务可能有多个模型调用、重试、摘要调用、子 Agent 和工具结果。需要把预算从租户到步骤逐层传递：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">租户月度额度</span><br><span class="line">  -&gt; 用户/项目额度</span><br><span class="line">      -&gt; Task 总预算</span><br><span class="line">          -&gt; Step 预算</span><br><span class="line">              -&gt; Model Call input/output/retry 预算</span><br></pre></td></tr></table></figure>
+
+<p>每层都有硬上限和软上限：</p>
+<ul>
+<li><strong>硬上限：</strong> 达到后拒绝新调用、转异步或转人工，不能由模型请求覆盖。</li>
+<li><strong>软上限：</strong> 触发小模型、摘要、减少检索 TopK 或缩短输出。</li>
+<li><strong>保留额度：</strong> 为错误修正、审批和最终答案保留，不允许前面的历史无限消耗。</li>
+</ul>
+<p>一次模型调用的计量记录可以是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">trace_id, task_id, step_id, tenant_id,</span><br><span class="line">model, model_version, prompt_version, context_version,</span><br><span class="line">input_tokens, cached_tokens, output_tokens, reasoning_tokens,</span><br><span class="line">retry_count, latency_ms, first_token_ms,</span><br><span class="line">unit_price, estimated_cost, actual_cost,</span><br><span class="line">budget_before, budget_after, finish_reason</span><br></pre></td></tr></table></figure>
+
+<p>成本不能只除以请求数。至少要按“成功任务”统计平均成本和 P95 成本；失败重试、压缩调用、路由降级和子 Agent 都要算入同一条任务账单。这样才能比较“多花一次摘要调用是否减少了后续五轮输入”这种真实决策。</p>
+<h3 id="成本控制的顺序"><a href="#成本控制的顺序" class="headerlink" title="成本控制的顺序"></a>成本控制的顺序</h3><p>建议按下面顺序优化：</p>
+<ol>
+<li>先移除无关上下文和重复工具结果。</li>
+<li>再用结构化输出减少无用解释和重复文本。</li>
+<li>合并可并行的判断，减少模型轮次。</li>
+<li>稳定前缀，测量 Prompt Cache 命中和实际费用。</li>
+<li>按任务难度路由模型，小模型处理分类、改写和摘要。</li>
+<li>最后才调低输出上限或强行截断，因为这可能直接损害任务成功率。</li>
+</ol>
+<p>优化前后必须使用同一评测集比较质量、延迟和成本。只有成本下降而任务成功率明显下降，不能算优化。</p>
+<h2 id="模型路由要看任务预算，不是只看价格"><a href="#模型路由要看任务预算，不是只看价格" class="headerlink" title="模型路由要看任务预算，不是只看价格"></a>模型路由要看任务预算，不是只看价格</h2><p>Day 3 的 <code>ModelGateway</code> 可以在这里加入预算感知路由。路由输入至少包括：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">task_type, quality_target, context_tokens,</span><br><span class="line">remaining_budget, deadline, tenant_policy,</span><br><span class="line">data_sensitivity, tool_required, retry_count</span><br></pre></td></tr></table></figure>
+
+<p>一个简单策略如下：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">if data_sensitivity == HIGH:</span><br><span class="line">    choose approved_model_only</span><br><span class="line">else if remaining_budget &lt; LOW_WATERMARK:</span><br><span class="line">    choose small_model or ask_for_confirmation</span><br><span class="line">else if context_tokens &gt; large_context_threshold:</span><br><span class="line">    choose context-capable_model</span><br><span class="line">else if deadline - now &lt; short_deadline:</span><br><span class="line">    choose low-latency_model</span><br><span class="line">else:</span><br><span class="line">    choose model_from_quality_baseline</span><br></pre></td></tr></table></figure>
+
+<p>模型降级不能只改变 <code>model</code> 字段。不同模型可能支持不同上下文窗口、Schema、工具数量、缓存策略和安全等级。路由后要重新计算可用预算和能力矩阵；如果目标模型不支持当前输出 Schema，应先切换兼容的 Prompt&#x2F;解析策略，不能把不兼容请求直接发送出去。</p>
+<h2 id="Java-服务的-ContextBuilder-伪代码"><a href="#Java-服务的-ContextBuilder-伪代码" class="headerlink" title="Java 服务的 ContextBuilder 伪代码"></a>Java 服务的 ContextBuilder 伪代码</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">ContextResult</span> <span class="title function_">build</span><span class="params">(</span></span><br><span class="line"><span class="params">    TaskState task,</span></span><br><span class="line"><span class="params">    PromptTemplate prompt,</span></span><br><span class="line"><span class="params">    List&lt;Message&gt; history,</span></span><br><span class="line"><span class="params">    List&lt;Evidence&gt; evidence,</span></span><br><span class="line"><span class="params">    ContextBudget budget,</span></span><br><span class="line"><span class="params">    TokenCounter counter</span></span><br><span class="line"><span class="params">)</span> &#123;</span><br><span class="line">    <span class="type">List</span>&lt;ContextBlock&gt; <span class="variable">blocks</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    blocks.add(required(prompt.renderStablePrefix()));</span><br><span class="line">    blocks.add(required(renderPolicy(task.tenantPolicy())));</span><br><span class="line">    blocks.add(required(renderTaskState(task)));</span><br><span class="line">    blocks.add(required(renderUserGoal(task.userGoal())));</span><br><span class="line"></span><br><span class="line">    addByBudget(blocks, evidence, budget.retrievedTokens(), Priority.HIGH);</span><br><span class="line">    addByBudget(blocks, recent(history), budget.recentHistoryTokens(), Priority.MEDIUM);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">estimated</span> <span class="operator">=</span> counter.count(blocks);</span><br><span class="line">    <span class="keyword">if</span> (estimated &gt; budget.usableInputTokens()) &#123;</span><br><span class="line">        blocks = compactAndExternalize(blocks, budget, counter);</span><br><span class="line">        estimated = counter.count(blocks);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (estimated &gt; budget.usableInputTokens()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ContextBudgetExceeded</span>(estimated);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">ContextResult</span>(blocks, estimated, contextVersion(blocks));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>required()</code> 不是说所有必需内容都永远不能缩短，而是说其语义不能被普通裁剪删除。系统规则可以使用一个经过评测的短版本，工具结果可以外置，历史可以摘要，但任务授权和完成条件必须仍然可验证。</p>
+<h2 id="可观测性和评测：证明压缩没有把任务压坏"><a href="#可观测性和评测：证明压缩没有把任务压坏" class="headerlink" title="可观测性和评测：证明压缩没有把任务压坏"></a>可观测性和评测：证明压缩没有把任务压坏</h2><p>上下文工程要同时看三类指标：</p>
+<h3 id="资源指标"><a href="#资源指标" class="headerlink" title="资源指标"></a>资源指标</h3><ul>
+<li>输入、输出、推理和缓存命中 Token。</li>
+<li>每任务成本、每租户成本、重试成本。</li>
+<li>首 token、总延迟、上下文压缩耗时。</li>
+<li>上下文使用率、超限率、平均消息数。</li>
+</ul>
+<h3 id="行为指标"><a href="#行为指标" class="headerlink" title="行为指标"></a>行为指标</h3><ul>
+<li>结构化输出通过率。</li>
+<li>任务成功率、工具选择准确率、引用准确率。</li>
+<li>压缩前后事实保留率、数字&#x2F;实体&#x2F;权限规则错误率。</li>
+<li>模型降级后的质量差异。</li>
+</ul>
+<h3 id="运维指标"><a href="#运维指标" class="headerlink" title="运维指标"></a>运维指标</h3><ul>
+<li>Prompt&#x2F;Schema&#x2F;模型版本的失败分布。</li>
+<li>缓存命中下降、上下文超限、摘要失败告警。</li>
+<li>单租户突发 Token 消耗和预算拒绝率。</li>
+<li>长任务 P95&#x2F;P99 延迟及其阶段分解。</li>
+</ul>
+<p>为压缩单独准备回归集：长对话、多个冲突事实、包含金额和日期、长工具结果、用户修改约束、人工审批和断点恢复。分别比较“原始上下文”和“压缩上下文”的任务结果，不能只让另一个模型评价摘要是否通顺。</p>
+<h2 id="今天的实践任务"><a href="#今天的实践任务" class="headerlink" title="今天的实践任务"></a>今天的实践任务</h2><p>在 Day 3 的 <code>ModelClient</code> 之上实现一个 <code>ContextBuilder</code>：</p>
+<ul>
+<li>定义固定前缀、任务状态、历史、证据和工具结果五类块。</li>
+<li>为每类块设置 Token 配额、优先级和是否必需。</li>
+<li>模拟上下文达到 70%、85% 和 100% 时的裁剪、摘要、外置和失败策略。</li>
+<li>保存 <code>prompt_version</code>、<code>context_version</code>、<code>summary_version</code> 和每次压缩的来源 ID。</li>
+<li>输出一份成本报告，至少包含输入、输出、缓存命中、压缩调用和重试成本。</li>
+<li>用 10 条长任务样本比较压缩前后的任务成功率、关键事实保留率和 P95 延迟。</li>
+</ul>
+<p>提交物是 <code>ContextBuilder</code> 接口、预算分配表、两种压缩策略的对比记录和一份可以解释“为什么删掉这段历史”的 trace。下一篇先用 Golden Set 检查 Prompt 和上下文策略的改动是否安全，再做压缩实验。</p>
+<h2 id="近期面试题整理（检索日期：2026-10-30）"><a href="#近期面试题整理（检索日期：2026-10-30）" class="headerlink" title="近期面试题整理（检索日期：2026-10-30）"></a>近期面试题整理（检索日期：2026-10-30）</h2><p>以下题目来自近期公开面经和题库页面，页面多数标注原始来源为牛客网；聚合页面的解析经过整理，适合练习回答结构，不能替代真实代码和评测。</p>
+<h3 id="1-Agent-上下文越来越长，应该怎样处理？"><a href="#1-Agent-上下文越来越长，应该怎样处理？" class="headerlink" title="1. Agent 上下文越来越长，应该怎样处理？"></a>1. Agent 上下文越来越长，应该怎样处理？</h3><p><strong>方向：</strong> 上下文工程；<strong>难度：</strong> 中高。</p>
+<p>先给 system、任务状态、检索证据、最近历史和工具结果分别设置 Token 配额，超过阈值按优先级处理：先裁剪重复内容，再做阶段摘要，长结果外置并保留 <code>result_id</code>、摘要和查询条件，独立子任务使用独立上下文。金额、时间、编号、权限、用户目标和未完成事项不能只放在自然语言摘要里，必须结构化保存。</p>
+<p><strong>追问：</strong> 为什么不能把 1M 上下文窗口全部用满？</p>
+<p>因为输入 Token 仍会消耗延迟和成本，噪声会稀释注意力，输出还需要预留空间；窗口大不代表把全量历史都送进去是最优方案。</p>
+<p>来源：<a href="https://mj.mianlingai.com/interview/kuaishou-agent-first-round-931679347587444736/">快手 Agent 开发一面：工具兜底、多 Agent 与流式解析</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="2-上下文压缩时应该保留什么，如何证明没有压坏任务？"><a href="#2-上下文压缩时应该保留什么，如何证明没有压坏任务？" class="headerlink" title="2. 上下文压缩时应该保留什么，如何证明没有压坏任务？"></a>2. 上下文压缩时应该保留什么，如何证明没有压坏任务？</h3><p><strong>方向：</strong> Agent 记忆与可靠性；<strong>难度：</strong> 中高。</p>
+<p>保留当前目标和完成标准、硬约束与授权、已确认事实、任务状态、决策及依据、未完成事项，以及可回查的工具结果和文档引用。压缩后对数字、实体、否定关系、权限和状态做规则校验，再用长任务回归集比较任务成功率、事实保留率、引用准确率和成本，而不是只评价摘要是否通顺。</p>
+<p><strong>追问：</strong> 压缩发现新旧事实冲突怎么办？</p>
+<p>两个版本都保留来源和时间，在状态层显式标记当前生效版本；需要时回查原始事件，不能让摘要静默覆盖旧事实。</p>
+<p>来源：<a href="https://www.nowcoder.com/discuss/933731739082510336?sourceSSR=dynamic&weFlow=true">阿里云 AI Agent 算法一面面经：上下文压缩时保留什么信息</a>（页面标注时间 2026-09-01、来源为牛客网）。</p>
+<h3 id="3-为什么-Prompt、工具定义和-Skill-顺序会影响缓存命中？"><a href="#3-为什么-Prompt、工具定义和-Skill-顺序会影响缓存命中？" class="headerlink" title="3. 为什么 Prompt、工具定义和 Skill 顺序会影响缓存命中？"></a>3. 为什么 Prompt、工具定义和 Skill 顺序会影响缓存命中？</h3><p><strong>方向：</strong> Prompt 版本与性能；<strong>难度：</strong> 中高。</p>
+<p>Prompt Cache 通常匹配完整的前缀。系统指令、工具 Schema、工具顺序或中间内容变化，会让后续 Token 无法复用。工程上应把稳定规则和工具定义放在前面，动态用户输入、检索结果和工具返回放在后面，并保持同一版本内的字节级稳定；同时用 <code>cached_tokens</code>、首 token 延迟和实际费用验证，而不是假设命中。</p>
+<p><strong>追问：</strong> 压缩后 Token 变少，为什么缓存命中率可能反而下降？</p>
+<p>压缩会重写早期上下文，新的前缀与旧缓存不再完全匹配。应保留稳定前缀，把变化集中在后缀，并比较“缓存损失”和“输入 Token 减少”哪个更省钱。</p>
+<p>来源：<a href="https://mj.mianlingai.com/interview/tencent-marketing-backend-2916638/">腾讯营销后端一面：Agent 上下文体系与多路归并</a>（页面标注时间 2026-09、来源为牛客网）；缓存机制参考<a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方文档</a>。</p>
+<h3 id="4-如何降低-Agent-的-Token-成本？"><a href="#4-如何降低-Agent-的-Token-成本？" class="headerlink" title="4. 如何降低 Agent 的 Token 成本？"></a>4. 如何降低 Agent 的 Token 成本？</h3><p><strong>方向：</strong> AI 平台与成本治理；<strong>难度：</strong> 中高。</p>
+<p>先减少输入：检索只取相关片段、工具按需加载、历史滚动摘要、去重 Few-shot；再提高稳定前缀的缓存命中；限制输出解释和 JSON 字段；合并可并行步骤、减少模型轮次；最后按任务难度路由模型。每种优化都要在固定评测集上同时看质量、P95 延迟和每成功任务成本，不能只看账单下降。</p>
+<p><strong>追问：</strong> 简单任务都切到小模型，质量下降怎么办？</p>
+<p>先定义任务分级和质量基线，使用小模型做分类&#x2F;改写&#x2F;摘要等低风险步骤；质量不达标时回退大模型或请求人工确认，并把路由版本记录在 trace 中。</p>
+<p>来源：<a href="https://mj.mianlingai.com/interview/tencent-backend-social-2915915/">腾讯社招一面面经（Agent 方向）</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h3 id="5-长流程-Agent-的上下文超限和延迟如何定位？"><a href="#5-长流程-Agent-的上下文超限和延迟如何定位？" class="headerlink" title="5. 长流程 Agent 的上下文超限和延迟如何定位？"></a>5. 长流程 Agent 的上下文超限和延迟如何定位？</h3><p><strong>方向：</strong> Agent 性能与可观测性；<strong>难度：</strong> 高。</p>
+<p>用同一个 <code>trace_id</code> 拆分排队、模型首 token、模型总耗时、工具等待、重试、上下文压缩、锁和连接池等待，比较 P95&#x2F;P99 而不是只看均值。再按任务类型、模型&#x2F;Prompt&#x2F;工具版本和上下文长度切分，验证是上下文膨胀、重复工具调用、重试放大还是下游等待。修复后用相同任务集做回归。</p>
+<p><strong>追问：</strong> 1M 上下文还不够怎么办？</p>
+<p>先缩小当前任务目标，做分层摘要和外置索引，把独立工作拆给子 Agent，保留可回查的原文；如果业务仍需要全量信息，考虑专门检索、批处理或异步工作流，不能只继续提高窗口上限。</p>
+<p>来源：<a href="https://mj.mianlingai.com/interview/mihoyo-ai-agent-938914757099130880/">米哈游 AI Agent 一面：代码生成链路、并发隔离与手撕 LRU</a>（页面标注时间 2026-10、来源为牛客网）；性能排查思路参考<a href="https://mj.mianlingai.com/interview/bytedance-ai-agent-first-round-933733520864706560/">字节跳动 AI Agent 开发一面面经</a>（页面标注时间 2026-09、来源为牛客网）。</p>
+<h2 id="今日资料"><a href="#今日资料" class="headerlink" title="今日资料"></a>今日资料</h2><ul>
+<li><a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt Caching 官方指南</a>：稳定前缀、缓存命中、缓存 Token 和监控方法。</li>
+<li><a href="https://developers.openai.com/api/docs/guides/prompting">OpenAI Prompting 官方指南</a>：Prompt 组织、版本维护和缓存前缀建议。</li>
+<li><a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">Day 3：统一 ModelClient</a>：消息、结构化输出、流式事件、超时和重试边界。</li>
+</ul>
+<p>下一篇用 Golden Set 建立 Prompt 回归门槛；随后用实测数据比较原始上下文、截断与结构化压缩。Embedding 和模型路由会在第 1 月后续专题展开。</p>
+]]></content>
+      <categories>
+        <category>AI工程</category>
+      </categories>
+      <tags>
+        <tag>AI全栈</tag>
+        <tag>模型工程</tag>
+        <tag>Token</tag>
+        <tag>上下文工程</tag>
+        <tag>成本控制</tag>
+        <tag>Prompt</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>区块链系列——分布式核心问题</title>
     <url>/articles/Blockchain-Distributed-issues.html</url>
     <content><![CDATA[<h1 id="分布式核心问题"><a href="#分布式核心问题" class="headerlink" title="分布式核心问题"></a>分布式核心问题</h1><p>随着摩尔定律遇到瓶颈，越来越多情况下要依靠分布式架构，才能实现海量数据处理能力和可扩展计算能力。</p>
@@ -1808,6 +2097,11 @@
       </tags>
   </entry>
   <entry>
+    <title>区块链系列——浅谈以太坊</title>
+    <url>/articles/Blockchain-Ethereum.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
     <title>超级账本——面向企业的分布式账本</title>
     <url>/articles/Blockchain-Hyperledger.html</url>
     <content><![CDATA[<p>超级账本（Hyperledger）项目是首个面向企业应用场景的开源分布式账本平台。</p>
@@ -1940,11 +2234,6 @@
         <tag>Fabric</tag>
         <tag>Hyperledger</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>区块链系列——浅谈以太坊</title>
-    <url>/articles/Blockchain-Ethereum.html</url>
-    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title>区块链系列——浅谈比特币</title>
@@ -3945,6 +4234,77 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       </tags>
   </entry>
   <entry>
+    <title>这位大叔，生日快乐</title>
+    <url>/articles/Essay-Happy-Birthday.html</url>
+    <content><![CDATA[<p>24岁生日快乐。</p>
+<p><del> 少年 </del>？</p>
+<p>不存在的，已经大叔了。天天煮心灵鸡汤那种大叔。</p>
+<span id="more"></span>
+
+<p>有两个事情，今天高兴一下。</p>
+<ul>
+<li><p>个人主页正式调试完毕，所有功能齐全。</p>
+</li>
+<li><p>摊上一个好领导，说过段时间让我去安全部试试。</p>
+</li>
+</ul>
+<p>说实话有时候虽然在公司挺努力的，但是还是觉得自己做的太少了。</p>
+<p>辣鸡。</p>
+<p>不过至少前途，是能看到光明的。</p>
+<p>现在才懂了付出了是真的会有结果的。</p>
+<p>只是一天天变得坚硬而冷淡了。</p>
+<p>莫名其妙。</p>
+<p>打开各种游戏试了试，嗯，已经<strong>手残</strong>了。</p>
+<p>也不知道自己都写啥了，差不多要去睡觉了。</p>
+<p>晚安。</p>
+]]></content>
+      <categories>
+        <category>闲言碎语</category>
+      </categories>
+      <tags>
+        <tag>随笔</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>有趣的男人自带烧钱属性</title>
+    <url>/articles/Essay-Interesting-Boy.html</url>
+    <content><![CDATA[<p>都说好看的女孩子自带烧钱属性。其实有趣的男生何尝不是如此呢？</p>
+<span id="more"></span>
+
+<p>很多人觉得一个男生每天有什么好忙的，一套格子衫就能穿上一个季度，又不需要保养品，干嘛那么努力挣钱。我当时就笑了。如果你认识一个有趣的男生，你就会了解，有趣是有代价的。他自己组装的PC、雷蛇机械键盘、森海塞尔耳机的价格可能让你瞠目结舌，各式各样的Steam游戏抵得上限量款香奈儿圣诞口红价格。他时常去旅行，对各种相机和镜头如数家珍，周末去健身房撸铁打拳（但是不会撩妹）。正是这些元素撑起了他的有趣。这都需要钱。</p>
+<p>其实自己也时常会有这样的想法：我是不是太浪费钱了；我要不要谈恋爱了；我还得买车买房啊；我还需要很多钱和喜欢的人约会旅行吃大餐啊……其实蛮纠结的。</p>
+<p>但有时候会想象到，一个宅男算得上是个完美男友，整日只想着存钱给女朋友买房子，省吃俭用，不打游戏不旅行，一件格子衬衣加洗得发白的牛仔裤可以穿两三年，节假日舍不得出去旅游，只在窝在家里陪女友刷剧。有一天妹子参加同学聚会，立刻被初恋吸引住了。这个有趣的男人，可以滔滔不绝地讲在北欧旅行路过的小镇，在阿尔卑斯山滑雪，三文鱼、牛排配红酒的各种吃法。聚会后，妹子跟着初恋回了家，看到一墙的旅拍，一柜子的相机镜头，还有手办和航模，男人讲自己经常逛的展览，侃侃而谈。妹子被这样的初恋又吸引了，旧情复燃果断出轨。</p>
+<p>宅男伤心极了，反正房子也不买了，钱留着也没用，就大方地去潇洒吧。于是他买了自己一直想买的咖啡机，组装了四路泰坦的顶配电脑，衣柜里摆满了潮牌鞋服，配了一块儿手表，余下的钱给爸妈买了保险，陪爸妈出去旅游。</p>
+<p>几个月后，他变了。谈吐间透露出男人的有趣和健谈。</p>
+<p>我想，也许，就算你买下全部的电脑外设和 Steam 游戏，全部的 AJ 和百达翡丽手表，全部的相机镜头，不喜欢的人可能还是不会喜欢你，但喜欢你的人，会越来越多。最重要的是，你会爱上一个有趣的自己。</p>
+<p>男生为什么要有钱？</p>
+<p>我想大概是为了过上更好的生活，买得起更多的电子产品、游戏和设备，最后遇见并爱上一个女孩子，跟她一起奋斗并且度过这一生吧。</p>
+<p>要买 NVIDIA 2080Ti，Conan 5D5，Sony A7R3，DJI Inspire 2……各种电子设备在男人眼里都是最好的玩具。</p>
+<p>要去家旁边最好的健身房办十年卡，请最好的私教上常规课、拳课、拉伸课，苦练胸肌马甲线，去除中年的油腻。</p>
+<p>要去买豪华大气的车，买带阁楼和落地窗的大房子以及高级感的装修，给自己的老婆孩子一个家。</p>
+<p>总而言之，有钱，会让我们变得更有趣。</p>
+<p>想来，这个社会为什么富人更富，穷人更穷，其实是因为，富人不需要担心生活中的琐碎，不需要被各种压力烦恼，可以把精力用在更多提升自己的地方；而穷人终其一生都在为了锅碗瓢盆的琐事困扰、被买房买车的压力压垮，哪里还有精力去提升自己呢？</p>
+<p>你什么都嫌贵，吃的嫌贵，穿的嫌贵，运动嫌贵，设备嫌贵，游戏嫌贵……无论做什么都嫌贵，自己就变得廉价，别人也会嫌你廉价。</p>
+<p>所以男人最好的状态应该是，我能赚钱养家，也能让自己变得好玩有趣。</p>
+<p>从今天起，做一个有趣的男孩儿，面向大海，摁下快门，只关心装备和游戏。</p>
+<p>……</p>
+<p>以上，均为扯淡。</p>
+<p>说出来的话多少有点情绪化，甚至显得有点直男癌，可其实很多话是说得夸张了。</p>
+<p>只是看到太多周围的朋友，因为车房婚恋的压力，逐渐变成了赚钱工具，没有了自己的生活和灵魂。</p>
+<p>当然了，年轻人也要攒钱啊，我自己也因为买相机和健身，在一段时间变得有些狼狈，负债还钱的滋味并不好受。但是我也不会后悔，因为作为程序员，必须要随时想好自己的后路，30 多岁做不动的时候，那时候也是生活压力最大的时候，我还能通过什么来继续维持生活呢？对于我来讲，是摄影，是美食，是写作。所以我年轻时候烧的钱，以后还会通过这些赚回来，顺便假装自己是个文艺青年。</p>
+<p>本杰明·富兰克林说过：“有些人二十五岁就死了，只是到七十五岁才被埋葬。”</p>
+<p>我想和最爱的人，在一起活到疯狂到一百岁。</p>
+<p>以上。</p>
+]]></content>
+      <categories>
+        <category>闲言碎语</category>
+      </categories>
+      <tags>
+        <tag>随笔</tag>
+        <tag>杂谈</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>爱与尊重</title>
     <url>/articles/Essay-Love-and-Respect.html</url>
     <content><![CDATA[<p><strong>最成熟的爱，是尊重对方，让他成长为最好的自己。</strong></p>
@@ -3994,77 +4354,6 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
 <blockquote>
 <p>你相信自己能变得更好，而不是紧张地怀疑自己是否做错了什么。</p>
 </blockquote>
-]]></content>
-      <categories>
-        <category>闲言碎语</category>
-      </categories>
-      <tags>
-        <tag>随笔</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>有趣的男人自带烧钱属性</title>
-    <url>/articles/Essay-Interesting-Boy.html</url>
-    <content><![CDATA[<p>都说好看的女孩子自带烧钱属性。其实有趣的男生何尝不是如此呢？</p>
-<span id="more"></span>
-
-<p>很多人觉得一个男生每天有什么好忙的，一套格子衫就能穿上一个季度，又不需要保养品，干嘛那么努力挣钱。我当时就笑了。如果你认识一个有趣的男生，你就会了解，有趣是有代价的。他自己组装的PC、雷蛇机械键盘、森海塞尔耳机的价格可能让你瞠目结舌，各式各样的Steam游戏抵得上限量款香奈儿圣诞口红价格。他时常去旅行，对各种相机和镜头如数家珍，周末去健身房撸铁打拳（但是不会撩妹）。正是这些元素撑起了他的有趣。这都需要钱。</p>
-<p>其实自己也时常会有这样的想法：我是不是太浪费钱了；我要不要谈恋爱了；我还得买车买房啊；我还需要很多钱和喜欢的人约会旅行吃大餐啊……其实蛮纠结的。</p>
-<p>但有时候会想象到，一个宅男算得上是个完美男友，整日只想着存钱给女朋友买房子，省吃俭用，不打游戏不旅行，一件格子衬衣加洗得发白的牛仔裤可以穿两三年，节假日舍不得出去旅游，只在窝在家里陪女友刷剧。有一天妹子参加同学聚会，立刻被初恋吸引住了。这个有趣的男人，可以滔滔不绝地讲在北欧旅行路过的小镇，在阿尔卑斯山滑雪，三文鱼、牛排配红酒的各种吃法。聚会后，妹子跟着初恋回了家，看到一墙的旅拍，一柜子的相机镜头，还有手办和航模，男人讲自己经常逛的展览，侃侃而谈。妹子被这样的初恋又吸引了，旧情复燃果断出轨。</p>
-<p>宅男伤心极了，反正房子也不买了，钱留着也没用，就大方地去潇洒吧。于是他买了自己一直想买的咖啡机，组装了四路泰坦的顶配电脑，衣柜里摆满了潮牌鞋服，配了一块儿手表，余下的钱给爸妈买了保险，陪爸妈出去旅游。</p>
-<p>几个月后，他变了。谈吐间透露出男人的有趣和健谈。</p>
-<p>我想，也许，就算你买下全部的电脑外设和 Steam 游戏，全部的 AJ 和百达翡丽手表，全部的相机镜头，不喜欢的人可能还是不会喜欢你，但喜欢你的人，会越来越多。最重要的是，你会爱上一个有趣的自己。</p>
-<p>男生为什么要有钱？</p>
-<p>我想大概是为了过上更好的生活，买得起更多的电子产品、游戏和设备，最后遇见并爱上一个女孩子，跟她一起奋斗并且度过这一生吧。</p>
-<p>要买 NVIDIA 2080Ti，Conan 5D5，Sony A7R3，DJI Inspire 2……各种电子设备在男人眼里都是最好的玩具。</p>
-<p>要去家旁边最好的健身房办十年卡，请最好的私教上常规课、拳课、拉伸课，苦练胸肌马甲线，去除中年的油腻。</p>
-<p>要去买豪华大气的车，买带阁楼和落地窗的大房子以及高级感的装修，给自己的老婆孩子一个家。</p>
-<p>总而言之，有钱，会让我们变得更有趣。</p>
-<p>想来，这个社会为什么富人更富，穷人更穷，其实是因为，富人不需要担心生活中的琐碎，不需要被各种压力烦恼，可以把精力用在更多提升自己的地方；而穷人终其一生都在为了锅碗瓢盆的琐事困扰、被买房买车的压力压垮，哪里还有精力去提升自己呢？</p>
-<p>你什么都嫌贵，吃的嫌贵，穿的嫌贵，运动嫌贵，设备嫌贵，游戏嫌贵……无论做什么都嫌贵，自己就变得廉价，别人也会嫌你廉价。</p>
-<p>所以男人最好的状态应该是，我能赚钱养家，也能让自己变得好玩有趣。</p>
-<p>从今天起，做一个有趣的男孩儿，面向大海，摁下快门，只关心装备和游戏。</p>
-<p>……</p>
-<p>以上，均为扯淡。</p>
-<p>说出来的话多少有点情绪化，甚至显得有点直男癌，可其实很多话是说得夸张了。</p>
-<p>只是看到太多周围的朋友，因为车房婚恋的压力，逐渐变成了赚钱工具，没有了自己的生活和灵魂。</p>
-<p>当然了，年轻人也要攒钱啊，我自己也因为买相机和健身，在一段时间变得有些狼狈，负债还钱的滋味并不好受。但是我也不会后悔，因为作为程序员，必须要随时想好自己的后路，30 多岁做不动的时候，那时候也是生活压力最大的时候，我还能通过什么来继续维持生活呢？对于我来讲，是摄影，是美食，是写作。所以我年轻时候烧的钱，以后还会通过这些赚回来，顺便假装自己是个文艺青年。</p>
-<p>本杰明·富兰克林说过：“有些人二十五岁就死了，只是到七十五岁才被埋葬。”</p>
-<p>我想和最爱的人，在一起活到疯狂到一百岁。</p>
-<p>以上。</p>
-]]></content>
-      <categories>
-        <category>闲言碎语</category>
-      </categories>
-      <tags>
-        <tag>随笔</tag>
-        <tag>杂谈</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>这位大叔，生日快乐</title>
-    <url>/articles/Essay-Happy-Birthday.html</url>
-    <content><![CDATA[<p>24岁生日快乐。</p>
-<p><del> 少年 </del>？</p>
-<p>不存在的，已经大叔了。天天煮心灵鸡汤那种大叔。</p>
-<span id="more"></span>
-
-<p>有两个事情，今天高兴一下。</p>
-<ul>
-<li><p>个人主页正式调试完毕，所有功能齐全。</p>
-</li>
-<li><p>摊上一个好领导，说过段时间让我去安全部试试。</p>
-</li>
-</ul>
-<p>说实话有时候虽然在公司挺努力的，但是还是觉得自己做的太少了。</p>
-<p>辣鸡。</p>
-<p>不过至少前途，是能看到光明的。</p>
-<p>现在才懂了付出了是真的会有结果的。</p>
-<p>只是一天天变得坚硬而冷淡了。</p>
-<p>莫名其妙。</p>
-<p>打开各种游戏试了试，嗯，已经<strong>手残</strong>了。</p>
-<p>也不知道自己都写啥了，差不多要去睡觉了。</p>
-<p>晚安。</p>
 ]]></content>
       <categories>
         <category>闲言碎语</category>
@@ -4920,6 +5209,21 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       </tags>
   </entry>
   <entry>
+    <title>Java 基础（二）异常体系</title>
+    <url>/articles/Java-Basics-Exception.html</url>
+    <content><![CDATA[<p>Java 异常体系和常见异常，一篇搞定！</p>
+<span id="more"></span>
+]]></content>
+      <categories>
+        <category>Java</category>
+      </categories>
+      <tags>
+        <tag>面试</tag>
+        <tag>Java</tag>
+        <tag>异常</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Java 基础（一）Java 关键字</title>
     <url>/articles/Java-Basics-Keywords.html</url>
     <content><![CDATA[<p>Java 关键字一篇搞定！</p>
@@ -5263,21 +5567,6 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       <tags>
         <tag>面试</tag>
         <tag>Java</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Java 基础（二）异常体系</title>
-    <url>/articles/Java-Basics-Exception.html</url>
-    <content><![CDATA[<p>Java 异常体系和常见异常，一篇搞定！</p>
-<span id="more"></span>
-]]></content>
-      <categories>
-        <category>Java</category>
-      </categories>
-      <tags>
-        <tag>面试</tag>
-        <tag>Java</tag>
-        <tag>异常</tag>
       </tags>
   </entry>
   <entry>
@@ -7095,58 +7384,6 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       </tags>
   </entry>
   <entry>
-    <title>Agent 工具调用怎么做才安全：权限、审批与审计</title>
-    <url>/articles/Agent-Tool-Calling-Security.html</url>
-    <content><![CDATA[<p>Agent 一旦可以查询订单、修改配置或发送消息，工具调用就不再是普通的函数调用，而是一次由自然语言触发的业务操作。模型可能误解用户意图，外部材料可能包含恶意指令，工具返回的数据也可能被拼接到下一轮提示词中。</p>
-<p>因此，安全边界不能只写在系统提示词里。模型可以提出动作，但真正决定“能不能做、对什么对象做、做完是否生效”的，应该是独立于模型的策略和执行层。</p>
-<span id="more"></span>
-
-<h2 id="先画出工具调用的信任边界"><a href="#先画出工具调用的信任边界" class="headerlink" title="先画出工具调用的信任边界"></a>先画出工具调用的信任边界</h2><p>一次调用至少经过四个主体：用户、Agent 编排器、策略引擎和业务工具。用户身份决定任务范围，编排器负责组织步骤，策略引擎负责授权，工具服务负责最后的业务校验。任何一层都不应假设前一层已经做完全部检查。</p>
-<p>可以把工具按照风险分为三类：</p>
-<ul>
-<li>只读工具，例如查询知识和读取订单。</li>
-<li>可逆写入工具，例如创建草稿、生成待审批配置。</li>
-<li>不可逆或外部影响工具，例如付款、删除数据、发布内容和向外部发送消息。</li>
-</ul>
-<p>风险等级应决定授权方式、审计粒度和是否需要人工确认，而不是决定模型能否调用某个函数名。</p>
-<h2 id="工具契约要写清楚"><a href="#工具契约要写清楚" class="headerlink" title="工具契约要写清楚"></a>工具契约要写清楚</h2><p>工具定义需要同时描述机器可校验的 schema 和人可以理解的语义。例如：</p>
-<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ticket.comment.create&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span> <span class="string">&quot;在指定工单下创建内部评论，不会对客户可见&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;input_schema&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;object&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;required&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;ticket_id&quot;</span><span class="punctuation">,</span> <span class="string">&quot;body&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;properties&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;ticket_id&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;body&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;maxLength&quot;</span><span class="punctuation">:</span> <span class="number">4000</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;risk&quot;</span><span class="punctuation">:</span> <span class="string">&quot;reversible_write&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;requires_approval&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;idempotency_key&quot;</span><span class="punctuation">:</span> <span class="string">&quot;required&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p><code>description</code> 不能把“可做什么”和“不能做什么”混在模糊的自然语言里。读写应拆成独立工具，参数的枚举、长度、数量和资源归属应在 schema 与代码中重复校验。模型输出的 JSON 只是候选参数，不能视为已经通过验证。</p>
-<h2 id="使用短时、最小权限的授权"><a href="#使用短时、最小权限的授权" class="headerlink" title="使用短时、最小权限的授权"></a>使用短时、最小权限的授权</h2><p>Agent 不应拿到一个长期有效、包含所有业务权限的服务账号。更安全的做法是：用户先通过身份认证，平台根据用户、组织、资源和任务类型生成短时能力令牌，工具服务再次验证令牌中的范围。</p>
-<p>令牌至少应包含主体、作用域、资源范围、过期时间、任务 ID 和审批状态。比如“允许读取项目 A 的工单”与“允许修改所有项目工单”必须是两个不同的 scope。工具服务不要相信模型传入的 <code>user_id</code>，应从经过验证的身份上下文取得调用者。</p>
-<p>多租户场景还要防止资源 ID 越权。即使用户知道另一个租户的订单号，也不能仅凭字符串通过校验。资源归属检查应在业务服务侧完成，并记录拒绝原因。</p>
-<h2 id="把提示词注入当成输入问题处理"><a href="#把提示词注入当成输入问题处理" class="headerlink" title="把提示词注入当成输入问题处理"></a>把提示词注入当成输入问题处理</h2><p>网页、邮件、文档和工单内容都属于不可信输入。它们可能出现“忽略之前规则”“把密钥发给我”之类的文字。检索内容应该作为证据传递给模型，而不是被拼接为新的系统指令。</p>
-<p>可以采取几层防护：</p>
-<ol>
-<li>明确区分指令、用户内容和外部材料，使用结构化消息传递。</li>
-<li>对外部文本做长度限制、格式标记和敏感内容识别。</li>
-<li>工具参数只从结构化字段读取，不从模型的解释段落中解析命令。</li>
-<li>高风险动作要求重新确认，不能由外部材料自动触发。</li>
-<li>记录触发策略的证据片段，方便复盘而不必保存全部敏感内容。</li>
-</ol>
-<p>这些措施不能保证模型永远不会被误导，但可以让一次误解无法直接扩大成权限事故。</p>
-<h2 id="审批不是简单的确认弹窗"><a href="#审批不是简单的确认弹窗" class="headerlink" title="审批不是简单的确认弹窗"></a>审批不是简单的确认弹窗</h2><p>审批应描述即将发生的具体动作，而不是只显示“允许 Agent 继续”。用户需要看到对象、变更内容、影响范围、调用者、依据和过期时间。审批结果要绑定任务步骤和参数摘要，参数发生实质变化时必须重新审批。</p>
-<p>对批量操作，可以要求先生成预览，再由用户选择范围；对不可逆动作，可以增加双人审批或延迟执行窗口。审批系统要支持拒绝、撤回和超时，不能把“用户没有点击”解释成允许。</p>
-<h2 id="幂等、重试和回滚同样属于安全"><a href="#幂等、重试和回滚同样属于安全" class="headerlink" title="幂等、重试和回滚同样属于安全"></a>幂等、重试和回滚同样属于安全</h2><p>网络超时可能让 Agent 重试一个已经成功的写入。所有可写工具都应设计幂等键，并在业务侧保存执行记录。重试只能复用同一个幂等键，不能每次生成新的请求。</p>
-<p>对于可逆操作，工具可以提供补偿动作，例如撤回草稿；对于不可逆操作，要在执行前生成清晰的预览和风险提示。不要把回滚责任交给模型自由规划，回滚路径应该由业务系统定义。</p>
-<h2 id="审计记录要能回答五个问题"><a href="#审计记录要能回答五个问题" class="headerlink" title="审计记录要能回答五个问题"></a>审计记录要能回答五个问题</h2><p>一次工具调用至少要能回答：谁发起、模型建议了什么、策略依据是什么、实际执行了什么、结果影响了哪些资源。建议用任务 ID 串起用户消息、模型请求摘要、检索证据、策略决策、审批记录和工具结果。</p>
-<p>日志中避免直接写入完整密码、令牌和敏感正文，可以保存哈希、字段摘要和受控引用。审计数据本身也需要访问权限和保留期限，否则为了追查问题反而制造新的泄露面。</p>
-<h2 id="先做拒绝测试，再做成功测试"><a href="#先做拒绝测试，再做成功测试" class="headerlink" title="先做拒绝测试，再做成功测试"></a>先做拒绝测试，再做成功测试</h2><p>工具安全测试不能只验证“正确参数能执行”。还要覆盖越权资源、过期令牌、缺失审批、参数边界、重复请求、恶意文档、超时重试和取消后的迟到结果。对每个高风险工具，至少准备一组应该拒绝的样例，并将策略版本纳入回归测试。</p>
-<p>Agent 的自主性应随着证据和控制能力一起增加。能安全读资料，不代表可以安全写入；能生成建议，也不代表可以直接替用户做出不可逆决定。把工具当成受控的业务 API，Agent 才能在企业环境中长期运行。</p>
-]]></content>
-      <categories>
-        <category>AI工程</category>
-      </categories>
-      <tags>
-        <tag>Agent</tag>
-        <tag>工程实践</tag>
-        <tag>企业架构</tag>
-        <tag>信息安全</tag>
-        <tag>权限</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>巅峰之旅（一）如何学习 Java</title>
     <url>/articles/Java-How-to-Learn-Java.html</url>
     <content><![CDATA[<p>学习是为了什么？</p>
@@ -7822,6 +8059,48 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       </tags>
   </entry>
   <entry>
+    <title>异步下单之后，还需要补上哪些可靠性环节</title>
+    <url>/articles/Java-SecKill-Reliability-Review.html</url>
+    <content><![CDATA[<p>旧博客的异步下单文章，把请求放进消息队列，再由消费者写订单。它很适合展示一个变化：用户请求不必一直等待完整的数据库操作。</p>
+<p>这次再看代码，更值得继续讨论的是失败以后会发生什么。消息进了队列就一定有订单吗？库存已经更新，但订单插入失败怎么办？用户重复发一次请求，系统认得出来吗？</p>
+<p>下面基于旧学习 demo 做一次代码阅读。它不是生产故障复盘，也没有新的压测结论。</p>
+<span id="more"></span>
+
+<h2 id="先还原代码中的处理顺序"><a href="#先还原代码中的处理顺序" class="headerlink" title="先还原代码中的处理顺序"></a>先还原代码中的处理顺序</h2><p>项目里可以沿 <code>OrderController</code>、<code>OrderMqReceiver</code>、<code>OrderServiceImpl</code> 追踪请求。</p>
+<p>在异步订单方法中，代码依次校验库存、尝试乐观更新、删除库存缓存、写数据库订单，最后写入订单结果缓存。方法开头还有一个用于演示排队的十秒等待。</p>
+<p>这说明它的重点是展示异步流程。实际工程中的排队应当从消息积压、消费者并发和任务耗时中观察，不能把演示用的等待当成处理策略。</p>
+<h2 id="请求受理和订单成功，需要两个结果"><a href="#请求受理和订单成功，需要两个结果" class="headerlink" title="请求受理和订单成功，需要两个结果"></a>请求受理和订单成功，需要两个结果</h2><p>前端收到接口响应时，后台可能还没有开始处理订单。</p>
+<p>可以让响应返回一个可查询的请求编号。客户端先展示“已受理”，再根据结果查询展示成功、库存不足或处理失败。</p>
+<p>消息发布确认和消费者处理确认也要分开。RabbitMQ 的发布确认覆盖发布者到消息代理这一段，不能证明订单已经在业务数据库中创建。两种确认的边界可以参考 <a target="_blank" rel="noopener" href="https://www.rabbitmq.com/docs/confirms">RabbitMQ 官方说明</a>。</p>
+<h2 id="乐观更新成功，不代表整个下单操作都成功"><a href="#乐观更新成功，不代表整个下单操作都成功" class="headerlink" title="乐观更新成功，不代表整个下单操作都成功"></a>乐观更新成功，不代表整个下单操作都成功</h2><p>旧代码中，异步方法先更新库存，再插入订单。这个方法自身没有声明 <code>@Transactional</code>；同一个类里的悲观下单方法则明确声明了事务。</p>
+<p>这是代码阅读发现的边界问题，不是已经验证的运行时故障。还应检查外层调用及事务配置，才能判断实际运行范围。</p>
+<p>不过要设计这条链路，必须明确回答：库存更新成功而订单插入失败时，前者是否回滚？如果两者使用同一个数据库，通常可以把扣库存和建订单放在明确的本地事务里；缓存更新与结果通知还要设计提交后的处理和失败修复。</p>
+<p>加了注解也要验证调用方式。Spring 默认代理模式下，同一对象内部的自调用不会经过事务代理，详见 <a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html">Spring 事务文档</a>。</p>
+<h2 id="消费者捕获异常以后，谁来决定重试"><a href="#消费者捕获异常以后，谁来决定重试" class="headerlink" title="消费者捕获异常以后，谁来决定重试"></a>消费者捕获异常以后，谁来决定重试</h2><p><code>OrderMqReceiver.process</code> 捕获下单方法的异常后只记录日志，然后正常返回。</p>
+<p>不能只看这一段就断言消息一定丢失，因为实际确认行为还取决于监听容器配置。但它提出了一个必须核对的问题：业务失败以后，框架是否还能感知失败，消息会重试、进入失败队列，还是被当作正常处理结束？</p>
+<p>对可恢复错误可以设置有上限的重试；对库存不足这类业务终态，应记录明确结果；超过重试条件的消息应留下可查询、可处理的失败记录。具体确认时机需要与数据库提交顺序一起设计。</p>
+<h2 id="幂等需要落到稳定的业务标识"><a href="#幂等需要落到稳定的业务标识" class="headerlink" title="幂等需要落到稳定的业务标识"></a>幂等需要落到稳定的业务标识</h2><p>在入口查缓存，发现用户尚未下单，可以减少无效请求。但两个请求可能同时读到“尚未下单”，也可能因为消息重投而进入同一段消费逻辑。</p>
+<p>因此，可以按业务规则选择请求编号、活动与用户组合等稳定标识，并通过数据库约束与事务内检查保障重复处理不会生成第二份业务结果。已经完成的请求再次到达时，应返回或查询已有结果。</p>
+<p>缓存可以帮助查询和削减流量，但不应成为判断唯一业务结果的唯一依据。</p>
+<h2 id="结果查询也需要区分状态"><a href="#结果查询也需要区分状态" class="headerlink" title="结果查询也需要区分状态"></a>结果查询也需要区分状态</h2><p>缓存里查不到订单，可能表示尚未处理，也可能表示订单落库成功后缓存写入失败。只用一个布尔值，很难解释这些差异。</p>
+<p>一个简化的结果模型可以包含 <code>ACCEPTED</code>、<code>PROCESSING</code>、<code>SUCCEEDED</code>、<code>REJECTED</code>、<code>FAILED</code>。这些是设计示例，并非旧项目已经实现的状态。状态应有明确的持久化位置、更新时间和查询路径；“没查到”与“已失败”需要分开处理。</p>
+<h2 id="下一次实验，优先验证失败路径"><a href="#下一次实验，优先验证失败路径" class="headerlink" title="下一次实验，优先验证失败路径"></a>下一次实验，优先验证失败路径</h2><p>与其只比较接口平均耗时，更有价值的是构造几个确定的失败点：库存更新后订单插入失败；数据库提交后消费者进程退出；同一消息重复到达；订单成功后缓存不可用；乐观更新因并发竞争失败。</p>
+<p>每次都检查数据库结果、消息状态和用户可查询的结果是否一致。性能实验则另外固定消费者数量、数据库连接池、请求规模与硬件条件。</p>
+<p>异步化改变了等待的位置，也把可靠性问题分散到了多个步骤。把这些步骤逐个说清楚，旧 demo 就能继续成为理解工程问题的好材料。</p>
+<p>代码来源：<a target="_blank" rel="noopener" href="https://github.com/MrShadowalker/secKill">secKill</a>，本次阅读基于<a target="_blank" rel="noopener" href="https://github.com/MrShadowalker/secKill/tree/1f7d43a597add6e4c68cbb6c60a18913348be49a">提交 <code>1f7d43a597ad</code></a>；原系列：<a href="https://chenzihao.me/articles/Java-SecKill-Asynchronous.html">如何优雅地异步下订单</a>。</p>
+]]></content>
+      <categories>
+        <category>Java</category>
+      </categories>
+      <tags>
+        <tag>工程实践</tag>
+        <tag>Java</tag>
+        <tag>高并发</tag>
+        <tag>分布式</tag>
+        <tag>RabbitMQ</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>秒杀系列（一）防止超卖</title>
     <url>/articles/Java-SecKill-Prevent-Oversold.html</url>
     <content><![CDATA[<h1 id="秒杀系统"><a href="#秒杀系统" class="headerlink" title="秒杀系统"></a>秒杀系统</h1><p>秒杀系统相信网上已经介绍了很多了，我也不想粘贴很多定义过来了。</p>
@@ -7931,48 +8210,6 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
         <tag>Java</tag>
         <tag>高并发</tag>
         <tag>分布式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>异步下单之后，还需要补上哪些可靠性环节</title>
-    <url>/articles/Java-SecKill-Reliability-Review.html</url>
-    <content><![CDATA[<p>旧博客的异步下单文章，把请求放进消息队列，再由消费者写订单。它很适合展示一个变化：用户请求不必一直等待完整的数据库操作。</p>
-<p>这次再看代码，更值得继续讨论的是失败以后会发生什么。消息进了队列就一定有订单吗？库存已经更新，但订单插入失败怎么办？用户重复发一次请求，系统认得出来吗？</p>
-<p>下面基于旧学习 demo 做一次代码阅读。它不是生产故障复盘，也没有新的压测结论。</p>
-<span id="more"></span>
-
-<h2 id="先还原代码中的处理顺序"><a href="#先还原代码中的处理顺序" class="headerlink" title="先还原代码中的处理顺序"></a>先还原代码中的处理顺序</h2><p>项目里可以沿 <code>OrderController</code>、<code>OrderMqReceiver</code>、<code>OrderServiceImpl</code> 追踪请求。</p>
-<p>在异步订单方法中，代码依次校验库存、尝试乐观更新、删除库存缓存、写数据库订单，最后写入订单结果缓存。方法开头还有一个用于演示排队的十秒等待。</p>
-<p>这说明它的重点是展示异步流程。实际工程中的排队应当从消息积压、消费者并发和任务耗时中观察，不能把演示用的等待当成处理策略。</p>
-<h2 id="请求受理和订单成功，需要两个结果"><a href="#请求受理和订单成功，需要两个结果" class="headerlink" title="请求受理和订单成功，需要两个结果"></a>请求受理和订单成功，需要两个结果</h2><p>前端收到接口响应时，后台可能还没有开始处理订单。</p>
-<p>可以让响应返回一个可查询的请求编号。客户端先展示“已受理”，再根据结果查询展示成功、库存不足或处理失败。</p>
-<p>消息发布确认和消费者处理确认也要分开。RabbitMQ 的发布确认覆盖发布者到消息代理这一段，不能证明订单已经在业务数据库中创建。两种确认的边界可以参考 <a target="_blank" rel="noopener" href="https://www.rabbitmq.com/docs/confirms">RabbitMQ 官方说明</a>。</p>
-<h2 id="乐观更新成功，不代表整个下单操作都成功"><a href="#乐观更新成功，不代表整个下单操作都成功" class="headerlink" title="乐观更新成功，不代表整个下单操作都成功"></a>乐观更新成功，不代表整个下单操作都成功</h2><p>旧代码中，异步方法先更新库存，再插入订单。这个方法自身没有声明 <code>@Transactional</code>；同一个类里的悲观下单方法则明确声明了事务。</p>
-<p>这是代码阅读发现的边界问题，不是已经验证的运行时故障。还应检查外层调用及事务配置，才能判断实际运行范围。</p>
-<p>不过要设计这条链路，必须明确回答：库存更新成功而订单插入失败时，前者是否回滚？如果两者使用同一个数据库，通常可以把扣库存和建订单放在明确的本地事务里；缓存更新与结果通知还要设计提交后的处理和失败修复。</p>
-<p>加了注解也要验证调用方式。Spring 默认代理模式下，同一对象内部的自调用不会经过事务代理，详见 <a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html">Spring 事务文档</a>。</p>
-<h2 id="消费者捕获异常以后，谁来决定重试"><a href="#消费者捕获异常以后，谁来决定重试" class="headerlink" title="消费者捕获异常以后，谁来决定重试"></a>消费者捕获异常以后，谁来决定重试</h2><p><code>OrderMqReceiver.process</code> 捕获下单方法的异常后只记录日志，然后正常返回。</p>
-<p>不能只看这一段就断言消息一定丢失，因为实际确认行为还取决于监听容器配置。但它提出了一个必须核对的问题：业务失败以后，框架是否还能感知失败，消息会重试、进入失败队列，还是被当作正常处理结束？</p>
-<p>对可恢复错误可以设置有上限的重试；对库存不足这类业务终态，应记录明确结果；超过重试条件的消息应留下可查询、可处理的失败记录。具体确认时机需要与数据库提交顺序一起设计。</p>
-<h2 id="幂等需要落到稳定的业务标识"><a href="#幂等需要落到稳定的业务标识" class="headerlink" title="幂等需要落到稳定的业务标识"></a>幂等需要落到稳定的业务标识</h2><p>在入口查缓存，发现用户尚未下单，可以减少无效请求。但两个请求可能同时读到“尚未下单”，也可能因为消息重投而进入同一段消费逻辑。</p>
-<p>因此，可以按业务规则选择请求编号、活动与用户组合等稳定标识，并通过数据库约束与事务内检查保障重复处理不会生成第二份业务结果。已经完成的请求再次到达时，应返回或查询已有结果。</p>
-<p>缓存可以帮助查询和削减流量，但不应成为判断唯一业务结果的唯一依据。</p>
-<h2 id="结果查询也需要区分状态"><a href="#结果查询也需要区分状态" class="headerlink" title="结果查询也需要区分状态"></a>结果查询也需要区分状态</h2><p>缓存里查不到订单，可能表示尚未处理，也可能表示订单落库成功后缓存写入失败。只用一个布尔值，很难解释这些差异。</p>
-<p>一个简化的结果模型可以包含 <code>ACCEPTED</code>、<code>PROCESSING</code>、<code>SUCCEEDED</code>、<code>REJECTED</code>、<code>FAILED</code>。这些是设计示例，并非旧项目已经实现的状态。状态应有明确的持久化位置、更新时间和查询路径；“没查到”与“已失败”需要分开处理。</p>
-<h2 id="下一次实验，优先验证失败路径"><a href="#下一次实验，优先验证失败路径" class="headerlink" title="下一次实验，优先验证失败路径"></a>下一次实验，优先验证失败路径</h2><p>与其只比较接口平均耗时，更有价值的是构造几个确定的失败点：库存更新后订单插入失败；数据库提交后消费者进程退出；同一消息重复到达；订单成功后缓存不可用；乐观更新因并发竞争失败。</p>
-<p>每次都检查数据库结果、消息状态和用户可查询的结果是否一致。性能实验则另外固定消费者数量、数据库连接池、请求规模与硬件条件。</p>
-<p>异步化改变了等待的位置，也把可靠性问题分散到了多个步骤。把这些步骤逐个说清楚，旧 demo 就能继续成为理解工程问题的好材料。</p>
-<p>代码来源：<a target="_blank" rel="noopener" href="https://github.com/MrShadowalker/secKill">secKill</a>，本次阅读基于<a target="_blank" rel="noopener" href="https://github.com/MrShadowalker/secKill/tree/1f7d43a597add6e4c68cbb6c60a18913348be49a">提交 <code>1f7d43a597ad</code></a>；原系列：<a href="https://chenzihao.me/articles/Java-SecKill-Asynchronous.html">如何优雅地异步下订单</a>。</p>
-]]></content>
-      <categories>
-        <category>Java</category>
-      </categories>
-      <tags>
-        <tag>工程实践</tag>
-        <tag>Java</tag>
-        <tag>高并发</tag>
-        <tag>分布式</tag>
-        <tag>RabbitMQ</tag>
       </tags>
   </entry>
   <entry>
@@ -9037,6 +9274,87 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
       </tags>
   </entry>
   <entry>
+    <title>todoList</title>
+    <url>/articles/todoList.html</url>
+    <content><![CDATA[<h1 id="Github-Hexo-搭建个人博客，主题配置"><a href="#Github-Hexo-搭建个人博客，主题配置" class="headerlink" title="Github + Hexo 搭建个人博客，主题配置"></a>Github + Hexo 搭建个人博客，主题配置</h1><p><a target="_blank" rel="noopener" href="http://baixin.io/2015/08/HEXO%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/">参考链接</a> </p>
+<span id="more"></span>
+
+<h2 id="清理工作"><a href="#清理工作" class="headerlink" title="清理工作"></a>清理工作</h2><p>之前既然搭建失败了，那么删掉 Github 项目和本地文件夹。然后从0开始，重新搭建。</p>
+<h2 id="本地环境搭建"><a href="#本地环境搭建" class="headerlink" title="本地环境搭建"></a>本地环境搭建</h2><h3 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h3><p>检测方式，查看版本号：</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">node -v</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">npm -v</span><br></pre></td></tr></table></figure>
+
+<h3 id="Git"><a href="#Git" class="headerlink" title="Git"></a>Git</h3><figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">git --version</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="本地文件夹"><a href="#本地文件夹" class="headerlink" title="本地文件夹"></a>本地文件夹</h2><p>新创建一个本地文件夹，我是命名成 myBlog，符合命名规则，看起来舒服一点。之后进入文件夹，操作都在文件夹中。</p>
+<h2 id="Hexo-配置"><a href="#Hexo-配置" class="headerlink" title="Hexo 配置"></a>Hexo 配置</h2><p>安装</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">sudo</span> npm install -g hexo</span><br></pre></td></tr></table></figure>
+
+<p>初始化</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+
+<p>部署过程，生成静态页面</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>或简写：</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure>
+
+<p>本地启动服务器</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo server</span><br></pre></td></tr></table></figure>
+
+<p>浏览器进入<br><a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000/</a></p>
+<h2 id="Github-配置"><a href="#Github-配置" class="headerlink" title="Github 配置"></a>Github 配置</h2><p>新建仓库，命名为：<br>username.github.io</p>
+<p>去<strong>站点配置文件</strong>_config.yml中：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/username/username.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+
+<p>然后安装提交插件：</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
+
+<p>进行第一次提交：</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>或者简写：</p>
+<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>这时候访问你的主页就好</p>
+<p><a target="_blank" rel="noopener" href="http://username.github.io/">http://username.github.io</a></p>
+<p><strong>以下是部署常用命令</strong></p>
+<p>hexo clean 清除原配置</p>
+<p>hexo generate 部署</p>
+<p>hexo deploy 提交</p>
+<h2 id="主题配置"><a href="#主题配置" class="headerlink" title="主题配置"></a>主题配置</h2><p>选择自己喜欢的主题，然后阅读 README.md 文档，因为不同的主题有各自不同的安装配置方法，并不是通用的。</p>
+<h2 id="其他配置"><a href="#其他配置" class="headerlink" title="其他配置"></a>其他配置</h2><p>头像、图标等配置，页面语言、风格等配置，自己参照之前的网址。</p>
+<h2 id="创作"><a href="#创作" class="headerlink" title="创作"></a>创作</h2><p>常用命令自己看吧，都不难。</p>
+<h1 id="Kali-Win10-虚拟机"><a href="#Kali-Win10-虚拟机" class="headerlink" title="Kali + Win10 虚拟机"></a>Kali + Win10 虚拟机</h1><h1 id="SQL-注入攻击"><a href="#SQL-注入攻击" class="headerlink" title="SQL 注入攻击"></a>SQL 注入攻击</h1><h1 id="PHP-黑魔法"><a href="#PHP-黑魔法" class="headerlink" title="PHP 黑魔法"></a>PHP 黑魔法</h1><h1 id="Python-脚本"><a href="#Python-脚本" class="headerlink" title="Python 脚本"></a>Python 脚本</h1><h1 id="大数据"><a href="#大数据" class="headerlink" title="大数据"></a>大数据</h1><h2 id="理论基础"><a href="#理论基础" class="headerlink" title="理论基础"></a>理论基础</h2><h2 id="技术层面"><a href="#技术层面" class="headerlink" title="技术层面"></a>技术层面</h2><h3 id="云计算"><a href="#云计算" class="headerlink" title="云计算"></a>云计算</h3><h3 id="分布式处理技术"><a href="#分布式处理技术" class="headerlink" title="分布式处理技术"></a>分布式处理技术</h3><h3 id="存储技术"><a href="#存储技术" class="headerlink" title="存储技术"></a>存储技术</h3><h3 id="感知技术"><a href="#感知技术" class="headerlink" title="感知技术"></a>感知技术</h3><h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="互联网大数据"><a href="#互联网大数据" class="headerlink" title="互联网大数据"></a>互联网大数据</h3><h3 id="政府大数据"><a href="#政府大数据" class="headerlink" title="政府大数据"></a>政府大数据</h3><h3 id="企业大数据"><a href="#企业大数据" class="headerlink" title="企业大数据"></a>企业大数据</h3><h3 id="个人大数据"><a href="#个人大数据" class="headerlink" title="个人大数据"></a>个人大数据</h3><h2 id="发展方向"><a href="#发展方向" class="headerlink" title="发展方向"></a>发展方向</h2><h3 id="机器学习-人工智能"><a href="#机器学习-人工智能" class="headerlink" title="机器学习-&gt;人工智能"></a>机器学习-&gt;人工智能</h3><h1 id="未来研究方向，车载系统安全漏洞"><a href="#未来研究方向，车载系统安全漏洞" class="headerlink" title="未来研究方向，车载系统安全漏洞"></a>未来研究方向，车载系统安全漏洞</h1><ul>
+<li><p>远程控制网络（39%）</p>
+</li>
+<li><p>本地网络软件（17%）</p>
+</li>
+<li><p>车载蜂窝网络（16%）</p>
+</li>
+<li><p>CAN网络总线（10%）</p>
+</li>
+<li><p>USB（通用串行总线）设备（13%）</p>
+</li>
+<li><p>车载网络系统串口复制软件Serial（5%）</p>
+</li>
+<li><p>……</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>编程开发</category>
+      </categories>
+      <tags>
+        <tag>Plan</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>如何打造宇宙最强 Macbook</title>
     <url>/articles/Tool-best-Mac.html</url>
     <content><![CDATA[<p>作为开发者，如何打造宇宙最强 Mac 呢？</p>
@@ -9311,87 +9629,6 @@ Ip  #e  Dk  Ck    Zr  Dr  Mx  Ar</pre>
         <tag>工具</tag>
         <tag>教程</tag>
         <tag>Mac</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>todoList</title>
-    <url>/articles/todoList.html</url>
-    <content><![CDATA[<h1 id="Github-Hexo-搭建个人博客，主题配置"><a href="#Github-Hexo-搭建个人博客，主题配置" class="headerlink" title="Github + Hexo 搭建个人博客，主题配置"></a>Github + Hexo 搭建个人博客，主题配置</h1><p><a target="_blank" rel="noopener" href="http://baixin.io/2015/08/HEXO%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/">参考链接</a> </p>
-<span id="more"></span>
-
-<h2 id="清理工作"><a href="#清理工作" class="headerlink" title="清理工作"></a>清理工作</h2><p>之前既然搭建失败了，那么删掉 Github 项目和本地文件夹。然后从0开始，重新搭建。</p>
-<h2 id="本地环境搭建"><a href="#本地环境搭建" class="headerlink" title="本地环境搭建"></a>本地环境搭建</h2><h3 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h3><p>检测方式，查看版本号：</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">node -v</span><br></pre></td></tr></table></figure>
-
-
-
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">npm -v</span><br></pre></td></tr></table></figure>
-
-<h3 id="Git"><a href="#Git" class="headerlink" title="Git"></a>Git</h3><figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">git --version</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="本地文件夹"><a href="#本地文件夹" class="headerlink" title="本地文件夹"></a>本地文件夹</h2><p>新创建一个本地文件夹，我是命名成 myBlog，符合命名规则，看起来舒服一点。之后进入文件夹，操作都在文件夹中。</p>
-<h2 id="Hexo-配置"><a href="#Hexo-配置" class="headerlink" title="Hexo 配置"></a>Hexo 配置</h2><p>安装</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">sudo</span> npm install -g hexo</span><br></pre></td></tr></table></figure>
-
-<p>初始化</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
-
-<p>部署过程，生成静态页面</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>或简写：</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure>
-
-<p>本地启动服务器</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo server</span><br></pre></td></tr></table></figure>
-
-<p>浏览器进入<br><a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000/</a></p>
-<h2 id="Github-配置"><a href="#Github-配置" class="headerlink" title="Github 配置"></a>Github 配置</h2><p>新建仓库，命名为：<br>username.github.io</p>
-<p>去<strong>站点配置文件</strong>_config.yml中：</p>
-<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/username/username.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
-
-<p>然后安装提交插件：</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
-
-<p>进行第一次提交：</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>或者简写：</p>
-<figure class="highlight zsh"><table><tr><td class="code"><pre><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-
-<p>这时候访问你的主页就好</p>
-<p><a target="_blank" rel="noopener" href="http://username.github.io/">http://username.github.io</a></p>
-<p><strong>以下是部署常用命令</strong></p>
-<p>hexo clean 清除原配置</p>
-<p>hexo generate 部署</p>
-<p>hexo deploy 提交</p>
-<h2 id="主题配置"><a href="#主题配置" class="headerlink" title="主题配置"></a>主题配置</h2><p>选择自己喜欢的主题，然后阅读 README.md 文档，因为不同的主题有各自不同的安装配置方法，并不是通用的。</p>
-<h2 id="其他配置"><a href="#其他配置" class="headerlink" title="其他配置"></a>其他配置</h2><p>头像、图标等配置，页面语言、风格等配置，自己参照之前的网址。</p>
-<h2 id="创作"><a href="#创作" class="headerlink" title="创作"></a>创作</h2><p>常用命令自己看吧，都不难。</p>
-<h1 id="Kali-Win10-虚拟机"><a href="#Kali-Win10-虚拟机" class="headerlink" title="Kali + Win10 虚拟机"></a>Kali + Win10 虚拟机</h1><h1 id="SQL-注入攻击"><a href="#SQL-注入攻击" class="headerlink" title="SQL 注入攻击"></a>SQL 注入攻击</h1><h1 id="PHP-黑魔法"><a href="#PHP-黑魔法" class="headerlink" title="PHP 黑魔法"></a>PHP 黑魔法</h1><h1 id="Python-脚本"><a href="#Python-脚本" class="headerlink" title="Python 脚本"></a>Python 脚本</h1><h1 id="大数据"><a href="#大数据" class="headerlink" title="大数据"></a>大数据</h1><h2 id="理论基础"><a href="#理论基础" class="headerlink" title="理论基础"></a>理论基础</h2><h2 id="技术层面"><a href="#技术层面" class="headerlink" title="技术层面"></a>技术层面</h2><h3 id="云计算"><a href="#云计算" class="headerlink" title="云计算"></a>云计算</h3><h3 id="分布式处理技术"><a href="#分布式处理技术" class="headerlink" title="分布式处理技术"></a>分布式处理技术</h3><h3 id="存储技术"><a href="#存储技术" class="headerlink" title="存储技术"></a>存储技术</h3><h3 id="感知技术"><a href="#感知技术" class="headerlink" title="感知技术"></a>感知技术</h3><h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="互联网大数据"><a href="#互联网大数据" class="headerlink" title="互联网大数据"></a>互联网大数据</h3><h3 id="政府大数据"><a href="#政府大数据" class="headerlink" title="政府大数据"></a>政府大数据</h3><h3 id="企业大数据"><a href="#企业大数据" class="headerlink" title="企业大数据"></a>企业大数据</h3><h3 id="个人大数据"><a href="#个人大数据" class="headerlink" title="个人大数据"></a>个人大数据</h3><h2 id="发展方向"><a href="#发展方向" class="headerlink" title="发展方向"></a>发展方向</h2><h3 id="机器学习-人工智能"><a href="#机器学习-人工智能" class="headerlink" title="机器学习-&gt;人工智能"></a>机器学习-&gt;人工智能</h3><h1 id="未来研究方向，车载系统安全漏洞"><a href="#未来研究方向，车载系统安全漏洞" class="headerlink" title="未来研究方向，车载系统安全漏洞"></a>未来研究方向，车载系统安全漏洞</h1><ul>
-<li><p>远程控制网络（39%）</p>
-</li>
-<li><p>本地网络软件（17%）</p>
-</li>
-<li><p>车载蜂窝网络（16%）</p>
-</li>
-<li><p>CAN网络总线（10%）</p>
-</li>
-<li><p>USB（通用串行总线）设备（13%）</p>
-</li>
-<li><p>车载网络系统串口复制软件Serial（5%）</p>
-</li>
-<li><p>……</p>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>编程开发</category>
-      </categories>
-      <tags>
-        <tag>Plan</tag>
       </tags>
   </entry>
 </search>

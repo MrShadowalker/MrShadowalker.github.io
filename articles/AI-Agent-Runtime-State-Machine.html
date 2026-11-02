@@ -74,7 +74,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">4k</span>
+            <span class="post-count">4.1k</span>
         </span>
     </span>
 
@@ -108,7 +108,7 @@ var _hmt = _hmt || [];
 
 <p>这不是要求一开始就部署七个服务。早期可以在一个应用里实现这些模块，但它们应该有独立的接口和测试。将来模型网关、队列、策略服务或工具执行器拆出去时，任务状态不需要跟着重写。</p>
 <h2 id="先定义状态，再写-Agent-Loop"><a href="#先定义状态，再写-Agent-Loop" class="headerlink" title="先定义状态，再写 Agent Loop"></a>先定义状态，再写 Agent Loop</h2><p>状态机的价值是把“做到哪一步”从对话历史中拿出来。一个最小任务状态可以是：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATED</span><br><span class="line">  -&gt; RUNNING</span><br><span class="line">  -&gt; WAITING_FOR_INPUT</span><br><span class="line">  -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">  -&gt; SUCCEEDED</span><br><span class="line">  -&gt; FAILED</span><br><span class="line">  -&gt; CANCELED</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CREATED</span><br><span class="line">  -&gt; RUNNING</span><br><span class="line">  -&gt; WAITING_FOR_INPUT</span><br><span class="line">  -&gt; WAITING_FOR_APPROVAL</span><br><span class="line">  -&gt; WAITING_FOR_HUMAN</span><br><span class="line">  -&gt; SUCCEEDED</span><br><span class="line">  -&gt; FAILED</span><br><span class="line">  -&gt; CANCELED</span><br></pre></td></tr></table></figure>
 
 <p>状态迁移必须有明确的前置条件。比如 <code>WAITING_FOR_APPROVAL</code> 只能由审批结果迁移到 <code>RUNNING</code>，不能让模型返回一个 <code>final=true</code> 就直接变成 <code>SUCCEEDED</code>；<code>CANCELED</code> 之后不允许再执行新的写入步骤。</p>
 <p>可以把迁移规则写成一张表：</p>
@@ -138,6 +138,18 @@ var _hmt = _hmt || [];
 <td><code>need_approval</code></td>
 <td><code>WAITING_FOR_APPROVAL</code></td>
 <td>保存预览和审批摘要</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td><code>handoff_requested</code></td>
+<td><code>WAITING_FOR_HUMAN</code></td>
+<td>保存接管原因与已完成步骤</td>
+</tr>
+<tr>
+<td><code>WAITING_FOR_HUMAN</code></td>
+<td><code>human_resolved</code></td>
+<td><code>RUNNING</code> 或 <code>FAILED</code></td>
+<td>保存人工结论，恢复前重验权限</td>
 </tr>
 <tr>
 <td><code>RUNNING</code></td>
@@ -227,6 +239,7 @@ var _hmt = _hmt || [];
 <p>工具调用本身可能无法立即中断，因此还要在写入边界做第二次检查：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">执行器准备提交工具结果</span><br><span class="line">  -&gt; 读取 task.status 与 task.version</span><br><span class="line">  -&gt; 若已 CANCELED 或版本不匹配，丢弃迟到结果</span><br><span class="line">  -&gt; 若仍可写，使用幂等键提交业务结果</span><br></pre></td></tr></table></figure>
 
+<p>丢弃迟到结果只能阻止本系统继续提交，不能撤销外部服务已经完成的写入。对结果未知的写工具，要用同一业务幂等键查询下游执行记录；确认已生效就记账，必要时走补偿或人工处理。</p>
 <p>总超时和单工具超时要分开。单工具超时只能结束当前调用，总任务超时则应让任务进入 <code>FAILED</code> 或 <code>WAITING_FOR_HUMAN</code>，并保存已经完成的步骤。用户再次恢复时，从最后一个确认步骤继续，而不是从头让模型重复所有副作用。</p>
 <p>如果进程重启，恢复任务的过程也应该由数据库状态驱动：扫描 <code>RUNNING</code> 且心跳过期的任务，将执行租约标记为失效；读取最后一个已确认的 Step，重新构建上下文；对处于不确定结果的工具先调用查询接口；确认没有重复副作用后再继续 Loop。</p>
 <p>长任务也可以交给专门的持久化工作流引擎。比如 <a target="_blank" rel="noopener" href="https://docs.temporal.io/workflows">Temporal Workflow</a> 用事件历史重放工作流状态，并把外部 API、数据库、文件和模型调用放进 Activity；这类设计的核心思想与我们自己实现的 Task&#x2F;Step&#x2F;Event 一致。是否引入框架，要看任务时长、并发、恢复要求和团队运维能力。</p>
