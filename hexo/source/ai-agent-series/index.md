@@ -40,6 +40,7 @@ comments: true
 - **Day 5｜[Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度](/articles/AI-Prompt-Regression-Golden-Set.html)**
 - **Day 6｜[上下文压缩到底省了什么：Token 计量、事实保留与任务成本实验](/articles/AI-Context-Compression-Token-Experiment.html)**
 - **Day 7｜[AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环](/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html)**
+- **Day 8｜[Embedding 不只是相似度：向量检索的输入、召回与评测基础](/articles/AI-Embedding-Vector-Retrieval-Basics.html)**
 
 ### 已有相关文章
 
@@ -64,7 +65,8 @@ comments: true
 - Day 5：[Prompt 回归测试、Golden Set、评测门槛与灰度](/articles/AI-Prompt-Regression-Golden-Set.html)
 - Day 6：[Token 计量、事实保留与任务成本实验](/articles/AI-Context-Compression-Token-Experiment.html)
 - Day 7：[首周复盘、集成演练与八道小测](/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html)
-- Day 8-14：Embedding、模型路由、缓存和成本统计
+- Day 8：[Embedding、向量召回、混合检索与分层评测](/articles/AI-Embedding-Vector-Retrieval-Basics.html)
+- Day 9-14：模型路由、缓存和成本统计
 - Day 15-21：Python/TypeScript 服务、异步任务、数据库模型和 API 设计
 - Day 22-30：最小对话服务、回归样本、阶段项目一：模型网关
 

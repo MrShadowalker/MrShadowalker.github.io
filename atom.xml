@@ -10,7 +10,24 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-02T01:00:00.000Z</updated>
+  <updated>2026-11-03T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="RAG" scheme="https://chenzihao.me/tags/RAG/"/>
+    <category term="Embedding" scheme="https://chenzihao.me/tags/Embedding/"/>
+    <category term="向量检索" scheme="https://chenzihao.me/tags/%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2/"/>
+    <id>https://chenzihao.me/articles/AI-Embedding-Vector-Retrieval-Basics.html</id>
+    <link href="https://chenzihao.me/articles/AI-Embedding-Vector-Retrieval-Basics.html"/>
+    <published>2026-11-03T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 8 天，从 Embedding 契约、结构化切片、向量与 BM25 混合召回、RRF、重排到 Recall@K 和端到端评测，搭一条能排错、能迁移、能面试的检索链路。</summary>
+    <title>Embedding 不只是相似度：向量检索的输入、召回与评测基础</title>
+    <updated>2026-11-03T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -327,21 +344,5 @@
     <summary>Valar Morghulis</summary>
     <title>秒杀系列（一）防止超卖</title>
     <updated>2021-07-26T03:03:30.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="高并发" scheme="https://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
-    <category term="分布式" scheme="https://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
-    <id>https://chenzihao.me/articles/Java-SecKill-Distributed-Design.html</id>
-    <link href="https://chenzihao.me/articles/Java-SecKill-Distributed-Design.html"/>
-    <published>2021-07-26T03:02:55.000Z</published>
-    <summary>秒杀系列开篇文章，整理分布式微服务设计中，面对高并发场景的一系列潜在问题和处理思路。</summary>
-    <title>秒杀系列（零）高并发设计</title>
-    <updated>2021-07-26T03:02:55.000Z</updated>
   </entry>
 </feed>
