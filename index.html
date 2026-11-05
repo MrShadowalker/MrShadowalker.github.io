@@ -117,6 +117,124 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-AI-Prompt-Semantic-Cache-Isolation"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-Prompt-Semantic-Cache-Isolation.html"
+    >Prompt 缓存与语义缓存怎么分：命中、失效和租户隔离</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Prompt-Semantic-Cache-Isolation.html" class="article-date">
+  <time datetime="2026-11-05T01:00:00.000Z" itemprop="datePublished">2026-11-05</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>第 9 天讨论模型路由时，缓存会直接影响模型调用的延迟和账单。但“命中缓存”可能指完全不同的事：供应商复用相同 Prompt 前缀的计算、应用复用上次检索列表，或者把旧答案直接返回给用户。三者的收益、风险和失效方式不能混在一起。</p>
+<p>今天的目标是给缓存划清责任边界，并做一套可回放的本地实验：缓存每次命中都能说明“复用了什么、为何仍可用、节省了多少、是否跨越了权限边界”。</p> 
+      <a class="article-more-link" href="/articles/AI-Prompt-Semantic-Cache-Isolation.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Prompt/" rel="tag">Prompt</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/" rel="tag">成本控制</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%A7%9F%E6%88%B7%E9%9A%94%E7%A6%BB/" rel="tag">租户隔离</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-AI-Model-Routing-Cache-Cost-Ledger"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-Model-Routing-Cache-Cost-Ledger.html"
+    >模型路由怎么落地：能力门槛、缓存命中与每成功任务成本</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Model-Routing-Cache-Cost-Ledger.html" class="article-date">
+  <time datetime="2026-11-04T01:00:00.000Z" itemprop="datePublished">2026-11-04</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>前面已经有统一 <code>ModelClient</code>、Token 预算和 Prompt 回归集。第 8 天又给检索结果加上了版本、权限和评测。现在要回答一个更像平台工程的问题：同一个接口后面接了多个模型，请求进来时到底选谁？</p>
+<p>本篇用一个客服任务贯穿路由、缓存和成本账本。目标是把“选更便宜的模型”变成<strong>可审计的路由决策</strong>：先判断能力和权限是否满足，再比较质量、延迟和任务成本；出故障时明确重试、降级或失败。文中的价格与运行结果均是设计示例，不代表真实供应商报价或已完成的线上实验。</p> 
+      <a class="article-more-link" href="/articles/AI-Model-Routing-Cache-Cost-Ledger.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/" rel="tag">成本控制</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/" rel="tag">模型路由</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-AI-Embedding-Vector-Retrieval-Basics"
   class="article article-type-post"
   itemscope
@@ -580,124 +698,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Agent-Evaluation-and-Operations"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/Agent-Evaluation-and-Operations.html"
-    >Agent 上线前评测什么：从离线样本到线上运维</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/Agent-Evaluation-and-Operations.html" class="article-date">
-  <time datetime="2026-10-24T02:30:00.000Z" itemprop="datePublished">2026-10-24</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>Agent 的效果很难用一个分数概括。它可能答对了最终问题，却越权读取了材料；也可能工具调用成功，但任务没有真正完成；还可能离线样本表现稳定，线上遇到长上下文和并发后延迟失控。</p>
-<p>上线前评测的目标不是证明 Agent 永远正确，而是知道它在哪些条件下可靠、在哪些条件下必须拒答或交给人，并且能在结果变差时快速定位原因。</p> 
-      <a class="article-more-link" href="/articles/Agent-Evaluation-and-Operations.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%B9%B3%E5%8F%B0/" rel="tag">AI平台</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag">可观测性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%83%A8%E7%BD%B2/" rel="tag">部署</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Agent-Tool-Calling-Security"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/Agent-Tool-Calling-Security.html"
-    >Agent 工具调用怎么做才安全：权限、审批与审计</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/Agent-Tool-Calling-Security.html" class="article-date">
-  <time datetime="2026-10-24T02:20:00.000Z" itemprop="datePublished">2026-10-24</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>Agent 一旦可以查询订单、修改配置或发送消息，工具调用就不再是普通的函数调用，而是一次由自然语言触发的业务操作。模型可能误解用户意图，外部材料可能包含恶意指令，工具返回的数据也可能被拼接到下一轮提示词中。</p>
-<p>因此，安全边界不能只写在系统提示词里。模型可以提出动作，但真正决定“能不能做、对什么对象做、做完是否生效”的，应该是独立于模型的策略和执行层。</p> 
-      <a class="article-more-link" href="/articles/Agent-Tool-Calling-Security.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/" rel="tag">企业架构</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/" rel="tag">信息安全</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%9D%83%E9%99%90/" rel="tag">权限</a></li></ul>
 
     </footer>
   </div>

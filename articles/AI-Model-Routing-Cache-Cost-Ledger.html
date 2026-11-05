@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 9 天，用模型注册表、硬约束、质量门槛、缓存策略和调用账本设计可回放的模型路由，附四道公开面试题。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>模型路由怎么落地：能力门槛、缓存命中与每成功任务成本 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Model-Routing-Cache-Cost-Ledger"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  模型路由怎么落地：能力门槛、缓存命中与每成功任务成本
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Model-Routing-Cache-Cost-Ledger.html" class="article-date">
+  <time datetime="2026-11-04T01:00:00.000Z" itemprop="datePublished">2026-11-04</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">16 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>前面已经有统一 <code>ModelClient</code>、Token 预算和 Prompt 回归集。第 8 天又给检索结果加上了版本、权限和评测。现在要回答一个更像平台工程的问题：同一个接口后面接了多个模型，请求进来时到底选谁？</p>
+<p>本篇用一个客服任务贯穿路由、缓存和成本账本。目标是把“选更便宜的模型”变成<strong>可审计的路由决策</strong>：先判断能力和权限是否满足，再比较质量、延迟和任务成本；出故障时明确重试、降级或失败。文中的价格与运行结果均是设计示例，不代表真实供应商报价或已完成的线上实验。</p>
+<span id="more"></span>
+
+<h2 id="一、先说清路由的输入和输出"><a href="#一、先说清路由的输入和输出" class="headerlink" title="一、先说清路由的输入和输出"></a>一、先说清路由的输入和输出</h2><p>假设用户问：“解释订单 O-17 为什么不能退款，只查询，不要执行退款。”这个任务要求读取订单与政策、保留“不执行退款”的约束，返回结构化解释，不能因为模型切换而变成写操作。一个路由器最少需要这些输入：</p>
+<table>
+<thead>
+<tr>
+<th>输入</th>
+<th>例子</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务契约</td>
+<td><code>explain_refund_reason</code>、只读、JSON Schema v2</td>
+<td>排除不支持结构化输出或工具调用的模型</td>
+</tr>
+<tr>
+<td>身份与策略</td>
+<td>tenant、地域、数据密级、允许的供应商</td>
+<td>避免敏感数据越界或跨租户流转</td>
+</tr>
+<tr>
+<td>请求大小</td>
+<td>完整输入预估、输出预留、工具定义</td>
+<td>检查上下文与独立输入&#x2F;输出上限</td>
+</tr>
+<tr>
+<td>质量门槛</td>
+<td>固定评测集按任务分桶的通过率</td>
+<td>阻止便宜但不满足业务要求的候选</td>
+</tr>
+<tr>
+<td>服务状态</td>
+<td>P95、错误率、并发余量、RPM&#x2F;TPM</td>
+<td>避开拥塞与已熔断的实例</td>
+</tr>
+<tr>
+<td>预算</td>
+<td>租户额度、任务成本上限、价格版本</td>
+<td>在调用前拒绝超预算请求</td>
+</tr>
+</tbody></table>
+<p>输出不是一个模型名，而是一条带理由的决策记录：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;route_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;route-20261104-017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;task_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;task-017&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;policy_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;router-v3&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;selected_model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;balanced-model@2026-10&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;candidate_models&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;balanced-model@2026-10&quot;</span><span class="punctuation">,</span> <span class="string">&quot;strong-model@2026-09&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;hard_filters&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;region=cn&quot;</span><span class="punctuation">,</span> <span class="string">&quot;json_schema=true&quot;</span><span class="punctuation">,</span> <span class="string">&quot;input_limit&gt;=8200&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;quality_bucket&quot;</span><span class="punctuation">:</span> <span class="string">&quot;refund-explanation&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;estimated_upper_cost&quot;</span><span class="punctuation">:</span> <span class="number">0.018</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;price_snapshot&quot;</span><span class="punctuation">:</span> <span class="string">&quot;price-2026-11-04&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;fallback_policy&quot;</span><span class="punctuation">:</span> <span class="string">&quot;retry_same_then_strong_if_safe&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>estimated_upper_cost</code> 在这里只是教学数字。实际系统要用当天的价格快照、完整输入估计和输出上限计算，并保留币种、单位及税费规则。供应商报价与能力会变化，不能把示例值写死进代码。</p>
+<h2 id="二、模型注册表：把可选条件与运行状态拆开"><a href="#二、模型注册表：把可选条件与运行状态拆开" class="headerlink" title="二、模型注册表：把可选条件与运行状态拆开"></a>二、模型注册表：把可选条件与运行状态拆开</h2><p>在 Java 服务里，可以先做一张配置表或一个版本化 JSON，而不用一开始就做完整控制台：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">record</span> <span class="title class_">ModelProfile</span><span class="params">(</span></span><br><span class="line"><span class="params">    String provider,</span></span><br><span class="line"><span class="params">    String modelId,</span></span><br><span class="line"><span class="params">    String revision,</span></span><br><span class="line"><span class="params">    String region,</span></span><br><span class="line"><span class="params">    Set&lt;String&gt; capabilities,  // JSON_SCHEMA, TOOL_CALL, STREAM, VISION...</span></span><br><span class="line"><span class="params">    <span class="type">int</span> contextWindow,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> inputLimit,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> outputLimit,</span></span><br><span class="line"><span class="params">    Set&lt;String&gt; dataClasses,</span></span><br><span class="line"><span class="params">    String priceVersion,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> maxConcurrent</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">record</span> <span class="title class_">ModelHealth</span><span class="params">(</span></span><br><span class="line"><span class="params">    String modelId,</span></span><br><span class="line"><span class="params">    <span class="type">double</span> p95LatencyMs,</span></span><br><span class="line"><span class="params">    <span class="type">double</span> recentErrorRate,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> availableSlots,</span></span><br><span class="line"><span class="params">    <span class="type">boolean</span> circuitOpen</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ModelProfile</code> 记录经人工确认的相对稳定能力；<code>ModelHealth</code> 记录运行时状态。评测分数也不要直接塞进一条“全局模型分”里：同一个模型可能擅长摘要，却在中文金额、否定词或 Tool Calling 上失分。建议按 <code>任务类型 × 语言 × 风险等级 × Schema 版本</code> 维护质量门槛。</p>
+<p>真正选择模型时分两段：</p>
+<ol>
+<li><strong>硬过滤。</strong> 区域与数据策略、工具&#x2F;结构化能力、上下文与输入上限、租户准入、预算、熔断状态任何一项不满足，就不进入候选。</li>
+<li><strong>软排序。</strong> 对剩余候选比较固定评测通过率、P95&#x2F;首 Token 延迟、估计成本、近期失败率。权重由业务目标配置，变更要有版本和回放结果。</li>
+</ol>
+<p>一个简单的伪代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">List</span>&lt;ModelProfile&gt; <span class="variable">candidates</span> <span class="operator">=</span> registry.stream()</span><br><span class="line">    .filter(m -&gt; permittedForTenant(m, request.tenantId()))</span><br><span class="line">    .filter(m -&gt; supports(m, request.requiredCapabilities()))</span><br><span class="line">    .filter(m -&gt; fitsContext(m, preflightInputTokens, outputReserve))</span><br><span class="line">    .filter(m -&gt; passesQualityGate(m, request.evalBucket()))</span><br><span class="line">    .filter(m -&gt; withinBudget(m, estimatedUpperCost))</span><br><span class="line">    .filter(m -&gt; !health.get(m.modelId()).circuitOpen())</span><br><span class="line">    .toList();</span><br><span class="line"></span><br><span class="line"><span class="type">ModelProfile</span> <span class="variable">selected</span> <span class="operator">=</span> rankByPolicy(candidates, policyVersion);</span><br><span class="line">persistRouteDecision(request.taskId(), selected, candidates, policyVersion);</span><br></pre></td></tr></table></figure>
+
+<p>候选为空时返回明确原因，如 <code>NO_MODEL_FOR_REGION</code>、<code>CAPABILITY_UNAVAILABLE</code>、<code>BUDGET_REJECTED</code>；不能偷偷忽略 Schema、区域或权限约束。<code>ModelClient</code> 随后负责供应商协议差异、流式事件、结束原因和 usage 归一化，路由器不应直接解析各家 SSE 文本。</p>
+<p><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/model-selection">OpenAI Model selection</a> 与 <a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/models/choosing-a-model">Anthropic Choosing a model</a> 都建议围绕代表性任务评测模型能力和速度；这里把评测分桶、能力门槛和运行状态组合成路由规则，是本文的工程推导。资料检索日期：2026-11-04，复核日期：2026-11-05。</p>
+<h2 id="三、缓存要分层：每一层的命中语义不同"><a href="#三、缓存要分层：每一层的命中语义不同" class="headerlink" title="三、缓存要分层：每一层的命中语义不同"></a>三、缓存要分层：每一层的命中语义不同</h2><p>“加缓存”容易混淆四种完全不同的复用：</p>
+<table>
+<thead>
+<tr>
+<th>缓存层</th>
+<th>复用内容</th>
+<th>必须考虑的键与失效条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>供应商 Prompt Cache</td>
+<td>相同前缀的计算状态</td>
+<td>模型、稳定前缀、工具定义、Schema；由供应商报告命中，应用不把它当旧答案</td>
+</tr>
+<tr>
+<td>精确结果缓存</td>
+<td>完整请求的已验证回答</td>
+<td>tenant、用户&#x2F;角色、Prompt、模型、Schema、知识快照、参数；动态事实需短 TTL</td>
+</tr>
+<tr>
+<td>检索&#x2F;工具只读结果缓存</td>
+<td>文档片段或只读查询回执</td>
+<td>权限快照、源版本、时间范围、查询参数；业务状态更新后失效</td>
+</tr>
+<tr>
+<td>语义结果缓存</td>
+<td>相近问法的可复用回答</td>
+<td>语义阈值之外，还需实体、约束、权限、版本一致和人工评测</td>
+</tr>
+</tbody></table>
+<p>最安全的起点是<strong>只缓存可证明等价的只读结果</strong>。例如“订单 O-17 的当前状态”随时间变，必须有明确 TTL 或源版本；“执行退款”的结果不能因为问题相似就从缓存里返回“已经执行”。跨租户、跨权限、跨知识版本的命中应当作为安全测试的失败样本。</p>
+<p>Prompt Cache 是供应商在相同前缀上复用计算状态，之后仍会生成新答案。它不缩短模型看到的逻辑上下文，也不意味着响应内容相同；缓存输入仍可能计入速率限制。稳定的系统指令、工具定义和 Schema 放在前面，动态订单、用户消息和检索结果放在后面，通常更容易形成复用前缀。但是否命中要看 usage 与供应商条件，不能用“请求看起来差不多”推断。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt caching</a>；<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Claude Prompt caching</a>（检索日期：2026-11-04，复核日期：2026-11-05）。</p>
+<p>缓存键可先写成结构体，再做哈希，避免字符串拼接遗漏字段：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CacheKey = hash(</span><br><span class="line">  tenant_id, access_scope_hash, task_type,</span><br><span class="line">  normalized_query, entity_ids, source_version,</span><br><span class="line">  prompt_version, schema_version, model_version,</span><br><span class="line">  tool_result_version, generation_parameters</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>用户身份不一定要原样写入键，但<strong>访问范围必须可区分</strong>。权限变更、政策撤回、模型&#x2F;Prompt 升级要能批量失效或自然过期。语义缓存还要在返回前重新校验当前身份和来源有效性，不能只用向量相似度做命中判定。</p>
+<h2 id="四、成本账本按调用记，按任务算"><a href="#四、成本账本按调用记，按任务算" class="headerlink" title="四、成本账本按调用记，按任务算"></a>四、成本账本按调用记，按任务算</h2><p>一次 Agent 任务可能有意图分类、查询改写、主模型、重试、摘要和工具调用。只读最后一次模型的 usage，会把失败与重试藏掉。账本至少保留这几个层次：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Task → Step → ModelCall / ToolCall</span><br><span class="line">       request_id、attempt_no、tenant_id、route_id</span><br><span class="line">       provider、model_revision、price_version、currency</span><br><span class="line">       input_tokens、cached_read_tokens、cached_write_tokens</span><br><span class="line">       output_tokens、reasoning_tokens（按供应商语义归一化）</span><br><span class="line">       status、stop_reason、latency、retry_reason</span><br><span class="line">       charged_amount、estimated_amount、reconciliation_status</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意计数关系。</strong> 有些供应商把缓存读取包含在总输入里，有些把缓存写入或创建单独报告；推理 Token 往往包含在输出用量的某个子字段里。不要简单把所有字段相加，否则会双计。适配层应给每个供应商写清 <code>raw_usage → normalized_usage</code> 的映射，并保留原始响应方便对账。流式调用如果最终 usage 缺失，先写估算值和 <code>ESTIMATED</code> 状态，后续用供应商账单或日志对齐，不能当成精确扣费。</p>
+<p>一个教学公式（<code>priceVersion</code> 中各单位为每百万 Token 的单价）是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">单次调用费用 = uncached_input × input_rate</span><br><span class="line">             + cache_read × cache_read_rate</span><br><span class="line">             + cache_write × cache_write_rate</span><br><span class="line">             + output × output_rate</span><br><span class="line">             + 工具及其他计费项</span><br><span class="line"></span><br><span class="line">单任务成本 = 该 task_id 下所有实际调用费用之和</span><br><span class="line">每成功任务成本 = 所有计划任务的实际总费用 / 成功任务数</span><br></pre></td></tr></table></figure>
+
+<p>如果某组 100 个计划任务里只有 80 个成功，且所有调用与重试共花 12 元，那么每成功任务成本是 <code>12 / 80 = 0.15 元</code>，不是把失败任务花的钱剔除后再除。还要同时报告成功率 <code>80/100</code>、超时&#x2F;预算拒绝&#x2F;人工接管数量，以及 P95 延迟。这样才能看出路由把账面单次调用降价后，是否让更多任务失败或重试。</p>
+<p>预算要在调用前后都生效：预检用完整请求 Token、输出预留和价格快照估上界；运行中限制任务总耗时、最大调用数、工具次数和租户并发；完成后用实际 usage 入账。<code>BUDGET_REJECTED</code> 仍属于计划任务分母，不能只统计被接纳请求的成功率。</p>
+<p><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Counting tokens</a> 与 <a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a> 说明 Token 预估和多维速率限制需要分别管理；<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic Rate limits</a> 也区分请求、输入和输出 Token 的限制。具体价格应按当日官方报价维护版本，不在本文写死。（检索日期：2026-11-04，复核日期：2026-11-05）</p>
+<h2 id="五、故障时先判断能不能安全切换"><a href="#五、故障时先判断能不能安全切换" class="headerlink" title="五、故障时先判断能不能安全切换"></a>五、故障时先判断能不能安全切换</h2><p>路由与降级的顺序可以这样设计：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">模型调用失败</span><br><span class="line">  → 记录错误分类和当前响应状态</span><br><span class="line">  → 可恢复错误？剩余总截止时间与预算足够？</span><br><span class="line">  → 同模型有限次退避重试</span><br><span class="line">  → 仍失败且任务允许降级？候选通过同一质量/权限/Schema 门槛？</span><br><span class="line">  → 切备用模型，并给用户或上层任务标明降级</span><br><span class="line">  → 无合格候选：明确失败或等待人工</span><br></pre></td></tr></table></figure>
+
+<p>错误分类要结合供应商协议：短暂限流、网络中断、服务暂不可用通常可以有限重试；无效参数、余额耗尽、权限拒绝、Schema 不支持属于配置或策略问题，盲目重试只会增加成本。每个供应商和模型设独立并发信号量、连接池与熔断器；租户额度独立，避免一个大租户耗尽其他租户的余量。</p>
+<p>流式响应有一个额外边界：已经向客户端发出部分内容时，不能在后面静默换模型并拼接成一个“完整答案”。需要发出 <code>STREAM_INTERRUPTED</code> 事件，视业务决定重启一个新尝试并清楚标记版本，或结束请求。涉及写工具的 Agent，还要查外部副作用是否发生；模型重试不等于工具写入可以重放。</p>
+<p>一个降级规则必须写清：允许切换的任务类型、最低质量门槛、结构化输出&#x2F;工具契约兼容性、剩余预算、审计字段和用户可见状态。若备用模型不满足“不执行退款”约束的回归门槛，应直接失败或人工接管，而不是为了可用率输出一个风险更高的答案。</p>
+<h2 id="六、90-分钟实验：从固定路由走到可回放的策略"><a href="#六、90-分钟实验：从固定路由走到可回放的策略" class="headerlink" title="六、90 分钟实验：从固定路由走到可回放的策略"></a>六、90 分钟实验：从固定路由走到可回放的策略</h2><p>先用两个本地 <code>FakeModelClient</code> 和固定的 usage 回执，不需要真实 API 费用。建立 40 条请求夹具，至少覆盖：普通 FAQ、金额&#x2F;否定词、长上下文、结构化输出、工具调用、区域限制、跨租户、模型 429、流式半包、缓存失效和预算不足。</p>
+<p>做四组对照：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>路由</th>
+<th>缓存</th>
+<th>故障处理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A</td>
+<td>全部强模型</td>
+<td>关闭</td>
+<td>直接失败</td>
+</tr>
+<tr>
+<td>B</td>
+<td>任务类型规则路由</td>
+<td>关闭</td>
+<td>同模型有限重试</td>
+</tr>
+<tr>
+<td>C</td>
+<td>B + 稳定前缀&#x2F;只读精确缓存</td>
+<td>开启并记录命中</td>
+<td>同 B</td>
+</tr>
+<tr>
+<td>D</td>
+<td>C + 健康&#x2F;预算门槛</td>
+<td>开启</td>
+<td>合格候选降级或明确失败</td>
+</tr>
+</tbody></table>
+<p>每条 Case 记录 <code>expected_model</code>、<code>forbidden_model</code>、<code>expected_status</code>、<code>allowed_cache_layer</code> 和 <code>max_cost</code>。输出逐 Case 报告，而不是只给四个平均数：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">quality_pass_rate = quality_pass_count / planned_cases</span><br><span class="line">schema_pass_rate = schema_pass_count / planned_cases</span><br><span class="line">unauthorized_cache_hit_rate = unauthorized_cache_hits / planned_cases</span><br><span class="line">P50、P95 与首 Token 延迟</span><br><span class="line">cache_read/write tokens、cache_hit_rate</span><br><span class="line">total_cost、cost_per_successful_task</span><br><span class="line">retry_count、fallback_count、budget_rejected_count</span><br></pre></td></tr></table></figure>
+
+<p>质量硬门槛是：跨租户缓存命中为零、禁止动作发生次数为零、结构化输出和权限约束不回退。再比较成本和延迟。若假客户端只模拟缓存命中，应标 <code>SIMULATED</code>；没有真实供应商 usage，不能把实验结果写成真实降本百分比。</p>
+<p>最终提交物是 <code>model-registry.json</code>、<code>router-policy.json</code>、<code>fixtures.jsonl</code>、<code>usage-ledger.jsonl</code> 和一张 A&#x2F;B&#x2F;C&#x2F;D 对照表。第 30 天模型网关阶段项目会把这些字段接入真实服务。</p>
+<h2 id="七、今天的面试题：模型网关与成本治理"><a href="#七、今天的面试题：模型网关与成本治理" class="headerlink" title="七、今天的面试题：模型网关与成本治理"></a>七、今天的面试题：模型网关与成本治理</h2><p>以下题面来自牛客用户公开面经或社区题库，<strong>不是企业官方确认的原题</strong>。资料检索日期为 <strong>2026-11-04</strong>，并于 <strong>2026-11-05</strong> 复核。帖子中的成本百分比属于作者自报，不能当作通用收益或自己的项目实测。</p>
+<h3 id="题-1：多模型-AI-网关如何设计路由、降级和故障隔离？"><a href="#题-1：多模型-AI-网关如何设计路由、降级和故障隔离？" class="headerlink" title="题 1：多模型 AI 网关如何设计路由、降级和故障隔离？"></a>题 1：多模型 AI 网关如何设计路由、降级和故障隔离？</h3><ul>
+<li><strong>方向：</strong> 模型网关 &#x2F; 系统设计</li>
+<li><strong>难度：</strong> 高</li>
+<li><strong>来源：</strong> <a target="_blank" rel="noopener" href="https://ac.nowcoder.com/discuss/1673529?type=0">牛客“去哪儿 AI 应用开发（秋招）一面”用户帖</a>。帖子标题含公司与面试轮次，企业未公开核验。</li>
+<li><strong>参考答案：</strong> 先按租户、地域、数据密级、Schema&#x2F;工具能力、上下文和预算做硬过滤，再在通过任务评测的候选中比较 P95、成本与错误率。适配层统一消息、流式事件、usage 和错误分类；按供应商隔离连接池与并发，按租户控额度。限流和临时故障可以在总截止时间内有限重试；切备用模型前重新检查质量与契约，流式半包不能静默拼接。</li>
+<li><strong>追问：</strong> 某供应商 429、另一个供应商余额不足，分别怎么处理？租户 A 突增流量时怎样保护租户 B？</li>
+</ul>
+<h3 id="题-2：老板要求-Agent-单次成本降-50-，你会先改哪一层？"><a href="#题-2：老板要求-Agent-单次成本降-50-，你会先改哪一层？" class="headerlink" title="题 2：老板要求 Agent 单次成本降 50%，你会先改哪一层？"></a>题 2：老板要求 Agent 单次成本降 50%，你会先改哪一层？</h3><ul>
+<li><strong>方向：</strong> 成本治理 &#x2F; Agent 运行时</li>
+<li><strong>难度：</strong> 中高</li>
+<li><strong>来源：</strong> <a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/918987622926548992?sourceSSR=post">牛客“Agent 成本怎么降 50%”用户讨论</a>。作者自述面试和降本数字，无法独立核验；这里把题目当公开练习题。</li>
+<li><strong>参考答案：</strong> 先按任务 ID 汇总所有模型调用、摘要、重试、工具和人工接管，按业务类型找高成本且低成功率的分桶。之后依次验证规则&#x2F;小模型分流、稳定前缀缓存、可证明等价的只读结果缓存、上下文裁剪、最大步数与批处理。每步都在同一评测集报告成功率、P95、总费用和每成功任务成本；没有质量门槛时，便宜模型可能增加重试而使总成本上升。</li>
+<li><strong>追问：</strong> 成本下降而成功率从 95% 跌到 80%，还算达标吗？缓存命中率升高但每成功任务成本不降，可能是什么原因？</li>
+</ul>
+<h3 id="题-3：单一模型和多模型路由怎么取舍？"><a href="#题-3：单一模型和多模型路由怎么取舍？" class="headerlink" title="题 3：单一模型和多模型路由怎么取舍？"></a>题 3：单一模型和多模型路由怎么取舍？</h3><ul>
+<li><strong>方向：</strong> 模型选型 &#x2F; 平台架构</li>
+<li><strong>难度：</strong> 中高</li>
+<li><strong>来源：</strong> <a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/922460251717128192?sourceSSR=post&weFlow=true">牛客用户整理的“AI Agent 面试高频 100 问”，第 62 题</a>，为社区整理题，未标注具体企业原题。</li>
+<li><strong>参考答案：</strong> 单模型起步时协议和回归范围较小；当任务能力、区域、预算和服务可用性出现分化，才值得引入多模型。多模型要有统一 <code>ModelClient</code>、注册表、路由策略、逐模型质量门槛和回滚。切换后重新跑结构化输出、工具调用、中文与风险样本，不能把“API 兼容”误当行为兼容。</li>
+<li><strong>追问：</strong> 新模型价格更低但 JSON Schema 通过率差 2%，如何决定是否灰度？路由器自身出错时如何兜底？</li>
+</ul>
+<h3 id="题-4：Prompt-Cache-与结果缓存有什么区别？怎样防止缓存污染？"><a href="#题-4：Prompt-Cache-与结果缓存有什么区别？怎样防止缓存污染？" class="headerlink" title="题 4：Prompt Cache 与结果缓存有什么区别？怎样防止缓存污染？"></a>题 4：Prompt Cache 与结果缓存有什么区别？怎样防止缓存污染？</h3><ul>
+<li><strong>方向：</strong> Prompt &#x2F; 缓存安全 &#x2F; 成本</li>
+<li><strong>难度：</strong> 中高</li>
+<li><strong>来源：</strong> <a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/922460251717128192?sourceSSR=post&weFlow=true">牛客“AI Agent 面试高频 100 问”，第 50 题</a>，为社区整理题，未标注具体企业原题。</li>
+<li><strong>参考答案：</strong> Prompt Cache 复用相同前缀的计算状态，仍生成新输出，按供应商 usage 计费；结果缓存则直接复用应用层回答或只读查询结果。结果缓存键要包含租户、访问范围、实体、Prompt&#x2F;模型&#x2F;Schema&#x2F;知识版本与参数，失效依赖源版本或 TTL。语义命中还要重新校验实体、否定约束和当前权限；写操作不能从相似答案缓存推断已执行。</li>
+<li><strong>追问：</strong> Prompt 顺序变化但总 Token 变少，为什么账单可能上涨？用户角色被撤销后，旧缓存如何失效？</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/model-selection">OpenAI Model selection</a>：按任务质量、延迟和成本比较候选。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt caching</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Claude Prompt caching</a>：前缀复用、缓存读写与 usage 的供应商差异。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Counting tokens</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>：预检 Token 与多维限流。</li>
+<li><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/models/choosing-a-model">Anthropic Choosing a model</a>：用代表性任务测选型。</li>
+</ul>
+<p>资料检索日期：2026-11-04；复核日期：2026-11-05。明天单独练缓存一致性与失效：让知识版本、权限和时间变化成为固定测试输入，再看哪些缓存能复用、哪些必须失效。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Model-Routing-Cache-Cost-Ledger.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/" rel="tag">成本控制</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/" rel="tag">模型路由</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Prompt-Semantic-Cache-Isolation.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Prompt 缓存与语义缓存怎么分：命中、失效和租户隔离
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Embedding-Vector-Retrieval-Basics.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Embedding 不只是相似度：向量检索的输入、召回与评测基础</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
