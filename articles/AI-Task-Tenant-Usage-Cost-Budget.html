@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 11 天，从模型调用的原始用量出发，设计请求、任务、租户三级成本账本，以及并发预算预留、流式结算、重试与取消后的对账流程。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 成本账本怎么做：请求、任务、租户三级计量与预算硬上限 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Task-Tenant-Usage-Cost-Budget"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AI 成本账本怎么做：请求、任务、租户三级计量与预算硬上限
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Task-Tenant-Usage-Cost-Budget.html" class="article-date">
+  <time datetime="2026-11-06T01:00:00.000Z" itemprop="datePublished">2026-11-06</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">15 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>第 9 天用“每成功任务成本”衡量路由，第 10 天拆开了 Prompt 缓存和应用缓存。接下来要回答一个更实际的问题：一个 Agent 任务包含规划、检索、模型调用、失败重试和工具执行，账单应该记在哪里？当两个任务同时启动，怎样保证它们不会一起穿透租户预算？</p>
+<p>今天把模型供应商的原始用量接成<strong>调用尝试 → 任务 → 租户</strong>三级账本，并设计预算预检、预留和结算。本文的数据模型与控制流程是工程设计推导；各供应商的字段语义与 API 行为以文末官方文档为准。</p>
+<span id="more"></span>
+
+<h2 id="一、先定义账本的最小单位"><a href="#一、先定义账本的最小单位" class="headerlink" title="一、先定义账本的最小单位"></a>一、先定义账本的最小单位</h2><p>一次用户请求可能启动一个任务；一个任务有多个步骤；一个步骤可能因超时、限流或模型降级产生多次供应商调用。<strong>每一次实际发给供应商的调用尝试（attempt）都可能产生费用</strong>，不能只记录最后成功的响应。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">tenant_id</span><br><span class="line">  └── task_id（一次业务目标）</span><br><span class="line">       ├── step_id：检索 + 重排</span><br><span class="line">       ├── step_id：模型规划</span><br><span class="line">       │    ├── attempt_id：供应商 A，超时但可能已生成</span><br><span class="line">       │    └── attempt_id：供应商 B，成功</span><br><span class="line">       └── step_id：模型总结 + 工具调用</span><br></pre></td></tr></table></figure>
+
+<p>因此，业务指标和计费指标要分开：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>主键</th>
+<th>记录什么</th>
+<th>典型问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>调用尝试</td>
+<td><code>attempt_id</code></td>
+<td>原始 usage、互斥计费桶、单价快照、估算与最终金额</td>
+<td>重试和中断有没有漏记？</td>
+</tr>
+<tr>
+<td>任务</td>
+<td><code>task_id</code></td>
+<td>所有模型、检索、重排和工具调用的实际成本</td>
+<td>一次成功业务任务要花多少钱？</td>
+</tr>
+<tr>
+<td>租户</td>
+<td><code>tenant_id + 账期</code></td>
+<td>已结算金额、已预留金额、预算上限、调整记录</td>
+<td>并发任务会不会超预算？</td>
+</tr>
+</tbody></table>
+<p>“请求成本”可按入口 <code>request_id</code> 聚合，异步任务需要额外保存 <code>task_id</code>。一次请求如果启动多个任务，不能把任务成本硬塞进某一个 HTTP 响应；前端可以通过任务 ID 查询累计值。</p>
+<h2 id="二、原始-usage-永久保留，适配器只产出互斥计费桶"><a href="#二、原始-usage-永久保留，适配器只产出互斥计费桶" class="headerlink" title="二、原始 usage 永久保留，适配器只产出互斥计费桶"></a>二、原始 usage 永久保留，适配器只产出互斥计费桶</h2><p>先保存供应商返回的原始 usage、模型标识和响应 ID，再由<strong>供应商专属适配器</strong>归一化。不要让业务代码直接相加 <code>input_tokens</code>、<code>cached_tokens</code>、<code>reasoning_tokens</code> 等名字相似的字段。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;event_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;usage_evt_01&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;tenant_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;t_42&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;task_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;task_88&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;step_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;summarize&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;attempt_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;attempt_2&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;provider&quot;</span><span class="punctuation">:</span> <span class="string">&quot;openai&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;provider_response_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;resp_example&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;model-version-from-response&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;route_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;route-v7&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;price_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;price-snapshot-2026-11-06&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;currency&quot;</span><span class="punctuation">:</span> <span class="string">&quot;USD&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;usage_status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;CONFIRMED&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;input_uncached_tokens&quot;</span><span class="punctuation">:</span> <span class="number">1000</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;input_cache_read_tokens&quot;</span><span class="punctuation">:</span> <span class="number">4000</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;input_cache_write_tokens&quot;</span><span class="punctuation">:</span> <span class="number">7000</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;output_tokens&quot;</span><span class="punctuation">:</span> <span class="number">500</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;raw_usage_ref&quot;</span><span class="punctuation">:</span> <span class="string">&quot;immutable-provider-usage-01&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>示例仅展示模型 Token 桶。需要按供应商价格表继续拆分缓存写入保留时长、长上下文、音视频、工具调用等费率；不要把本文示例当作真实模型价格。</p>
+<h3 id="OpenAI：总输入已包含缓存子项"><a href="#OpenAI：总输入已包含缓存子项" class="headerlink" title="OpenAI：总输入已包含缓存子项"></a>OpenAI：总输入已包含缓存子项</h3><p>OpenAI Responses 的 <code>usage.input_tokens</code> 包含普通输入、缓存读取和缓存写入；<code>cached_tokens</code>、<code>cache_write_tokens</code> 是其中的子项。因此：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">普通输入 = input_tokens - cached_tokens - cache_write_tokens</span><br><span class="line">归一化输入总量 = 普通输入 + 缓存读取 + 缓存写入 = input_tokens</span><br></pre></td></tr></table></figure>
+
+<p>例如 <code>input_tokens=12000</code>、<code>cached_tokens=4000</code>、<code>cache_write_tokens=7000</code>，普通输入只有 1000。若再把 4000 和 7000 加到 12000 上，就会重复计费。<code>output_tokens_details.reasoning_tokens</code> 同样是 <code>output_tokens</code> 的子项，不能额外加一次。若缓存写入分为不同保存时长，要在写入桶内再次按费率拆分。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt caching</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/pricing">OpenAI API pricing</a>（检索日期：2026-11-06）</p>
+<h3 id="Anthropic：输入字段需要合并"><a href="#Anthropic：输入字段需要合并" class="headerlink" title="Anthropic：输入字段需要合并"></a>Anthropic：输入字段需要合并</h3><p>Anthropic Messages 的 <code>input_tokens</code>、<code>cache_creation_input_tokens</code>、<code>cache_read_input_tokens</code> 是互不重叠的用量；逻辑输入总量是三者之和。缓存读取和写入可能采用不同费率，不能拿 OpenAI 的减法套用。其 <code>output_tokens</code> 包含相应的思考 Token，用最终输出总量计价，保留思考明细做诊断即可。<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Anthropic Prompt caching</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/typescript/messages">Anthropic Messages reference</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/pricing">Anthropic pricing</a>（检索日期：2026-11-06）</p>
+<p>速率限制也不能共用一个口径：OpenAI 文档说明缓存输入仍计入 TPM；Anthropic 文档说明多数 Claude 模型的缓存读取不计入 ITPM，输入和缓存写入计入。预算金额、上下文容量、供应商 TPM&#x2F;ITPM 是不同维度，应分别检查。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI rate limits</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic rate limits</a>（检索日期：2026-11-06）</p>
+<p>适配器输出至少要携带 <code>raw_usage_ref</code>、供应商、模型版本、价格快照和币种。若某个模型或特殊工具的计价规则无法确定，标记为 <code>UNPRICED</code> 并告警，不要默默记零。汇率换算也应保存版本和时点，不能把不同币种直接相加。</p>
+<h2 id="三、流式、重试和取消：没有最终-usage-不等于零成本"><a href="#三、流式、重试和取消：没有最终-usage-不等于零成本" class="headerlink" title="三、流式、重试和取消：没有最终 usage 不等于零成本"></a>三、流式、重试和取消：没有最终 usage 不等于零成本</h2><p>流式输出的文字片段只是用户可见内容，可能漏掉不可见推理和结构 Token。OpenAI 的流式事件在 <code>created</code>、<code>in_progress</code> 阶段可能没有 usage；完成事件才可能提供最终值。Anthropic <code>message_delta.usage</code> 对同一消息是累计值，取最后一个有效值，不能逐帧求和。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI streaming events</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/claude_api_primer">Anthropic API primer</a>（检索日期：2026-11-06）</p>
+<p>建议将 attempt 的计量状态明确分成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">RESERVED → CONFIRMED → RECONCILED</span><br><span class="line">         ↘ PENDING_USAGE → RECONCILED / MANUAL_REVIEW</span><br><span class="line">         ↘ ESTIMATED（仅用于展示或风险控制，不能伪装成最终账单）</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>失败重试</strong>：每次供应商调用都有独立 <code>attempt_id</code>；第一个调用超时不等于供应商没有处理，继续保留预留额并等待对账。</li>
+<li><strong>客户端断开</strong>：前端 SSE 中断不等于后端或供应商停止生成。后端需继续接收最终 usage，或明确取消后进入待对账状态。</li>
+<li><strong>取消</strong>：即便供应商接受取消，返回 usage 也可能为空；不能立即释放全部预留额。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/methods/cancel">OpenAI cancel Response</a> 的示例就有 <code>usage=null</code>。（检索日期：2026-11-06）</li>
+<li><strong>幂等入账</strong>：对 <code>(provider, provider_response_id, usage_event_type)</code> 或稳定的 <code>attempt_id + settlement_version</code> 建唯一约束；重复回调只更新同一笔，不追加两次。</li>
+</ul>
+<p>供应商组织级 <a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs">OpenAI Costs API</a> 和 <a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api">Anthropic Usage and Cost Analytics API</a> 可用于延迟对账。它们的聚合粒度、更新时间和修订方式与应用实时账本不同；差异应记一条可追溯的调整事件，而非覆盖原始 attempt。（检索日期：2026-11-06）</p>
+<h2 id="四、预算预检：先数-Token，再按最坏情况预留金额"><a href="#四、预算预检：先数-Token，再按最坏情况预留金额" class="headerlink" title="四、预算预检：先数 Token，再按最坏情况预留金额"></a>四、预算预检：先数 Token，再按最坏情况预留金额</h2><p>对于计划发出的模型调用，后端预检要使用<strong>实际渲染后的消息、工具 Schema、多模态输入和输出约束</strong>。OpenAI 提供 <code>POST /v1/responses/input_tokens</code>；Anthropic 提供 <code>POST /v1/messages/count_tokens</code>。它们比“字符数除以四”可靠，但 Anthropic 计数接口对部分 server tools、MCP connector 和 URL&#x2F;file 来源内容不覆盖，遇到未覆盖输入需保守估算并施加上限。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Counting tokens</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/token-counting">Anthropic Token counting</a>（检索日期：2026-11-06）</p>
+<p>预留额不是“预计平均花费”，而是本次调用允许消耗的<strong>上界</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">预留额 = 普通输入上界 × 输入费率</span><br><span class="line">       + 最大输出 Token × 输出费率</span><br><span class="line">       + 可计价工具/检索/重排的上界</span><br><span class="line">       + 计价规则要求的附加项</span><br></pre></td></tr></table></figure>
+
+<p>预检不能预设缓存一定命中；也不能只用可见输出文字估算 <code>max_output_tokens</code>，因为该上限覆盖不可见的生成 Token。按上下文窗口、模型输入上限、输出上限、RPM&#x2F;TPM、任务剩余预算分别校验。硬花费上限与速率限制不是同一个开关。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Counting tokens</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI rate limits</a>（检索日期：2026-11-06）</p>
+<h2 id="五、并发任务必须原子预留"><a href="#五、并发任务必须原子预留" class="headerlink" title="五、并发任务必须原子预留"></a>五、并发任务必须原子预留</h2><p>假设租户剩余预算是 1 个计价单位，两个并发任务各需预留 0.8。若它们先各自读取余额再写入，两者都会通过，最终预留 1.6。预算控制必须在数据库事务或等价的原子操作中完成。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 伪 SQL：金额建议用最小货币单位的整数或定点数。</span></span><br><span class="line"><span class="keyword">UPDATE</span> budget_account</span><br><span class="line"><span class="keyword">SET</span> reserved_minor <span class="operator">=</span> reserved_minor <span class="operator">+</span> :amount</span><br><span class="line"><span class="keyword">WHERE</span> account_id <span class="operator">=</span> :tenant_account</span><br><span class="line">  <span class="keyword">AND</span> spent_minor <span class="operator">+</span> reserved_minor <span class="operator">+</span> :amount <span class="operator">&lt;=</span> cap_minor;</span><br><span class="line"><span class="comment">-- 受影响行数必须为 1，否则拒绝此次调用。</span></span><br></pre></td></tr></table></figure>
+
+<p>还要在同一事务内预留任务预算，写入唯一 <code>reservation_id</code>。若租户预留成功而任务预留失败，整个事务回滚；不能留下一笔孤儿预留。多层预算应固定锁顺序，避免并发死锁。跨数据库或多区域无法使用同一事务时，需要单一预算服务或有明确一致性语义的协调机制；仅用本地内存计数器不构成租户硬门槛。</p>
+<p>结算时用实际供应商 usage 与价格快照计算金额，事务内把 <code>reserved</code> 减去原预留额、把 <code>spent</code> 加上实际金额；若实际费用因规则变化超过预留额，要记录超额并触发熔断和人工核查。<strong>最终用量缺失时保留预留额或转入待对账额度</strong>，不能为了让余额好看而释放。预留记录与结算事件都要可重放、可去重。</p>
+<h3 id="任务运行中的闸门"><a href="#任务运行中的闸门" class="headerlink" title="任务运行中的闸门"></a>任务运行中的闸门</h3><p>每个新步骤开始前检查：剩余金额、模型调用数、工具调用数、最大步骤数、累计输入&#x2F;输出 Token、运行时长和用户取消状态。检测到循环重复且没有进展时，终止并返回已完成的事实与未完成原因。并行分支要共享同一个任务预算账户，不能各拿一份完整预算。</p>
+<p>这里的“硬上限”准确含义是：<strong>本系统不会批准超出预留上界的新调用</strong>。供应商在一次已经批准的流式调用内可能延迟回传 usage，网络中断后也可能继续计费。因此仅凭应用侧逐字节观察，无法保证最终供应商账单一分钱都不超过上限；应同时设置 <code>max_output_tokens</code>、超时、可用的取消机制和供应商级支出限制，并为未知用量留风险额度。不能向业务方承诺应用侧能精确切断每一笔流式费用。</p>
+<h2 id="六、Java-后端落地：接口与验收用例"><a href="#六、Java-后端落地：接口与验收用例" class="headerlink" title="六、Java 后端落地：接口与验收用例"></a>六、Java 后端落地：接口与验收用例</h2><p>账本可以拆成四个明确接口，让 <code>ModelClient</code> 不直接操作租户余额：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">record</span> <span class="title class_">BudgetScope</span><span class="params">(String tenantId, String taskId, String stepId)</span> &#123;&#125;</span><br><span class="line"><span class="keyword">record</span> <span class="title class_">CostEstimate</span><span class="params">(<span class="type">long</span> upperBoundMinor, String currency, String priceVersion)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">UsageAdapter</span> &#123;</span><br><span class="line">    <span class="type">NormalizedUsage</span> <span class="title function_">normalize</span><span class="params">(String provider, String model, RawUsage rawUsage)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">BudgetService</span> &#123;</span><br><span class="line">    <span class="type">Reservation</span> <span class="title function_">reserve</span><span class="params">(BudgetScope scope, CostEstimate estimate, String attemptId)</span>;</span><br><span class="line">    <span class="type">void</span> <span class="title function_">settle</span><span class="params">(String reservationId, NormalizedUsage usage)</span>;</span><br><span class="line">    <span class="type">void</span> <span class="title function_">markPending</span><span class="params">(String reservationId, String reason)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">CostLedger</span> &#123;</span><br><span class="line">    <span class="type">void</span> <span class="title function_">appendAttempt</span><span class="params">(AttemptCostEvent event)</span>;  <span class="comment">// 唯一键保证幂等</span></span><br><span class="line">    <span class="type">TaskCost</span> <span class="title function_">taskCost</span><span class="params">(String taskId)</span>;</span><br><span class="line">    <span class="type">TenantCost</span> <span class="title function_">tenantCost</span><span class="params">(String tenantId, String billingPeriod)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>今天的练习无需接真实付费 API。用 <code>FakeModelClient</code> 固定原始 usage 和价格快照，完成下列八个可自动检查的场景：</p>
+<ol>
+<li>普通输入、缓存读、缓存写分别计价；OpenAI 子项不重复相加，Anthropic 三项合并。</li>
+<li>一个任务有两次模型尝试，第一次超时，第二次成功；账本保留两笔 attempt。</li>
+<li>两个并发任务竞争同一租户余额，只有一个预留成功。</li>
+<li>租户预算充足但任务预算不足，预留整体回滚。</li>
+<li>流式最后一帧才有 usage；中途断开则进入 <code>PENDING_USAGE</code>。</li>
+<li>相同结算事件重放两次，任务成本只增加一次。</li>
+<li>取消后 usage 未知，不把成本写成零，也不释放风险额度。</li>
+<li>调整价格版本后，历史 attempt 仍按原快照展示；另用调整事件处理对账差异。</li>
+</ol>
+<p>验收输出至少包含 <code>cost_per_successful_task</code>、<code>pending_usage_amount</code>、预算拒绝数，以及按租户、模型、路由版本聚合的成本。这样第 9 天的路由实验才能比较“便宜的单次调用”和“便宜的成功任务”。</p>
+<h2 id="七、今日面试题（检索日期：2026-11-06）"><a href="#七、今日面试题（检索日期：2026-11-06）" class="headerlink" title="七、今日面试题（检索日期：2026-11-06）"></a>七、今日面试题（检索日期：2026-11-06）</h2><p>以下牛客内容是<strong>用户自述面经或社区整理题</strong>；字节、OPPO 标签来自发帖者，无法核验为企业官方题库。题面按公开页面概括，参考答案是基于本文设计给出的工程回答，不代表发帖者或企业标准答案。</p>
+<h3 id="1-Agent-有严格次数限制时，如何避免误杀正常任务？"><a href="#1-Agent-有严格次数限制时，如何避免误杀正常任务？" class="headerlink" title="1. Agent 有严格次数限制时，如何避免误杀正常任务？"></a>1. Agent 有严格次数限制时，如何避免误杀正常任务？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent Runtime、预算治理 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：把总预算拆成调用次数、步骤、Token、金额和墙钟时间；进入模型或工具调用前原子预留。对有进展的任务保留合理余量，对重复规划或无状态变化的循环提前停止。达到上限时返回部分结果、未完成原因和可恢复点，不让 Agent 无限尝试。</li>
+<li><strong>追问</strong>：两个并行分支同时申请最后一次模型调用，如何避免各自通过？答题重点是共享任务账户和原子预留。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/912833732065656832?sourceSSR=post&weFlow=true">牛客用户自述“字节 AI 全栈一面”</a>；公司归属未获官方核验。（检索日期：2026-11-06）</li>
+</ul>
+<h3 id="2-Agent-循环规划时，如何防止耗尽-Token-与工具预算？"><a href="#2-Agent-循环规划时，如何防止耗尽-Token-与工具预算？" class="headerlink" title="2. Agent 循环规划时，如何防止耗尽 Token 与工具预算？"></a>2. Agent 循环规划时，如何防止耗尽 Token 与工具预算？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent Runtime、循环控制 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：设置最大步骤、调用次数、Token、金额和运行时长；记录动作指纹与状态进展，重复动作且结果无变化时停止。每个步骤预检并预留预算，流式用量缺失时暂记待对账，重试也占预算。</li>
+<li><strong>追问</strong>：为什么只限制 Token 不够？答题重点是外部工具可能按次收费，循环还可能耗尽时间和并发资源。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://ac.nowcoder.com/discuss/1674899?type=0">牛客用户自述“OPPO AI Agent 秋招一面”</a>；公司归属未获官方核验。（检索日期：2026-11-06）</li>
+</ul>
+<h3 id="3-流式返回时，如何统计-Token-并支持计费？"><a href="#3-流式返回时，如何统计-Token-并支持计费？" class="headerlink" title="3. 流式返回时，如何统计 Token 并支持计费？"></a>3. 流式返回时，如何统计 Token 并支持计费？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：模型网关、流式计量 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：以 <code>attempt_id</code> 聚合一次供应商调用，优先使用供应商最终 usage。增量帧求和、累计帧取最后值，必须按供应商协议判断；可见文本不能覆盖不可见推理 Token。中断或没有最终 usage 时标记 <code>PENDING_USAGE</code>，保留预留额，等待供应商对账。重试和子调用分别入账，并用唯一键防止重复结算。</li>
+<li><strong>追问</strong>：客户端断开而供应商继续生成，如何避免漏记与双记？答题重点是服务端独立收尾、稳定调用 ID 和幂等结算。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/867373725035872256?toCommentId=22556982">牛客《80 道 Agent 开发面试题》“流式输出”第 8 题</a>；社区整理题，未核验具体企业出处。（检索日期：2026-11-06）</li>
+</ul>
+<h3 id="4-Token-消耗突然增加，怎样定位和优化？"><a href="#4-Token-消耗突然增加，怎样定位和优化？" class="headerlink" title="4. Token 消耗突然增加，怎样定位和优化？"></a>4. Token 消耗突然增加，怎样定位和优化？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI 平台、成本诊断 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：先按租户、任务类型、模型、Prompt 版本、路由版本聚合，区分请求量上升、每次输入增长、输出变长、重试次数增加和缓存命中下降。再看每成功任务成本与成功率，避免只靠单次 Token 指标优化。使用调用级 trace 对照价格快照和原始 usage，复现后再改上下文压缩、路由或缓存策略。</li>
+<li><strong>追问</strong>：平均单次 Token 下降而每成功任务成本上升，可能是什么原因？答题重点是失败率、重试、工具费或模型单价变化。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/924002092400775168?sourceSSR=post&weFlow=true">牛客成本趋势讨论帖</a>；社区整理题，未核验具体企业出处。（检索日期：2026-11-06）</li>
+</ul>
+<h3 id="5-多租户-Agent-平台怎样处理资源配额？"><a href="#5-多租户-Agent-平台怎样处理资源配额？" class="headerlink" title="5. 多租户 Agent 平台怎样处理资源配额？"></a>5. 多租户 Agent 平台怎样处理资源配额？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：多租户、模型网关 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：所有调用先绑定可信租户身份；分别设置并发、RPM&#x2F;TPM、任务预算和账期金额上限。全局额度与租户额度都要通过原子预留，重试不能绕过配额。账本按租户和 attempt 记原始 usage、结算状态及调整事件，并限制用户只能查询本租户成本。</li>
+<li><strong>追问</strong>：全局 TPM 和租户 TPM 同时紧张，怎样避免先占一个配额后另一个失败？答题重点是固定顺序、短期预留与失败回滚，或集中配额服务。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://ac.nowcoder.com/discuss/1665837?type=0">牛客 Agent 开发岗面试题整理</a>；社区整理题，未核验具体企业出处。（检索日期：2026-11-06）</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li>供应商用量、价格和限制：<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI Prompt caching</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/pricing">OpenAI API pricing</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI rate limits</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Anthropic Prompt caching</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/pricing">Anthropic pricing</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic rate limits</a>。</li>
+<li>计数、流式与对账：<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/token-counting">OpenAI Counting tokens</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI streaming events</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs">OpenAI Costs API</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/token-counting">Anthropic Token counting</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api">Anthropic Usage and Cost Analytics API</a>。（以上资料检索日期：2026-11-06）</li>
+</ul>
+<p>明天继续把预算闸门接到模型网关：区分供应商速率限制、租户配额、任务并发和降级策略，并验证 429、超时与预算拒绝的不同处理路径。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Task-Tenant-Usage-Cost-Budget.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%88%90%E6%9C%AC%E8%B4%A6%E6%9C%AC/" rel="tag">成本账本</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%A2%84%E7%AE%97%E6%8E%A7%E5%88%B6/" rel="tag">预算控制</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Prompt-Semantic-Cache-Isolation.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Prompt 缓存与语义缓存怎么分：命中、失效和租户隔离</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
