@@ -117,6 +117,65 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-AI-Model-Gateway-Rate-Limit-Quota-Fallback"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html"
+    >模型网关怎么控流：供应商限流、租户配额与安全降级</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html" class="article-date">
+  <time datetime="2026-11-07T01:00:00.000Z" itemprop="datePublished">2026-11-07</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>第 11 天已经把每次供应商调用接进成本账本，并用原子预留守住任务和租户预算。预算通过后，请求仍可能被供应商限流、被本系统并发限制挡住，或遇到临时过载。把所有失败都当成“再试一次”，会让重试流量放大故障。</p>
+<p>今天给模型网关加一层<strong>可解释的准入与恢复策略</strong>：谁占用了哪一维额度，为什么等待或拒绝，何时允许重试，何时可以切模型。文中的网关接口和调度算法是工程设计；供应商错误码、用量口径与响应头以引用的官方文档为准。</p> 
+      <a class="article-more-link" href="/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%99%8D%E7%BA%A7/" rel="tag">降级</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%99%90%E6%B5%81/" rel="tag">限流</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-AI-Task-Tenant-Usage-Cost-Budget"
   class="article article-type-post"
   itemscope
@@ -639,65 +698,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/" rel="tag">模型工程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/" rel="tag">流式响应</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA/" rel="tag">结构化输出</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-AI-Agent-Runtime-State-Machine"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/AI-Agent-Runtime-State-Machine.html"
-    >Agent Runtime 怎么设计：状态机、可恢复执行与幂等</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/AI-Agent-Runtime-State-Machine.html" class="article-date">
-  <time datetime="2026-10-28T01:10:00.000Z" itemprop="datePublished">2026-10-28</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>昨天先把企业级 Agent 的目标拆成了任务、步骤、证据和 trace。今天继续往下实现运行时。很多 Agent Demo 的主循环只有几行：调用模型、执行工具、把结果放回上下文，直到模型说任务完成。</p>
-<p>这段循环可以证明模型会调用工具，却不能证明系统能处理一个运行二十分钟的真实任务。服务重启怎么办，工具超时但实际已经成功怎么办，用户取消后迟到的结果写到哪里，两个执行器同时推进同一个任务怎么办？这些问题都属于 Agent Runtime，而不是 Prompt 的细节。</p> 
-      <a class="article-more-link" href="/articles/AI-Agent-Runtime-State-Machine.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E9%9D%A0%E6%80%A7/" rel="tag">可靠性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" rel="tag">状态机</a></li></ul>
 
     </footer>
   </div>

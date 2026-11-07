@@ -44,6 +44,7 @@ comments: true
 - **Day 9｜[模型路由怎么落地：能力门槛、缓存命中与每成功任务成本](/articles/AI-Model-Routing-Cache-Cost-Ledger.html)**
 - **Day 10｜[Prompt 缓存与语义缓存怎么分：命中、失效和租户隔离](/articles/AI-Prompt-Semantic-Cache-Isolation.html)**
 - **Day 11｜[AI 成本账本怎么做：请求、任务、租户三级计量与预算硬上限](/articles/AI-Task-Tenant-Usage-Cost-Budget.html)**
+- **Day 12｜[模型网关怎么控流：供应商限流、租户配额与安全降级](/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html)**
 
 ### 已有相关文章
 
@@ -72,7 +73,9 @@ comments: true
 - Day 9：[模型路由、能力门槛、缓存命中与任务成本](/articles/AI-Model-Routing-Cache-Cost-Ledger.html)
 - Day 10：[Prompt 缓存、语义缓存、失效与租户隔离](/articles/AI-Prompt-Semantic-Cache-Isolation.html)
 - Day 11：[请求、任务、租户三级成本账本与预算硬上限](/articles/AI-Task-Tenant-Usage-Cost-Budget.html)
-- Day 12-14：预算闸门、限流配额与模型服务治理
+- Day 12：[供应商限流、租户配额、有界重试与安全降级](/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html)
+- Day 13：模型服务治理、模型注册与路由配置发布
+- Day 14：第二周复盘与小测
 - Day 15-21：Python/TypeScript 服务、异步任务、数据库模型和 API 设计
 - Day 22-30：最小对话服务、回归样本、阶段项目一：模型网关
 

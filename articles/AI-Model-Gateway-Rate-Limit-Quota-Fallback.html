@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 12 天，设计模型网关的多维准入、租户公平排队、供应商错误分类、有界重试和安全模型降级，并用本地故障注入验收。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>模型网关怎么控流：供应商限流、租户配额与安全降级 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Model-Gateway-Rate-Limit-Quota-Fallback"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  模型网关怎么控流：供应商限流、租户配额与安全降级
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html" class="article-date">
+  <time datetime="2026-11-07T01:00:00.000Z" itemprop="datePublished">2026-11-07</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">15 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>第 11 天已经把每次供应商调用接进成本账本，并用原子预留守住任务和租户预算。预算通过后，请求仍可能被供应商限流、被本系统并发限制挡住，或遇到临时过载。把所有失败都当成“再试一次”，会让重试流量放大故障。</p>
+<p>今天给模型网关加一层<strong>可解释的准入与恢复策略</strong>：谁占用了哪一维额度，为什么等待或拒绝，何时允许重试，何时可以切模型。文中的网关接口和调度算法是工程设计；供应商错误码、用量口径与响应头以引用的官方文档为准。</p>
+<span id="more"></span>
+
+<h2 id="一、把四种“额度”分开"><a href="#一、把四种“额度”分开" class="headerlink" title="一、把四种“额度”分开"></a>一、把四种“额度”分开</h2><table>
+<thead>
+<tr>
+<th>约束</th>
+<th>典型键</th>
+<th>度量</th>
+<th>到上限后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>金额预算</td>
+<td>租户、任务、账期</td>
+<td>已结算 + 已预留金额</td>
+<td>拒绝新的付费调用，等待充值或下个账期</td>
+</tr>
+<tr>
+<td>请求速率</td>
+<td>租户、模型池、供应商项目</td>
+<td>RPM &#x2F; RPD 等</td>
+<td>延后发送或返回可重试的限流结果</td>
+</tr>
+<tr>
+<td>Token 速率</td>
+<td>租户、模型池、供应商项目</td>
+<td>TPM；部分供应商分输入和输出</td>
+<td>按实际规则保守预留，限额恢复后再尝试</td>
+</tr>
+<tr>
+<td>并发数</td>
+<td>租户、模型池、工具</td>
+<td>正在执行的调用数</td>
+<td>有界排队，队列满则拒绝</td>
+</tr>
+</tbody></table>
+<p>金额预算不是速率限制：一小时只发一次请求，也可能因单次长上下文越过成本上限。RPM 不是并发：一分钟内只发十个请求，十个请求也可能同时占住十条长连接。Token 速率也不能用请求数代替：短问答和长文档总结对供应商容量的占用不同。</p>
+<p>OpenAI 的限额可以按组织、项目、模型及共享模型族生效，响应头提供请求数与 Token 的剩余额度和重置时间；模型可用性与限额是两回事。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>（检索日期：2026-11-07）。Anthropic 区分 RPM、输入 Token 每分钟（ITPM）和输出 Token 每分钟（OTPM）；组织上限与 workspace 上限同时生效，并采用 Token Bucket，标称分钟额度不等于短时间内可以一次性突发用完。<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic Rate limits</a>（检索日期：2026-11-07）。</p>
+<p>尤其要复用第 11 天的供应商专属 usage 适配器：OpenAI 的缓存输入仍计入 TPM；Anthropic 多数 Claude 模型的缓存读取不计 ITPM，而缓存写入计入。不要把价格账本中的“缓存读费率更低”误读成“不会消耗速率额度”。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic Rate limits</a>（检索日期：2026-11-07）</p>
+<h2 id="二、一次请求怎样通过网关"><a href="#二、一次请求怎样通过网关" class="headerlink" title="二、一次请求怎样通过网关"></a>二、一次请求怎样通过网关</h2><p>模型路由先筛能力、数据边界与成本，再为候选模型申请额度。建议把一次准入拆成以下步骤，所有候选都走同一套规则：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">可信身份与租户绑定</span><br><span class="line">    → 验证任务类型、数据区域、模型能力、工具和结构化输出契约</span><br><span class="line">    → 估计实际渲染输入与最大输出，计算本次金额上界</span><br><span class="line">    → 进入有界租户队列；等待不能超过业务截止时间</span><br><span class="line">    → 原子申请租户与供应商模型池的速率额度、并发租约</span><br><span class="line">    → 原子预留任务与租户金额预算</span><br><span class="line">    → 发起一次供应商 attempt</span><br><span class="line">    → 记录原始响应、结算成本、释放并发租约</span><br></pre></td></tr></table></figure>
+
+<p>等待队列不应长期占住金额预留额。真正发出前要重新检查 deadline、权限、模型候选和预算。若准入申请中途失败，撤销<strong>尚未发送</strong>的本地预留；请求一旦送到供应商，就不能假设失败或超时不占其速率额度，也不能把成本写成零。第 11 天的 <code>attempt_id</code> 应贯穿网关、trace 和账本。</p>
+<p>对同一 Redis 分片内的多维本地速率额度，可用 Lua 脚本一次检查并扣减；若额度分散在多个存储或地域，就需要单一协调服务或明确的失败回滚与保守拒绝策略。并发名额应使用带租约时限的信号量，任务正常结束时立即释放，实例崩溃后由租约过期回收。金额预算仍用持久化原子预留与结算，不能只靠内存计数。</p>
+<h3 id="为什么不能只看供应商响应头"><a href="#为什么不能只看供应商响应头" class="headerlink" title="为什么不能只看供应商响应头"></a>为什么不能只看供应商响应头</h3><p>响应头是供应商对<strong>已到达请求</strong>的观察值，应用内部还有其他实例、其他项目或绕过本网关的流量。网关应维护自己的保守容量模型，再用供应商的 remaining&#x2F;reset 信息动态校准。若供应商报剩余 0，就停止本模型池的新发送；若本地估计尚有余额但供应商返回 429，以供应商拒绝为准，降低发送速率并记录偏差。</p>
+<p>有界队列可按租户做轮转或带权公平调度；付费等级可以影响权重，但不能让低权重租户永远得不到服务。队列深度、最长等待和单租户在队请求数都要设上限。排队超时应返回明确的 <code>QUEUE_DEADLINE_EXCEEDED</code>，不要在后台继续生成一个用户已经不需要的答案。</p>
+<h2 id="三、429-只是-HTTP-状态，不是恢复策略"><a href="#三、429-只是-HTTP-状态，不是恢复策略" class="headerlink" title="三、429 只是 HTTP 状态，不是恢复策略"></a>三、429 只是 HTTP 状态，不是恢复策略</h2><p>不同错误需要不同处理。下表中的本地错误码是建议的网关契约，不是供应商原样返回值。</p>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>判断证据</th>
+<th>网关动作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本地租户速率用尽</td>
+<td>网关限流器拒绝，未发往供应商</td>
+<td>可排队则等待；否则返回 <code>TENANT_RATE_LIMITED</code> 与可用重试时间</td>
+</tr>
+<tr>
+<td>本地任务或租户金额预算不足</td>
+<td>预算原子预留失败，未发往供应商</td>
+<td>返回 <code>BUDGET_EXHAUSTED</code>；不可自动重试</td>
+</tr>
+<tr>
+<td>OpenAI 临时爬升限流</td>
+<td>429、<code>error.code=slow_down</code></td>
+<td>降速，遵守 <code>Retry-After</code> 的最小等待并加抖动</td>
+</tr>
+<tr>
+<td>OpenAI 模型临时过载</td>
+<td>503、<code>error.code=server_is_overloaded</code></td>
+<td>在剩余 deadline 和预算内有界重试或切合格模型</td>
+</tr>
+<tr>
+<td>OpenAI 支出硬上限</td>
+<td>429 且错误体指向支出封顶</td>
+<td>停止该项目调用；提示运营处理，不做盲重试</td>
+</tr>
+<tr>
+<td>Anthropic 临时限流</td>
+<td>429 且可恢复的 rate limit 错误</td>
+<td>按 <code>retry-after</code> 和剩余预算等待</td>
+</tr>
+<tr>
+<td>Anthropic 支出上限</td>
+<td>供应商封顶错误；可能是 429 或用户设置限制时的 400</td>
+<td>停止重试，记录配额耗尽</td>
+</tr>
+<tr>
+<td>Anthropic 服务过载</td>
+<td>529 <code>overloaded_error</code></td>
+<td>有界退避或安全降级</td>
+</tr>
+<tr>
+<td>超时或连接断开</td>
+<td>未拿到最终供应商结果</td>
+<td>标为结果未知；先查状态与账本，谨慎重试</td>
+</tr>
+</tbody></table>
+<p>OpenAI 官方文档明确区分 429 <code>slow_down</code>、503 <code>server_is_overloaded</code>，也说明支出硬上限可能返回 429。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>（检索日期：2026-11-07）。Anthropic 文档说明套餐支出上限可通过 <code>error.details.error_code=enforced_spend_limit_reached</code> 识别，用户自设限制可能返回 400；其过载错误为 529。<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic Rate limits</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/errors">Anthropic API errors</a>（检索日期：2026-11-07）。</p>
+<p>分类函数至少输入 <code>provider</code>、HTTP 状态、供应商 <code>error.type/code/details</code>、响应头和 <code>streamStarted</code>。不要只写 <code>if (status == 429) retry()</code>。对未知错误保留原始响应与请求 ID，采用保守处理，并把明确的 <code>retryable</code>、<code>retryAfter</code> 和 <code>reason</code> 返回给调用方。</p>
+<h2 id="四、有界重试：把-SDK-自带重试也算进去"><a href="#四、有界重试：把-SDK-自带重试也算进去" class="headerlink" title="四、有界重试：把 SDK 自带重试也算进去"></a>四、有界重试：把 SDK 自带重试也算进去</h2><p>重试只有在<strong>错误可恢复、业务截止时间未到、任务预算足够、下次调用仍满足能力与数据边界</strong>时才成立。先看有效的 <code>Retry-After</code>；它是最短等待时间，不应提前发送。若缺失或无效，再用指数退避加随机抖动。若等待时间已超过任务 deadline，就直接结束或转异步队列。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">RetryDecision</span> <span class="title function_">decide</span><span class="params">(AttemptFailure failure, TaskBudget budget, Instant deadline)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!failure.retryable() || failure.streamStarted()) <span class="keyword">return</span> RetryDecision.stop();</span><br><span class="line">    <span class="keyword">if</span> (budget.remainingAttempts() == <span class="number">0</span> || budget.remainingMoney() &lt;= <span class="number">0</span>) <span class="keyword">return</span> RetryDecision.stop();</span><br><span class="line">    <span class="type">Duration</span> <span class="variable">wait</span> <span class="operator">=</span> failure.retryAfter().orElseGet(() -&gt; backoffWithJitter(budget.usedAttempts()));</span><br><span class="line">    <span class="keyword">if</span> (Instant.now().plus(wait).isAfter(deadline)) <span class="keyword">return</span> RetryDecision.stop();</span><br><span class="line">    <span class="keyword">return</span> RetryDecision.retryAfter(wait);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个伪代码省略了成本上界、模型能力与幂等检查，生产实现必须补齐。每一次重试都产生新的 <code>attempt_id</code>，各自申请额度、预留成本并记账；任务层保留统一的业务幂等键。请求已经到达供应商后，超时可能代表“结果未知”，不能因为客户端没收到文本就断言供应商未生成。</p>
+<p>OpenAI 和 Anthropic 官方 SDK 都可能自动重试。若网关设最多 3 次、SDK 内部又设最多 3 次，实际供应商尝试可能远超预期。建议网关统一管理重试时关闭 SDK 重试，或把 SDK 内部尝试纳入同一个上限与账本。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/errors">Anthropic API errors</a>（检索日期：2026-11-07）</p>
+<p>故障期间还要控制<strong>重试流量占比</strong>，防止大量首次请求和重试一起挤满模型池。无论 429 还是 503，连续失败都应让相应模型池短暂降速或熔断，再以少量探测恢复。失败请求也可能占用供应商的每分钟额度；重试风暴只会加剧拥塞。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>（检索日期：2026-11-07）</p>
+<h2 id="五、降级必须先通过业务契约"><a href="#五、降级必须先通过业务契约" class="headerlink" title="五、降级必须先通过业务契约"></a>五、降级必须先通过业务契约</h2><p>从模型 A 切到模型 B 前，逐项检查：</p>
+<ol>
+<li><strong>能力</strong>：工具调用、结构化输出、上下文窗口、模态和最大输出满足本任务。</li>
+<li><strong>数据边界</strong>：租户允许的供应商、地域、保留策略和敏感数据规则允许切换。</li>
+<li><strong>质量门槛</strong>：该任务的 Golden Set 和灰度结果支持 B；高风险任务可直接失败或转人工。</li>
+<li><strong>费用与限额</strong>：B 的最大费用仍在剩余预算内，B 的 RPM&#x2F;TPM&#x2F;并发也可用。</li>
+<li><strong>状态</strong>：尚未向用户输出无法撤回的流式内容，也未产生不可重复的工具副作用。</li>
+</ol>
+<p>OpenAI 与 Anthropic 都说明流式请求开始后仍可能通过事件报告错误。<strong>已经向用户发出部分答案时，不应静默把另一模型的输出接在后面</strong>：模型可能重复前文、改变结论或造成引用错位。可明确终止本次流，展示“部分输出未完成”；若要重试，应启动新的可识别结果版本，重新走预算、权限和证据检查。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/errors">Anthropic API errors</a>（检索日期：2026-11-07）</p>
+<p>发生超时但结果未知时，先保留原 attempt 的预算与对账状态。若供应商支持查询原响应，则优先确认；确认无法查询时，按业务幂等风险决定是否新开 attempt。对带外部写操作的 Agent，模型重试不应自动重放已经执行的工具调用。</p>
+<h2 id="六、Java-服务接口与故障注入"><a href="#六、Java-服务接口与故障注入" class="headerlink" title="六、Java 服务接口与故障注入"></a>六、Java 服务接口与故障注入</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">record</span> <span class="title class_">AdmissionScope</span><span class="params">(String tenantId, String taskId, String modelPool)</span> &#123;&#125;</span><br><span class="line"><span class="keyword">record</span> <span class="title class_">Demand</span><span class="params">(<span class="type">long</span> inputTokensUpperBound, <span class="type">long</span> outputTokensUpperBound, <span class="type">long</span> moneyUpperBoundMinor)</span> &#123;&#125;</span><br><span class="line"><span class="keyword">record</span> <span class="title class_">GatewayError</span><span class="params">(String code, <span class="type">boolean</span> retryable, Duration retryAfter, String attemptId)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">AdmissionController</span> &#123;</span><br><span class="line">    <span class="type">Lease</span> <span class="title function_">tryAcquire</span><span class="params">(AdmissionScope scope, Demand demand, Instant deadline)</span>;</span><br><span class="line">    <span class="type">void</span> <span class="title function_">releaseBeforeSend</span><span class="params">(Lease lease)</span>;</span><br><span class="line">    <span class="type">void</span> <span class="title function_">finish</span><span class="params">(Lease lease, UsageResult result)</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">ProviderErrorClassifier</span> &#123;</span><br><span class="line">    <span class="type">GatewayError</span> <span class="title function_">classify</span><span class="params">(String provider, <span class="type">int</span> httpStatus, RawError body,</span></span><br><span class="line"><span class="params">                          Map&lt;String, String&gt; headers, <span class="type">boolean</span> streamStarted)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>用 <code>FakeProvider</code> 和虚拟时钟做一组可重放实验，避免接真实付费 API：</p>
+<ol>
+<li>RPM 还有余额但 TPM 不足：准入拒绝，供应商调用数保持零。</li>
+<li>同租户并发达到上限：第二个请求进入有界队列，租约释放后继续；实例崩溃时租约到期回收。</li>
+<li>两个租户竞争同一模型池：验证全局上限不被突破，低权重租户仍有完成机会。</li>
+<li>本地预算不足：无供应商调用，返回 <code>BUDGET_EXHAUSTED</code>。</li>
+<li>OpenAI 临时 429 带 <code>Retry-After</code>：不提前发送；等待超出 deadline 时停止。</li>
+<li>供应商支出封顶也返回 429：不重试、不切到同一付费账户下的另一个模型。</li>
+<li>503 或 529 过载：只对符合契约的候选降级，并单独记录每次 attempt 与成本。</li>
+<li>流式已输出部分内容后收到错误事件：不自动重放；标记部分结果与待对账用量。</li>
+<li>SDK 自带重试与网关重试同时开启：检查实际供应商调用次数，修正为单一重试预算。</li>
+</ol>
+<p>观察指标至少包括：按原因分组的准入拒绝数、队列等待 p95、租户公平性、供应商 429&#x2F;503&#x2F;529 比例、重试放大率、降级后的成功率与质量、每成功任务成本、待对账金额。只看“成功率提升”会掩盖重试成本和质量下降。</p>
+<h2 id="七、今日面试题（检索日期：2026-11-07）"><a href="#七、今日面试题（检索日期：2026-11-07）" class="headerlink" title="七、今日面试题（检索日期：2026-11-07）"></a>七、今日面试题（检索日期：2026-11-07）</h2><p>以下面经中的公司归属均为发帖者自述，<strong>不是企业官方题库</strong>；参考答案是本文的工程归纳。第 4 题只能核验搜索索引与作者主页，原文页面未能完整抓取，已单独标注。</p>
+<h3 id="1-工具调度器如何同时处理依赖、单工具配额和总并发上限？"><a href="#1-工具调度器如何同时处理依赖、单工具配额和总并发上限？" class="headerlink" title="1. 工具调度器如何同时处理依赖、单工具配额和总并发上限？"></a>1. 工具调度器如何同时处理依赖、单工具配额和总并发上限？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent Runtime、调度 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：用 DAG 拓扑排序和就绪队列安排执行；环在启动前拒绝。真正执行前申请全局与工具级租约，完成或失败后在 <code>finally</code> 释放。父节点不能持有并发名额等待子节点；失败下游标记 <code>SKIPPED</code> 并保留原因。</li>
+<li><strong>追问</strong>：并行分支同时争抢最后一个名额，如何保证租户公平和不超卖？</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/947983580246859776?sourceSSR=post">牛客用户自述“阿里淘天 Agent 平台一面”</a>，页面显示 11-05；企业归属未获官方核验。</li>
+</ul>
+<h3 id="2-实现最多-N-次、带指数退避和随机抖动、同业务键幂等的重试器"><a href="#2-实现最多-N-次、带指数退避和随机抖动、同业务键幂等的重试器" class="headerlink" title="2. 实现最多 N 次、带指数退避和随机抖动、同业务键幂等的重试器"></a>2. 实现最多 N 次、带指数退避和随机抖动、同业务键幂等的重试器</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：模型网关、Java 后端 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：先按供应商错误码区分可恢复与不可恢复；优先遵守 <code>Retry-After</code>，否则指数退避加抖动。用业务键关联任务、用 <code>attempt_id</code> 区分实际调用；限制总次数、总时间、预算与重试流量。网关统一重试时关闭或计入 SDK 自带重试。</li>
+<li><strong>追问</strong>：一千个请求同一时刻收到 429，怎样避免下一秒再次同步冲击供应商？</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/947982288917110784?sourceSSR=post">牛客用户自述“快手 AI 全栈一面”</a>；企业归属未获官方核验。</li>
+</ul>
+<h3 id="3-多用户调用同一工具，Redis-如何限流？限流和限制并发有什么区别？"><a href="#3-多用户调用同一工具，Redis-如何限流？限流和限制并发有什么区别？" class="headerlink" title="3. 多用户调用同一工具，Redis 如何限流？限流和限制并发有什么区别？"></a>3. 多用户调用同一工具，Redis 如何限流？限流和限制并发有什么区别？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：多租户、分布式限流 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：限流约束单位时间内的请求数或 Token；并发限制约束同一时刻正在执行的任务数。共享存储中按租户和全局维度原子申请，速率可用 Token Bucket，并发用带过期时间的租约。不能用本机 <code>Semaphore</code> 代表多实例总限额。</li>
+<li><strong>追问</strong>：实例在执行中崩溃，怎样回收并发名额，同时避免任务仍运行时租约提前失效？</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/946211096669564928?sourceSSR=home">牛客字节相关备考题单</a>，页面显示 11-01；发帖者说明是多份记录整理，未核验为单场企业原题。</li>
+</ul>
+<h3 id="4-首次请求返回-429-后切换模型，怎样避免重复生成和重复计费？"><a href="#4-首次请求返回-429-后切换模型，怎样避免重复生成和重复计费？" class="headerlink" title="4. 首次请求返回 429 后切换模型，怎样避免重复生成和重复计费？"></a>4. 首次请求返回 429 后切换模型，怎样避免重复生成和重复计费？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：模型路由、故障恢复 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：先区分<strong>确实收到流开始前的供应商拒绝</strong>和超时导致的结果未知；检查 SDK 是否已内部重试。已确定拒绝且未输出时，可以为合格候选重新准入和预留；结果未知时保留原 attempt 对账，不把它写成零。两个供应商调用分别记账，客户端只接受一个明确版本的结果。已输出部分流时不静默续接另一模型。</li>
+<li><strong>追问</strong>：主模型已有部分 SSE 输出，同时发生超时，怎样向用户说明状态并追踪两次成本？</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/c687af27a503401888e6b41c0f5ece93?sourceSSR=enterprise">牛客用户自述“字节抖音架构后端一面”</a>；题面及 2026-10-13 日期见搜索索引与作者主页，原文未能完整核验，企业归属也未获官方核验。</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/rate-limits">OpenAI Rate limits</a>：组织&#x2F;项目&#x2F;模型族限额，响应头、<code>Retry-After</code>、临时 429 与 503、有界重试和硬支出限额。</li>
+<li><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/rate-limits">Anthropic Rate limits</a>：RPM&#x2F;ITPM&#x2F;OTPM、Token Bucket、缓存 Token 口径、组织与 workspace 限额及支出封顶。</li>
+<li><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/api/errors">Anthropic API errors</a>：529 过载、流式错误事件与 SDK 重试。以上官方资料检索日期均为 2026-11-07。</li>
+</ul>
+<p>明天继续做模型服务治理：模型注册表、能力版本、健康检查与路由配置发布；第 14 天按计划做第二周复盘和小测。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%99%8D%E7%BA%A7/" rel="tag">降级</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%99%90%E6%B5%81/" rel="tag">限流</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Task-Tenant-Usage-Cost-Budget.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">AI 成本账本怎么做：请求、任务、租户三级计量与预算硬上限</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
