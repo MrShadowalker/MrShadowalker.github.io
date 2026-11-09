@@ -10,7 +10,25 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-08T01:00:00.000Z</updated>
+  <updated>2026-11-09T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
+    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
+    <category term="RAG" scheme="https://chenzihao.me/tags/RAG/"/>
+    <category term="多租户" scheme="https://chenzihao.me/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html"/>
+    <published>2026-11-09T01:00:00.000Z</published>
+    <summary>复盘 AI 全栈开发第 8–13 天，用一个本地多租户知识助手夹具验收检索、缓存、路由、成本、限流和模型注册表，附八道小测与四道有来源的面试题。</summary>
+    <title>AI 全栈开发第二周验收：从检索到模型网关的一次故障演练</title>
+    <updated>2026-11-09T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -19,8 +37,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="模型注册表" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E6%B3%A8%E5%86%8C%E8%A1%A8/"/>
     <category term="模型路由" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/"/>
+    <category term="模型注册表" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E6%B3%A8%E5%86%8C%E8%A1%A8/"/>
     <category term="灰度发布" scheme="https://chenzihao.me/tags/%E7%81%B0%E5%BA%A6%E5%8F%91%E5%B8%83/"/>
     <id>https://chenzihao.me/articles/AI-Model-Registry-Capability-Routing-Release.html</id>
     <link href="https://chenzihao.me/articles/AI-Model-Registry-Capability-Routing-Release.html"/>
@@ -37,8 +55,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="限流" scheme="https://chenzihao.me/tags/%E9%99%90%E6%B5%81/"/>
     <category term="多租户" scheme="https://chenzihao.me/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/"/>
+    <category term="限流" scheme="https://chenzihao.me/tags/%E9%99%90%E6%B5%81/"/>
     <category term="降级" scheme="https://chenzihao.me/tags/%E9%99%8D%E7%BA%A7/"/>
     <id>https://chenzihao.me/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html</id>
     <link href="https://chenzihao.me/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html"/>
@@ -73,8 +91,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="成本控制" scheme="https://chenzihao.me/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/"/>
-    <category term="Prompt" scheme="https://chenzihao.me/tags/Prompt/"/>
     <category term="缓存" scheme="https://chenzihao.me/tags/%E7%BC%93%E5%AD%98/"/>
+    <category term="Prompt" scheme="https://chenzihao.me/tags/Prompt/"/>
     <category term="租户隔离" scheme="https://chenzihao.me/tags/%E7%A7%9F%E6%88%B7%E9%9A%94%E7%A6%BB/"/>
     <id>https://chenzihao.me/articles/AI-Prompt-Semantic-Cache-Isolation.html</id>
     <link href="https://chenzihao.me/articles/AI-Prompt-Semantic-Cache-Isolation.html"/>
@@ -108,8 +126,8 @@
     <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="Embedding" scheme="https://chenzihao.me/tags/Embedding/"/>
     <category term="RAG" scheme="https://chenzihao.me/tags/RAG/"/>
+    <category term="Embedding" scheme="https://chenzihao.me/tags/Embedding/"/>
     <category term="向量检索" scheme="https://chenzihao.me/tags/%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2/"/>
     <id>https://chenzihao.me/articles/AI-Embedding-Vector-Retrieval-Basics.html</id>
     <link href="https://chenzihao.me/articles/AI-Embedding-Vector-Retrieval-Basics.html"/>
@@ -339,21 +357,5 @@
     <summary>从旧面试笔记和示例代码出发，沿着一笔订单串起并发、事务、缓存和消息。</summary>
     <title>把 Java 面试笔记串成一条工程主线</title>
     <updated>2026-09-09T01:30:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="工程实践" scheme="https://chenzihao.me/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="AI" scheme="https://chenzihao.me/tags/AI/"/>
-    <category term="测试" scheme="https://chenzihao.me/tags/%E6%B5%8B%E8%AF%95/"/>
-    <category term="可观测性" scheme="https://chenzihao.me/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"/>
-    <category term="部署" scheme="https://chenzihao.me/tags/%E9%83%A8%E7%BD%B2/"/>
-    <id>https://chenzihao.me/articles/Engineering-Release-Readback.html</id>
-    <link href="https://chenzihao.me/articles/Engineering-Release-Readback.html"/>
-    <published>2026-09-09T01:20:00.000Z</published>
-    <summary>从镜像构建到用户入口，讨论怎样确认新版本真正生效。</summary>
-    <title>服务启动了，然后呢？一次发布应该怎样验收</title>
-    <updated>2026-09-09T01:20:00.000Z</updated>
   </entry>
 </feed>
