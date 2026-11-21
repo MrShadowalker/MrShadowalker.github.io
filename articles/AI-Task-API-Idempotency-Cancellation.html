@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 16 天：为长时 Agent 任务设计提交、查询、事件和取消接口，讲清幂等键、HTTP 状态码、错误契约及外部副作用边界。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>任务 API 怎么定：幂等键、错误契约与取消语义 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Task-API-Idempotency-Cancellation"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  任务 API 怎么定：幂等键、错误契约与取消语义
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Task-API-Idempotency-Cancellation.html" class="article-date">
+  <time datetime="2026-11-11T01:00:00.000Z" itemprop="datePublished">2026-11-11</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">8 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>第 15 天的 <code>/v1/answers</code> 适合验证一条短请求链。但 Agent 任务可能检索、调模型、等待工具、等人审批，单个 HTTP 请求不应一直占着连接。第 16 天先把<strong>提交任务、查状态、读事件、请求取消</strong>定成稳定 API，再决定怎样实现队列和数据库。</p>
+<span id="more"></span>
+
+<h2 id="一、先把“接受请求”和“完成任务”分开"><a href="#一、先把“接受请求”和“完成任务”分开" class="headerlink" title="一、先把“接受请求”和“完成任务”分开"></a>一、先把“接受请求”和“完成任务”分开</h2><p>建议的最小契约如下。路径、字段和错误码是本文的工程约定，团队可调整，但客户端与服务端必须共享一份版本化规范。</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>请求</th>
+<th>成功响应</th>
+<th>核心语义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>提交</td>
+<td><code>POST /v1/tasks</code>，带 <code>Idempotency-Key</code></td>
+<td>202，<code>Location: /v1/tasks/&#123;task_id&#125;</code></td>
+<td>已持久化并等待执行，任务尚未成功</td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>GET /v1/tasks/&#123;task_id&#125;</code></td>
+<td>200，状态、版本、结果或错误</td>
+<td>只允许任务所属租户与授权用户查看</td>
+</tr>
+<tr>
+<td>事件</td>
+<td><code>GET /v1/tasks/&#123;task_id&#125;/events?after=17</code></td>
+<td>200 <code>text/event-stream</code>，按序推送事件</td>
+<td>SSE 断线后从确认序号补读</td>
+</tr>
+<tr>
+<td>取消</td>
+<td><code>POST /v1/tasks/&#123;task_id&#125;/cancel</code></td>
+<td>202，<code>CANCEL_REQUESTED</code></td>
+<td>接收取消意图，不承诺外部动作已撤销</td>
+</tr>
+</tbody></table>
+<p>RFC 9110 定义 202 为已接受处理但尚未完成，处理也可能最终不被执行；因此 202 响应必须给客户端可查询的任务地址和状态。<a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.3">RFC 9110 §15.3.3</a>（检索日期：2026-11-21）</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;task_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;task-7f0a&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;QUEUED&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;status_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;trace_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;trace-20261111-17&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;links&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;self&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/v1/tasks/task-7f0a&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;events&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/v1/tasks/task-7f0a/events&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>任务对象保存租户、创建者、规范化请求摘要、知识&#x2F;Prompt&#x2F;路由配置版本、截止时间与预算。响应只给必要的状态和链接，不回显原始企业文档。</p>
+<h2 id="二、幂等键要有范围、指纹和保留期"><a href="#二、幂等键要有范围、指纹和保留期" class="headerlink" title="二、幂等键要有范围、指纹和保留期"></a>二、幂等键要有范围、指纹和保留期</h2><p>“客户端超时重发”与“用户真的要新建第二个任务”必须区分。入口生成 <code>request_hash</code>，定义唯一范围为 <code>(tenant_id, principal_id, endpoint, idempotency_key)</code>，其中 <code>principal_id</code> 来自认证上下文而非请求体：</p>
+<ol>
+<li>第一次提交：同一数据库事务中插入任务和幂等记录，返回新任务的 202。</li>
+<li>同键、同规范化请求：返回原 <code>task_id</code> 的当前状态，不创建第二个任务。</li>
+<li>同键、不同请求指纹：返回 409 <code>IDEMPOTENCY_MISMATCH</code>，让客户端换键或纠正请求。</li>
+<li>并发首次提交：由数据库唯一约束决定胜者，败者读取已提交任务；不能先 <code>SELECT</code> 再无约束 <code>INSERT</code>。</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">UNIQUE</span> INDEX ux_task_idempotency</span><br><span class="line"><span class="keyword">ON</span> ai_task (tenant_id, created_by, endpoint, idempotency_key);</span><br></pre></td></tr></table></figure>
+
+<p>指纹应覆盖会改变业务结果的规范化输入，包括目标、授权资源范围和客户端指定的任务选项；服务端选出的模型发布版本则作为创建结果固定在任务中。记录需要明确保留期，并与任务保存期和业务重试窗口一致。IETF 对 <code>Idempotency-Key</code> 的文档截至检索日仍是 <strong>Internet-Draft，不是正式 RFC</strong>；它描述了同键不同载荷、并发请求及过期策略，本文采用其设计思路，具体协议以自己的 API 文档为准。<a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/">IETF Idempotency-Key 草案</a>（检索日期：2026-11-21）。PostgreSQL 的 <code>ON CONFLICT</code> 与唯一索引可承担原子冲突处理。<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT</a>（检索日期：2026-11-21）</p>
+<p>幂等键不能替代<strong>外部写操作幂等</strong>：一个任务可重试多次，调用“发邮件、退款、提交审批”时还要给每个业务动作稳定的 <code>action_key</code>，保留执行回执。客户端请求幂等、任务执行幂等和外部业务幂等是三层不同契约。</p>
+<h2 id="三、错误模型要让前端知道下一步"><a href="#三、错误模型要让前端知道下一步" class="headerlink" title="三、错误模型要让前端知道下一步"></a>三、错误模型要让前端知道下一步</h2><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;error&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;code&quot;</span><span class="punctuation">:</span> <span class="string">&quot;TASK_CONFLICT&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;任务状态已变化，请刷新后重试&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;retryable&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;trace_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;trace-20261111-17&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;details&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;current_status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;SUCCEEDED&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>HTTP 状态</th>
+<th>稳定业务码示例</th>
+<th>前端动作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400&#x2F;422</td>
+<td><code>INVALID_REQUEST</code></td>
+<td>修正字段或格式，不自动重试</td>
+</tr>
+<tr>
+<td>401&#x2F;403</td>
+<td><code>UNAUTHENTICATED / FORBIDDEN</code></td>
+<td>登录或提示无权限，不降级绕过</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>TASK_NOT_FOUND</code></td>
+<td>对无权跨租户任务也可统一返回 404，避免枚举</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>IDEMPOTENCY_MISMATCH / TASK_CONFLICT</code></td>
+<td>读取当前任务，再决定是否发新意图</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>TENANT_QUOTA_EXCEEDED</code></td>
+<td>按业务策略等待或提醒，不无限重试</td>
+</tr>
+<tr>
+<td>503</td>
+<td><code>UPSTREAM_UNAVAILABLE</code></td>
+<td>仅在任务未接收或明确可安全重试时重发</td>
+</tr>
+</tbody></table>
+<p>HTTP 状态用于大类，<code>error.code</code> 用于稳定业务处理；<code>message</code> 可以本地化，不能让前端解析文案。409 表示与资源当前状态冲突，适合“终态任务无法再取消”等冲突；具体业务码仍由应用定义。<a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.10">RFC 9110 §15.5.10</a>（检索日期：2026-11-21）</p>
+<h2 id="四、取消是一条状态转换，不是断开-SSE"><a href="#四、取消是一条状态转换，不是断开-SSE" class="headerlink" title="四、取消是一条状态转换，不是断开 SSE"></a>四、取消是一条状态转换，不是断开 SSE</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">QUEUED → RUNNING → SUCCEEDED</span><br><span class="line">   │        │  ↘ FAILED / RETRY_WAIT</span><br><span class="line">   └────────┴→ CANCEL_REQUESTED → CANCELLED</span><br><span class="line">                       ↘ RECONCILING → SUCCEEDED / FAILED</span><br></pre></td></tr></table></figure>
+
+<p>入口只在允许取消的状态下用 <code>status_version</code> 条件更新到 <code>CANCEL_REQUESTED</code>；worker 在每个安全点检查，停止后续模型和工具步骤，并在可以确认无未完成副作用时置为 <code>CANCELLED</code>。若外部写操作已发送但回执丢失，状态是 <code>RECONCILING</code>，应查询真实业务结果或执行受控补偿，不能立即向用户声称取消成功。SSE 连接关闭只代表客户端不再订阅，后台任务继续还是取消取决于独立业务策略。</p>
+<p>事件流里的 <code>seq</code> 由任务级持久化计数器递增。前端用 <code>after</code> 补读，必须去重；实时推送只改善体验，<strong>数据库任务状态仍是事实源</strong>。</p>
+<h2 id="五、今天的练习与验收"><a href="#五、今天的练习与验收" class="headerlink" title="五、今天的练习与验收"></a>五、今天的练习与验收</h2><p>写一份 OpenAPI 契约或接口夹具，至少回放六种情况：首次提交、同键同体重发、同键异体、两个并发提交、任务完成后取消、外部写动作结果未知时取消。逐个给出 HTTP 状态、业务码、任务状态和是否允许新供应商调用。验收硬条件是同一业务意图不会创建两条任务，取消不能隐瞒未知副作用，跨租户读取被拒绝。</p>
+<h2 id="六、今日面试题（检索日期：2026-11-21）"><a href="#六、今日面试题（检索日期：2026-11-21）" class="headerlink" title="六、今日面试题（检索日期：2026-11-21）"></a>六、今日面试题（检索日期：2026-11-21）</h2><p>以下题面来自牛客公开页面；公司归属是作者自述或社区整理，均未获企业官方核验。参考答案和追问由本文整理。</p>
+<h3 id="1-Redis-做幂等，处理时间超过-key-TTL-会怎样？"><a href="#1-Redis-做幂等，处理时间超过-key-TTL-会怎样？" class="headerlink" title="1. Redis 做幂等，处理时间超过 key TTL 会怎样？"></a>1. Redis 做幂等，处理时间超过 key TTL 会怎样？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI 全栈后端、消息幂等 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：TTL 到期后第二个消费者可能拿到同一个业务键；若第一个仍在执行，就会并发重复。Redis 锁要有唯一持有者、续租与原子比较删除，但业务结果仍应由持久化唯一约束和操作回执保护；不能把短 TTL 锁当最终幂等事实。</li>
+<li><strong>追问</strong>：第一次已提交外部写入、响应丢失，此时锁又过期，重试如何避免第二次写入？使用稳定业务动作键，先查下游回执或进入对账。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/947982288917110784?sourceSSR=enterprise">牛客“快手 AI 全栈一面”用户自述</a>，正文直接列出 TTL 追问；企业归属未获官方核验。</li>
+</ul>
+<h3 id="2-Agent-的状态机如何阻止非法状态转换？"><a href="#2-Agent-的状态机如何阻止非法状态转换？" class="headerlink" title="2. Agent 的状态机如何阻止非法状态转换？"></a>2. Agent 的状态机如何阻止非法状态转换？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：任务 API、并发控制 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：明确状态、事件、前置条件和可达边；更新时用 <code>WHERE status = :expected AND version = :version</code> 原子比较更新，失败就读取最新状态并返回冲突。模型输出只是候选动作，不得自行改任务状态。</li>
+<li><strong>追问</strong>：取消与成功同时写入，哪一个生效？由条件更新和真实外部回执决定，不凭请求到达顺序猜。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/928765054617415680">牛客“shopee Agent 开发一面”公开整理帖</a>，正文有状态机题；帖子真实性和公司归属无法独立核验。</li>
+</ul>
+<h3 id="3-Agent-执行到一半中断，怎样保存状态并处理已发出的写操作？"><a href="#3-Agent-执行到一半中断，怎样保存状态并处理已发出的写操作？" class="headerlink" title="3. Agent 执行到一半中断，怎样保存状态并处理已发出的写操作？"></a>3. Agent 执行到一半中断，怎样保存状态并处理已发出的写操作？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent Runtime、取消与副作用 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：持久化任务目标、状态、已完成节点、待执行动作、版本、工具回执和幂等键。恢复或取消前先确认外部操作真实状态；回执未知则进入对账，不能把断连当成撤销，也不能盲目重放写动作。</li>
+<li><strong>追问</strong>：关闭 SSE 连接是否应该取消任务？默认不等同，需看明确的业务契约。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/950800001213464576">牛客“AI Agent 高频工程面试 80 问”社区题库第 19 题</a>，公开正文可核对；<strong>社区整理题，非可核验的大厂原题</strong>。</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>：202 与 409 的 HTTP 语义。</li>
+<li><a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/">IETF Idempotency-Key 草案</a>：仍为工作草案，不应称为已发布标准。</li>
+<li><a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT &#x2F; ON CONFLICT</a>：并发唯一冲突处理。资料检索日期均为 2026-11-21。</li>
+</ul>
+<p>第 17 天用 PostgreSQL 把任务、attempt、事件与用量数据落地，并让每条记录带租户范围。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Task-API-Idempotency-Cancellation.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/API%E8%AE%BE%E8%AE%A1/" rel="tag">API设计</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BB%BB%E5%8A%A1%E7%8A%B6%E6%80%81%E6%9C%BA/" rel="tag">任务状态机</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B9%82%E7%AD%89/" rel="tag">幂等</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Task-Postgres-Tenant-Data-Model.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Fullstack-FastAPI-Service-Contract.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">AI 服务第一层怎么写：用 FastAPI 跑通租户、检索、路由与 Trace</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

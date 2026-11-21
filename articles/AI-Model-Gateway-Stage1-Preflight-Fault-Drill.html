@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 26 天，在第 30 天阶段项目之前，为多租户模型网关、任务 API、SSE 对话页、预算账本与评测发布建立故障演练和证据清单。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>模型网关阶段项目预检：用故障演练证明可交付 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Model-Gateway-Stage1-Preflight-Fault-Drill"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  模型网关阶段项目预检：用故障演练证明可交付
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html" class="article-date">
+  <time datetime="2026-11-21T12:50:00.000Z" itemprop="datePublished">2026-11-21</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">8 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>第 30 天的阶段项目是一个最小模型网关。今天是第 26 天，先做一次<strong>预检</strong>：把已有的注册表、路由、租户预算、适配器、任务状态、事件流、评测和浏览器页面放在同一条链路里，专门找会在面试追问中暴露的问题。</p>
+<p>本文给的是练习规格与验收方法，不代表项目已经实现或通过。每一个“通过”都应由代码、日志、评测报告和可复现的故障注入支撑。</p>
+<span id="more"></span>
+
+<h2 id="一、项目边界：一个任务、一条可回放链路"><a href="#一、项目边界：一个任务、一条可回放链路" class="headerlink" title="一、项目边界：一个任务、一条可回放链路"></a>一、项目边界：一个任务、一条可回放链路</h2><p>选择“企业差旅政策问答”作为最小业务。两个租户有不同政策，同一句问题必须得到各自授权的答案。系统图可以压缩为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">React 对话页</span><br><span class="line">  → 身份 / 租户 / POST 创建任务</span><br><span class="line">  → 任务表 + 事件表</span><br><span class="line">  → 路由配置快照 + 模型能力注册表</span><br><span class="line">  → 预算预留 + 速率 / 并发准入</span><br><span class="line">  → Provider Adapter</span><br><span class="line">  → 结构和引用校验</span><br><span class="line">  → usage 对账 + Trace + SSE 重放</span><br></pre></td></tr></table></figure>
+
+<p>不需要为了展示“Agent”硬加多步规划。这个项目的主目标是证明最小 AI 服务的可靠边界：相同输入在不同租户下不会串数据，异常时不会无限重试或重复计费，用户知道任务究竟成功、失败还是被取消。</p>
+<h2 id="二、冻结一次发布快照"><a href="#二、冻结一次发布快照" class="headerlink" title="二、冻结一次发布快照"></a>二、冻结一次发布快照</h2><p>在演练前保存一份只读发布清单：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">release_id:</span> <span class="string">gateway-stage1-candidate</span></span><br><span class="line"><span class="attr">api_contract:</span> <span class="string">chat-api-v2</span></span><br><span class="line"><span class="attr">event_contract:</span> <span class="string">task-events-v2</span></span><br><span class="line"><span class="attr">route_version:</span> <span class="string">route-v8</span></span><br><span class="line"><span class="attr">model_registry_version:</span> <span class="string">registry-v6</span></span><br><span class="line"><span class="attr">prompt_version:</span> <span class="string">travel-policy-v4</span></span><br><span class="line"><span class="attr">knowledge_snapshot:</span> <span class="string">travel-20261121</span></span><br><span class="line"><span class="attr">price_version:</span> <span class="string">provider-price-20261121</span></span><br><span class="line"><span class="attr">golden_set_hash:</span> <span class="string">sha256-of-fixtures</span></span><br><span class="line"><span class="attr">rubric_version:</span> <span class="string">travel-qa-v3</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>task</code> 就是第 16–22 天 API 中的一轮对话任务。每个任务固定这份快照；热更新只影响新任务。否则同一条长任务中途切换模型、Prompt 或知识库，事后既难复现，也难说明是哪次发布造成退化。OpenAI 的评测建议要求任务相关样本持续回归；供应商的流式事件又有明确终结、错误和不完整状态，发布门槛应覆盖这些协议分支。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/evaluation-best-practices">OpenAI 评测最佳实践</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI 流式事件参考</a>（检索日期：2026-11-21）</p>
+<h2 id="三、故障注入矩阵"><a href="#三、故障注入矩阵" class="headerlink" title="三、故障注入矩阵"></a>三、故障注入矩阵</h2><p>用 FakeProvider、FakeClock 与两个租户夹具先验收控制面。真实供应商只用于少量端到端冒烟，不要把其随机输出和限流误认为本地协议的确定性测试结果。</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>注入条件</th>
+<th>必须留下的证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A1 正常回答</td>
+<td>授权片段命中，模型返回正确引用</td>
+<td>终态 SUCCEEDED；证据 ID、模型版本、一次 attempt</td>
+</tr>
+<tr>
+<td>A2 跨租户召回</td>
+<td>B 的政策比 A 的政策更相似</td>
+<td>模型输入、引用和缓存均不含 B 的片段</td>
+</tr>
+<tr>
+<td>A3 权限撤销</td>
+<td>ACL 纪元更新，旧答案缓存未过期</td>
+<td>旧缓存不再命中；无权引用被拒绝</td>
+</tr>
+<tr>
+<td>A4 预算并发</td>
+<td>两个请求同时争最后余额</td>
+<td>原子预留只放行允许的请求；失败者无供应商调用</td>
+</tr>
+<tr>
+<td>A5 临时 429</td>
+<td>带重试等待时间，且截止时间足够</td>
+<td>有界重试，保留每次 attempt 与实际用量</td>
+</tr>
+<tr>
+<td>A6 支出封顶</td>
+<td>供应商返回不可恢复的额度错误</td>
+<td>不重试；明确失败分类</td>
+</tr>
+<tr>
+<td>A7 先输出后错误</td>
+<td>第三段文本后出现流内错误</td>
+<td>对外 FAILED&#x2F;不完整，不拼接备用模型文本</td>
+</tr>
+<tr>
+<td>A8 客户端断开</td>
+<td>浏览器丢失 SSE 连接</td>
+<td>重新订阅按事件序号补发或明确退到快照</td>
+</tr>
+<tr>
+<td>A9 取消竞争</td>
+<td>取消与完成几乎同时发生</td>
+<td>最终只落一个合法终态，已产生用量仍入账</td>
+</tr>
+<tr>
+<td>A10 工具半包</td>
+<td>参数 JSON 到一半就断流</td>
+<td>不执行工具，不留下未审计副作用</td>
+</tr>
+<tr>
+<td>A11 模型降级</td>
+<td>备用模型缺严格输出能力</td>
+<td>路由拒绝不合格候选，报告可见原因</td>
+</tr>
+<tr>
+<td>A12 热更新</td>
+<td>旧任务执行中发布 route-v9</td>
+<td>旧任务固定 v8，新任务才读取 v9</td>
+</tr>
+<tr>
+<td>A13 重复投递</td>
+<td>Worker 收到相同任务两次</td>
+<td>任务&#x2F;步骤唯一约束、状态版本与 fencing 阻止重复提交；外部动作使用独立幂等键，attempt 按实际调用记账</td>
+</tr>
+<tr>
+<td>A14 日志审计</td>
+<td>输入中有敏感文档片段</td>
+<td>普通日志只保留摘要&#x2F;受控引用，不泄漏原文</td>
+</tr>
+</tbody></table>
+<p>供应商 SSE 已开始后仍可能发送错误事件。Anthropic 文档还说明 <code>message_delta.usage</code> 是累计值，且流中可能有 ping 和新事件类型；适配器不能假定“HTTP 200 就一定成功”，也不能把累计数逐段相加。<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic Streaming messages</a>（检索日期：2026-11-21）</p>
+<p>队列层要认真区分“已接收任务”与“恰好执行一次”。Celery 官方建议任务函数幂等；即使设置延迟确认，Worker 异常终止的确认和重投递行为仍有条件，不能承诺绝对的单次执行。任务 ID、业务幂等键和供应商 attempt ID 应分别保存。<a target="_blank" rel="noopener" href="https://docs.celeryq.dev/en/stable/userguide/tasks.html">Celery Tasks</a>（检索日期：2026-11-21）</p>
+<h2 id="四、通过门槛与交付物"><a href="#四、通过门槛与交付物" class="headerlink" title="四、通过门槛与交付物"></a>四、通过门槛与交付物</h2><p>对每个 Case 记录 <code>PASS / FAIL / NOT_RUN</code>，不把未跑记成通过。建议的阶段预检门槛：</p>
+<ol>
+<li>A2、A3、A4、A10、A11、A13、A14 等权限、预算与副作用安全 Case 全部通过。</li>
+<li>A7、A8、A9 的最终状态与事件顺序可重放；浏览器与服务端记录一致。</li>
+<li>Golden Set 报告含逐桶结果、分母、失败样本、基线对比；质量、延迟和每成功任务成本阈值在运行前写定。</li>
+<li>每个任务都能沿 <code>task_id → attempt_id → provider_request_id</code> 查到路由、响应状态与用量来源；缺失最终 usage 时标记待对账。</li>
+</ol>
+<p>交付目录可用 <code>fixtures/</code> 存故障输入，<code>reports/</code> 存逐 Case JSONL 和差异报告，<code>evidence/</code> 存经脱敏的 trace 与 UI 录屏，<code>release.yaml</code> 固定版本。录屏是交互证据，不能代替自动化报告；通过率数字必须从实际文件计算，不在文章里预填。</p>
+<h2 id="五、面试时如何讲这个项目"><a href="#五、面试时如何讲这个项目" class="headerlink" title="五、面试时如何讲这个项目"></a>五、面试时如何讲这个项目</h2><p>用一条正常请求与一条失败请求说明：用户目标、输入边界、路由决策、供应商调用、终态验证、成本和引用，再展示如何从 trace 找到根因。能说清“为什么拒绝一个不合格备用模型”和“取消后已经产生的 Token 由谁承担”，比罗列框架名更有说服力。第 27–29 天可以补缺口、压测和整理报告；第 30 天再按同一套门槛验收阶段项目。</p>
+<h2 id="六、今日面试题"><a href="#六、今日面试题" class="headerlink" title="六、今日面试题"></a>六、今日面试题</h2><p>以下题面取自公开牛客面经和题单，检索日期均为 <strong>2026-11-21</strong>。标注的公司和场次只来自发帖者自述，未获企业官方核验；社区题单也不是可核验的单场原题。参考答案是本文的工程归纳。</p>
+<h3 id="1-Agent-在线服务如何做配置热更新、灰度和回滚？"><a href="#1-Agent-在线服务如何做配置热更新、灰度和回滚？" class="headerlink" title="1. Agent 在线服务如何做配置热更新、灰度和回滚？"></a>1. Agent 在线服务如何做配置热更新、灰度和回滚？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI Infra 发布治理，较难。</li>
+<li><strong>参考答案</strong>：把模型、Prompt、工具、路由和知识版本做不可变发布快照；新任务按稳定分桶选版本，在途任务固定原快照；灰度按任务成功率、权限错误、p95、成本和负反馈设回滚门槛。</li>
+<li><strong>追问</strong>：一次错误只发生在高风险租户，整体指标仍健康，回滚吗？该租户桶触发硬门槛，应停止灰度或定向回滚。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/a1ce24c561874141abe6ba18a466f982">牛客“字节 AI Infra 一面”用户自述</a>，公司归属未经官方确认。</li>
+</ul>
+<h3 id="2-模型网关什么时候允许自动-Fallback？"><a href="#2-模型网关什么时候允许自动-Fallback？" class="headerlink" title="2. 模型网关什么时候允许自动 Fallback？"></a>2. 模型网关什么时候允许自动 Fallback？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：模型路由与安全降级，较难。</li>
+<li><strong>参考答案</strong>：只在错误可恢复、业务截止时间允许、尚未对外输出或有明确重启语义时考虑切换；备用模型要通过能力、数据区域、严格 Schema、质量与成本门槛。结果未知的写操作先对账，不能换模型后再盲目重做。</li>
+<li><strong>追问</strong>：主模型已输出半段文本、备用模型更便宜，能否无提示地接上？不能；应标记原回答不完整，并由用户明确触发新 attempt 或走已定义的恢复流程。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/504ce797ea63400bb26edbe316af5d3d?sourceSSR=post&weFlow=true">牛客《JAVA 简历点评（10）》中的 Fallback 追问</a>，社区简历点评提出的备考题，不是某企业面试原题。</li>
+</ul>
+<h3 id="3-手写并发上限为-2-的异步调度器，成功和失败时如何释放名额？"><a href="#3-手写并发上限为-2-的异步调度器，成功和失败时如何释放名额？" class="headerlink" title="3. 手写并发上限为 2 的异步调度器，成功和失败时如何释放名额？"></a>3. 手写并发上限为 2 的异步调度器，成功和失败时如何释放名额？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：网关并发控制，中级。</li>
+<li><strong>参考答案</strong>：用有界队列和两个 permit；真正发起供应商调用前申请名额，在 <code>finally</code> 释放；取消、异常与超时均走相同释放路径。多实例场景不能靠单进程信号量承诺全局上限，应使用共享计数或分布式租约，并处理崩溃回收。</li>
+<li><strong>追问</strong>：某个任务持有 permit 等待自己的子任务领取 permit，怎么避免死锁？父节点不占执行 permit 等待子节点，依赖调度与执行容量分离。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/946211096669564928?sourceSSR=enterprise">牛客“字节 Agent 全栈研发一面｜备考题单”</a>，作者明确声明来自不同记录的整理，<strong>不是同一场面试实录</strong>，公司归属未获官方核验。</li>
+</ul>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/evaluation-best-practices">OpenAI Evaluation best practices</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI Responses streaming events</a></li>
+<li><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic Streaming messages</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.celeryq.dev/en/stable/userguide/tasks.html">Celery Tasks</a></li>
+</ul>
+<p>第 27 天继续补预检暴露的缺口，第 30 天用实际报告完成阶段项目验收。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%85%E9%9A%9C%E6%BC%94%E7%BB%83/" rel="tag">故障演练</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%B6%E6%AE%B5%E9%A1%B9%E7%9B%AE/" rel="tag">阶段项目</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">做一个能恢复的 AI 对话页面：React、SSE、引用与取消</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

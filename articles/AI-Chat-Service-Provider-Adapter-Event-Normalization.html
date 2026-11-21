@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 23 天，将最小对话服务接入模型网关：统一供应商请求、流式事件、结构化输出、错误和用量，同时保存原始证据。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最小对话服务接入多模型：适配器、事件流与用量归一化 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Chat-Service-Provider-Adapter-Event-Normalization"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  最小对话服务接入多模型：适配器、事件流与用量归一化
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html" class="article-date">
+  <time datetime="2026-11-18T01:00:00.000Z" itemprop="datePublished">2026-11-18</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">7 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>前几天已经把最小对话服务拆成 API、会话、任务、事件和存储。今天接入真正容易变动的一层：模型供应商。对 Java 后端开发者来说，可以把它理解为“防腐层”：业务只认识自己的请求与事件，适配器负责把供应商协议翻译过来；原始响应也必须保留，便于审计和补账。</p>
+<span id="more"></span>
+
+<h2 id="一、先定义内部契约，再接-SDK"><a href="#一、先定义内部契约，再接-SDK" class="headerlink" title="一、先定义内部契约，再接 SDK"></a>一、先定义内部契约，再接 SDK</h2><p>业务请求不应直接传供应商的 JSON。以下是一个精简内部契约，实际字段按租户政策扩展：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ModelRequest</span>:</span><br><span class="line">    task_id: <span class="built_in">str</span></span><br><span class="line">    tenant_id: <span class="built_in">str</span></span><br><span class="line">    messages: <span class="built_in">list</span>[<span class="built_in">dict</span>]</span><br><span class="line">    requested_capabilities: <span class="built_in">set</span>[<span class="built_in">str</span>]</span><br><span class="line">    response_schema_version: <span class="built_in">str</span> | <span class="literal">None</span></span><br><span class="line">    deadline_ms: <span class="built_in">int</span></span><br><span class="line">    max_output_tokens: <span class="built_in">int</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">GatewayEvent</span>:</span><br><span class="line">    task_id: <span class="built_in">str</span></span><br><span class="line">    attempt_id: <span class="built_in">str</span></span><br><span class="line">    seq: <span class="built_in">int</span></span><br><span class="line">    kind: <span class="built_in">str</span>  <span class="comment"># STARTED / TEXT_DELTA / TOOL_READY / USAGE / COMPLETED / FAILED</span></span><br><span class="line">    payload: <span class="built_in">dict</span></span><br></pre></td></tr></table></figure>
+
+<p>这里沿用第 16–22 天的任务 API：一轮对话创建一个 <code>task_id</code>，它也是模型网关内部关联这轮执行的键。<code>tenant_id</code> 来自已认证的服务端上下文，不接受客户端在消息体里自报。<code>attempt_id</code> 每次实际供应商请求都不同；同一个 <code>task_id</code> 可以因重试或降级有多个 attempt。路由器先检查模型能力、数据政策、预算与截止时间，再让适配器发送请求。</p>
+<p>对外至少拆四个接口：<code>prepare</code> 校验能力和参数；<code>invoke</code> 返回完整结果；<code>stream</code> 返回内部事件；<code>normalize_usage</code> 保存原始用量并给出厂商专用计价桶。别把供应商 JSON 整包透传到前端，因为它会把业务 UI 绑定到特定供应商字段。</p>
+<h2 id="二、流式输出是事件状态机"><a href="#二、流式输出是事件状态机" class="headerlink" title="二、流式输出是事件状态机"></a>二、流式输出是事件状态机</h2><p>OpenAI Responses 流使用有类型的 SSE 事件，文本增量、完成、不完整和错误各有独立类型；Anthropic Messages 流则有 <code>message_start</code>、内容块、<code>message_delta</code> 与 <code>message_stop</code>，还可能出现 ping 和流内错误。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/streaming-responses">OpenAI 流式指南</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI 事件参考</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic 流式指南</a>（检索日期：2026-11-21）</p>
+<p>适配器将这些事件映射为稳定的内部状态：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATED → STREAMING → COMPLETED</span><br><span class="line">                    ↘ INCOMPLETE</span><br><span class="line">                    ↘ FAILED</span><br><span class="line">                    ↘ CANCELLED</span><br></pre></td></tr></table></figure>
+
+<p><code>TEXT_DELTA</code> 可以立即展示；工具参数增量只能先按调用 ID 和内容块索引累积。只有供应商明确结束该工具调用、参数完整、JSON 与工具 Schema 均通过校验，才发 <code>TOOL_READY</code> 给执行器。半截 JSON 不能启动有副作用的工具。来自牛客的 Coding Agent 讨论也专门指出这一故障模式，但该帖是个人经验，不是供应商规范。<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/9c12e9fc0e7d4a828c699b83d59cedcb?sourceSSR=dynamic">牛客：流式工具调用</a>（检索日期：2026-11-21）</p>
+<p>流已经向用户发出文本后发生错误时，对外发 <code>FAILED</code> 并明确标为“不完整”。此时不能悄悄让备用模型续写同一条回答：不同模型的上下文、语气和工具状态可能不一致。想重新生成，应创建新的 attempt 和可见的“重新开始”事件。</p>
+<h2 id="三、结构化输出有三层校验"><a href="#三、结构化输出有三层校验" class="headerlink" title="三、结构化输出有三层校验"></a>三、结构化输出有三层校验</h2><p>以“回答 + 引用”为例，内部对象可以是：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;answer&quot;</span><span class="punctuation">:</span> <span class="string">&quot;住宿上限为每日 500 元。&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;citations&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span><span class="attr">&quot;evidence_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;policy-17&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;span&quot;</span><span class="punctuation">:</span> <span class="string">&quot;第 4 条&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ANSWERED&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>第一层是供应商支持的结构化输出能力与 Schema；第二层是服务端解析与版本校验；第三层是业务约束，如引用 ID 必须在本次授权证据集合内。OpenAI 的结构化输出文档说明 Schema 约束适用于完成且未拒绝的输出，应用仍需处理拒绝、不完整和 API 错误；Schema 本身不能验证业务事实。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a>（检索日期：2026-11-21）</p>
+<p>因此 <code>JSON_PARSE_OK</code> 不等于 <code>ANSWER_VALID</code>。在事件流中，完整对象的业务校验应在终结事件到来后进行；前端看到的流式文本只是预览，不能提前标为成功。</p>
+<h2 id="四、用量和错误必须保留供应商语义"><a href="#四、用量和错误必须保留供应商语义" class="headerlink" title="四、用量和错误必须保留供应商语义"></a>四、用量和错误必须保留供应商语义</h2><p>账本按 <code>task_id → attempt_id → provider_request_id</code> 关联。每个 attempt 保存 <code>raw_usage</code>、<code>normalized_usage</code>、<code>price_version</code>、<code>usage_status</code>。Anthropic 的 <code>message_delta.usage</code> 是累计值，不能把每个增量事件相加；OpenAI 的完成事件提供最终响应状态与用量，流中断时可能拿不到最终值。<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic 流式指南</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI 事件参考</a>（检索日期：2026-11-21）</p>
+<p>内部错误至少分为 <code>AUTH</code>、<code>CAPABILITY</code>、<code>RATE_LIMIT_TEMPORARY</code>、<code>BUDGET_EXHAUSTED</code>、<code>PROVIDER_OVERLOADED</code>、<code>TIMEOUT_UNKNOWN</code>、<code>STREAM_INTERRUPTED</code>、<code>OUTPUT_INVALID</code>。是否重试由错误体、是否已有输出、截止时间和幂等边界共同决定。一个 HTTP 429 不能代表所有供应商都只是“稍后再试”；第 12 天的限流文章已把临时限额和支出封顶分开。</p>
+<h3 id="今天动手的验收"><a href="#今天动手的验收" class="headerlink" title="今天动手的验收"></a>今天动手的验收</h3><p>用两个 <code>FakeProvider</code> 实现相同的内部接口：A 分三段返回文本，B 返回累计用量并在第二段后发流内错误。记录原始事件和归一化事件，断言：</p>
+<ol>
+<li>正常路径只出现一个终结事件，完成后才落 <code>SUCCEEDED</code>。</li>
+<li>B 的累计用量只取最终已知值；缺最终值记 <code>PENDING_USAGE</code>，不伪造精确费用。</li>
+<li>半截工具参数和无权引用都不能执行或被标为成功。</li>
+<li>两家供应商的事件都能被同一个前端契约消费。</li>
+</ol>
+<p>这些是练习验收标准；本文并未声称已经替读者实现生产服务。</p>
+<h2 id="五、今日面试题"><a href="#五、今日面试题" class="headerlink" title="五、今日面试题"></a>五、今日面试题</h2><p>当日未检索到可直接核验、与本篇适配器主题高度相关的近期大厂原题，因此选用可打开的社区经典题；不把它们标为大厂真题。以下题面来自公开牛客帖子；参考答案是本文的工程归纳。检索日期均为 <strong>2026-11-21</strong>。社区题库不是可核验的大厂原题；个人分享的项目背景也未经过企业确认。</p>
+<h3 id="1-多模型路由为什么需要统一适配器？"><a href="#1-多模型路由为什么需要统一适配器？" class="headerlink" title="1. 多模型路由为什么需要统一适配器？"></a>1. 多模型路由为什么需要统一适配器？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：模型网关，中级。</li>
+<li><strong>参考答案</strong>：让业务只依赖统一请求、文本、工具、结束状态、错误和用量契约；能力与地区先做准入，供应商差异留在适配器，原始事件保留以便对账与排障。</li>
+<li><strong>追问</strong>：备用模型不支持严格 Schema 时，网关还能自动切过去吗？应拒绝这个候选或改走经过评测的明确降级产品路径。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/922460251717128192?sourceSSR=post">牛客《AI Agent 面试高频 100 问》中的多模型路由题</a>，社区整理，非企业官方题库。</li>
+</ul>
+<h3 id="2-模型正在流式输出工具参数，能立刻执行工具吗？"><a href="#2-模型正在流式输出工具参数，能立刻执行工具吗？" class="headerlink" title="2. 模型正在流式输出工具参数，能立刻执行工具吗？"></a>2. 模型正在流式输出工具参数，能立刻执行工具吗？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：流式 Tool Calling，较难。</li>
+<li><strong>参考答案</strong>：先按调用 ID 汇集参数分片，等待完成事件，校验 JSON、Schema、权限与幂等键，再进入执行器；文本预览与工具执行的安全门槛不同。</li>
+<li><strong>追问</strong>：连接断在参数最后一个字节之后、完成事件之前怎么办？保持调用未确认，不执行副作用，并保存原始事件供排障。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/9c12e9fc0e7d4a828c699b83d59cedcb?sourceSSR=dynamic">牛客 Coding Agent 讨论</a>，个人技术讨论，不应写成特定公司面试实录。</li>
+</ul>
+<h3 id="3-Structured-Output-怎么用，怎样让下游得到可解析对象？"><a href="#3-Structured-Output-怎么用，怎样让下游得到可解析对象？" class="headerlink" title="3. Structured Output 怎么用，怎样让下游得到可解析对象？"></a>3. Structured Output 怎么用，怎样让下游得到可解析对象？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：结构化输出，中级。</li>
+<li><strong>参考答案</strong>：优先用模型原生 Schema 约束，处理拒绝和不完整状态，再做服务端类型校验和业务校验；对不支持该能力的模型设准入限制，不能只靠 Prompt 里写“请输出 JSON”。</li>
+<li><strong>追问</strong>：引用 ID 格式符合 Schema，却指向别的租户，哪层拦截？在业务授权与证据校验层拦截。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/916831948192944128">牛客《Agent 开发岗面试题——整理》</a>，正文可直接核对 Structured Output 题面；社区整理，非可核验的企业原题。</li>
+</ul>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/streaming-responses">OpenAI Streaming API responses</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI Responses streaming events</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></li>
+<li><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic Streaming messages</a></li>
+</ul>
+<p>下一篇为这条对话链建立任务级 Golden Set、回归报告和 Trace 证据。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E6%A8%A1%E5%9E%8B/" rel="tag">多模型</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA/" rel="tag">流式输出</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            让对话服务可回归：Golden Set、Trace 与发布门槛
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Conversation-Service-Vertical-Slice.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">最小对话服务怎样贯通：会话、消息、任务与 ModelClient</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

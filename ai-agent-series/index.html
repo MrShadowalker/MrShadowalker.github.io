@@ -131,7 +131,20 @@ var _hmt = _hmt || [];
 <li><strong>Day 12｜<a href="/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html">模型网关怎么控流：供应商限流、租户配额与安全降级</a></strong></li>
 <li><strong>Day 13｜<a href="/articles/AI-Model-Registry-Capability-Routing-Release.html">模型注册表怎么治理：能力契约、健康检查与路由配置发布</a></strong></li>
 <li><strong>Day 14｜<a href="/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html">AI 全栈开发第二周验收：从检索到模型网关的一次故障演练</a></strong></li>
+<li><strong>Day 15｜<a href="/articles/AI-Fullstack-FastAPI-Service-Contract.html">AI 服务第一层怎么写：用 FastAPI 跑通租户、检索、路由与 Trace</a></strong></li>
+<li><strong>Day 16｜<a href="/articles/AI-Task-API-Idempotency-Cancellation.html">任务 API 怎么定：幂等键、错误契约与取消语义</a></strong></li>
+<li><strong>Day 17｜<a href="/articles/AI-Task-Postgres-Tenant-Data-Model.html">Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本</a></strong></li>
+<li><strong>Day 18｜<a href="/articles/AI-Durable-Worker-Outbox-Lease-Retry.html">异步 Worker 怎么可靠执行：租约、Outbox 与有界重试</a></strong></li>
+<li><strong>Day 19｜<a href="/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html">Agent 流式输出怎样可恢复：SSE 事件、断点续传与取消边界</a></strong></li>
+<li><strong>Day 20｜<a href="/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html">AI 全栈前端怎样接任务：TypeScript 状态机、SSE 去重与权限边界</a></strong></li>
+<li><strong>Day 21｜<a href="/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html">AI 全栈开发第三周验收：从 API 到 Worker、SSE 的故障演练</a></strong></li>
+<li><strong>Day 22｜<a href="/articles/AI-Conversation-Service-Vertical-Slice.html">最小对话服务怎样贯通：会话、消息、任务与 ModelClient</a></strong></li>
+<li><strong>Day 23｜<a href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html">最小对话服务接入多模型：适配器、事件流与用量归一化</a></strong></li>
+<li><strong>Day 24｜<a href="/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html">让对话服务可回归：Golden Set、Trace 与发布门槛</a></strong></li>
+<li><strong>Day 25｜<a href="/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html">做一个能恢复的 AI 对话页面：React、SSE、引用与取消</a></strong></li>
+<li><strong>Day 26｜<a href="/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html">模型网关阶段项目预检：用故障演练证明可交付</a></strong></li>
 </ul>
+<p>补刊记录：Day 15–25 对应 2026 年 11 月 10–20 日的学习安排，于 11 月 21 日集中补刊；各文资料与面试题均标注实际检索日期。Day 26 对应 11 月 21 日。</p>
 <h3 id="已有相关文章"><a href="#已有相关文章" class="headerlink" title="已有相关文章"></a>已有相关文章</h3><p>这些文章作为系列的预备材料，分别覆盖架构、平台、工具安全和运营评测：</p>
 <ul>
 <li><a href="/articles/Enterprise-Agent-Architecture.html">企业级 Agent 不是聊天机器人：从任务闭环设计架构</a></li>
@@ -156,8 +169,22 @@ var _hmt = _hmt || [];
 <li>Day 12：<a href="/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html">供应商限流、租户配额、有界重试与安全降级</a></li>
 <li>Day 13：<a href="/articles/AI-Model-Registry-Capability-Routing-Release.html">模型注册表、能力契约、健康检查与路由配置发布</a></li>
 <li>Day 14：<a href="/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html">第二周复盘、多租户知识助手故障演练与八道小测</a></li>
-<li>Day 15-21：Python&#x2F;TypeScript 服务、异步任务、数据库模型和 API 设计</li>
-<li>Day 22-30：最小对话服务、回归样本、阶段项目一：模型网关</li>
+<li>Day 15：<a href="/articles/AI-Fullstack-FastAPI-Service-Contract.html">FastAPI 服务骨架、租户上下文、检索、路由与 Trace</a></li>
+<li>Day 16：<a href="/articles/AI-Task-API-Idempotency-Cancellation.html">任务 API、幂等键、错误契约与取消语义</a></li>
+<li>Day 17：<a href="/articles/AI-Task-Postgres-Tenant-Data-Model.html">PostgreSQL 任务、事件、用量表与租户隔离</a></li>
+<li>Day 18：<a href="/articles/AI-Durable-Worker-Outbox-Lease-Retry.html">异步 Worker、租约、Outbox 与有界重试</a></li>
+<li>Day 19：<a href="/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html">SSE 事件、断点续传与取消边界</a></li>
+<li>Day 20：<a href="/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html">TypeScript 任务客户端、UI 状态机与 SSE 去重</a></li>
+<li>Day 21：<a href="/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html">第三周复盘、服务故障演练与八道小测</a></li>
+<li>Day 22：<a href="/articles/AI-Conversation-Service-Vertical-Slice.html">最小对话服务：会话、消息、任务与 ModelClient</a></li>
+<li>Day 23：<a href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html">多模型适配器、流事件与用量归一化</a></li>
+<li>Day 24：<a href="/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html">Golden Set、Trace 与发布回归门槛</a></li>
+<li>Day 25：<a href="/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html">React 对话页面、SSE、引用与取消</a></li>
+<li>Day 26：<a href="/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html">阶段项目一预检与模型网关故障演练</a></li>
+<li>Day 27：网关安全、性能和部署收口</li>
+<li>Day 28：第四周复盘与小测</li>
+<li>Day 29：阶段项目一验收准备</li>
+<li>Day 30：阶段项目一：模型网关交付与复盘</li>
 </ul>
 <h4 id="第-2-月：Agent-核心与运行时"><a href="#第-2-月：Agent-核心与运行时" class="headerlink" title="第 2 月：Agent 核心与运行时"></a>第 2 月：Agent 核心与运行时</h4><ul>
 <li>Day 31-37：Tool Calling 与工具契约</li>

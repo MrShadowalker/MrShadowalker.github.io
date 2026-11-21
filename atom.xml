@@ -10,7 +10,212 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-09T01:00:00.000Z</updated>
+  <updated>2026-11-21T12:50:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
+    <category term="阶段项目" scheme="https://chenzihao.me/tags/%E9%98%B6%E6%AE%B5%E9%A1%B9%E7%9B%AE/"/>
+    <category term="故障演练" scheme="https://chenzihao.me/tags/%E6%95%85%E9%9A%9C%E6%BC%94%E7%BB%83/"/>
+    <id>https://chenzihao.me/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html</id>
+    <link href="https://chenzihao.me/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html"/>
+    <published>2026-11-21T12:50:00.000Z</published>
+    <summary>AI 全栈开发第 26 天，在第 30 天阶段项目之前，为多租户模型网关、任务 API、SSE 对话页、预算账本与评测发布建立故障演练和证据清单。</summary>
+    <title>模型网关阶段项目预检：用故障演练证明可交付</title>
+    <updated>2026-11-21T12:50:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <category term="React" scheme="https://chenzihao.me/tags/React/"/>
+    <category term="TypeScript" scheme="https://chenzihao.me/tags/TypeScript/"/>
+    <category term="前端" scheme="https://chenzihao.me/tags/%E5%89%8D%E7%AB%AF/"/>
+    <id>https://chenzihao.me/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html</id>
+    <link href="https://chenzihao.me/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html"/>
+    <published>2026-11-20T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 25 天，围绕最小对话服务设计 React 页面：稳定的 SSE 事件、断线续读、引用校验、取消、重试和可访问状态。</summary>
+    <title>做一个能恢复的 AI 对话页面：React、SSE、引用与取消</title>
+    <updated>2026-11-21T12:50:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="评测" scheme="https://chenzihao.me/tags/%E8%AF%84%E6%B5%8B/"/>
+    <category term="Golden Set" scheme="https://chenzihao.me/tags/Golden-Set/"/>
+    <category term="可观测" scheme="https://chenzihao.me/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B/"/>
+    <id>https://chenzihao.me/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html</id>
+    <link href="https://chenzihao.me/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html"/>
+    <published>2026-11-19T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 24 天，为多模型对话服务建立分层 Golden Set、可回放 Trace、逐样本判分和灰度发布门槛。</summary>
+    <title>让对话服务可回归：Golden Set、Trace 与发布门槛</title>
+    <updated>2026-11-21T12:50:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
+    <category term="多模型" scheme="https://chenzihao.me/tags/%E5%A4%9A%E6%A8%A1%E5%9E%8B/"/>
+    <category term="流式输出" scheme="https://chenzihao.me/tags/%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA/"/>
+    <id>https://chenzihao.me/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html</id>
+    <link href="https://chenzihao.me/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html"/>
+    <published>2026-11-18T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 23 天，将最小对话服务接入模型网关：统一供应商请求、流式事件、结构化输出、错误和用量，同时保存原始证据。</summary>
+    <title>最小对话服务接入多模型：适配器、事件流与用量归一化</title>
+    <updated>2026-11-21T12:50:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="多租户" scheme="https://chenzihao.me/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/"/>
+    <category term="对话服务" scheme="https://chenzihao.me/tags/%E5%AF%B9%E8%AF%9D%E6%9C%8D%E5%8A%A1/"/>
+    <category term="ModelClient" scheme="https://chenzihao.me/tags/ModelClient/"/>
+    <id>https://chenzihao.me/articles/AI-Conversation-Service-Vertical-Slice.html</id>
+    <link href="https://chenzihao.me/articles/AI-Conversation-Service-Vertical-Slice.html"/>
+    <published>2026-11-17T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 22 天：把会话消息、任务状态、持久化事件和统一 ModelClient 接成最小纵向链路，解决重复提交、版本固定、上下文构建与租户隔离。</summary>
+    <title>最小对话服务怎样贯通：会话、消息、任务与 ModelClient</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
+    <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html"/>
+    <published>2026-11-16T01:00:00.000Z</published>
+    <summary>复盘 AI 全栈开发第 15–20 天，用一个多租户任务夹具验收 API 幂等、PostgreSQL 持久化、Outbox、Worker 租约、SSE 恢复和前端状态，附八道小测及三道有来源的面试题。</summary>
+    <title>AI 全栈开发第三周验收：从 API 到 Worker、SSE 的故障演练</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <category term="React" scheme="https://chenzihao.me/tags/React/"/>
+    <category term="TypeScript" scheme="https://chenzihao.me/tags/TypeScript/"/>
+    <id>https://chenzihao.me/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html</id>
+    <link href="https://chenzihao.me/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html"/>
+    <published>2026-11-15T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 20 天：用 TypeScript 和 React 为异步任务建状态机，处理 SSE 去重、断线恢复、提交超时、身份权限和流式渲染，附三道有来源的面试题。</summary>
+    <title>AI 全栈前端怎样接任务：TypeScript 状态机、SSE 去重与权限边界</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html"/>
+    <published>2026-11-14T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 19 天：把 Agent 输出建成可持久化事件流，讲清 SSE 游标、Last-Event-ID、跨租户授权、断线重放和任务取消，并附三道有来源的面试题。</summary>
+    <title>Agent 流式输出怎样可恢复：SSE 事件、断点续传与取消边界</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="异步任务" scheme="https://chenzihao.me/tags/%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/"/>
+    <category term="Outbox" scheme="https://chenzihao.me/tags/Outbox/"/>
+    <category term="Worker" scheme="https://chenzihao.me/tags/Worker/"/>
+    <id>https://chenzihao.me/articles/AI-Durable-Worker-Outbox-Lease-Retry.html</id>
+    <link href="https://chenzihao.me/articles/AI-Durable-Worker-Outbox-Lease-Retry.html"/>
+    <published>2026-11-13T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 18 天：把持久化 Agent 任务交给 Worker，处理任务已落库但消息未发、重复投递、租约过期、旧 Worker 写回及失败重试。</summary>
+    <title>异步 Worker 怎么可靠执行：租约、Outbox 与有界重试</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="多租户" scheme="https://chenzihao.me/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/"/>
+    <category term="PostgreSQL" scheme="https://chenzihao.me/tags/PostgreSQL/"/>
+    <category term="Agent Runtime" scheme="https://chenzihao.me/tags/Agent-Runtime/"/>
+    <id>https://chenzihao.me/articles/AI-Task-Postgres-Tenant-Data-Model.html</id>
+    <link href="https://chenzihao.me/articles/AI-Task-Postgres-Tenant-Data-Model.html"/>
+    <published>2026-11-12T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 17 天：用 PostgreSQL 设计租户级任务、调用尝试、事件和用量表，说明复合外键、RLS、事务与外部调用边界。</summary>
+    <title>Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="API设计" scheme="https://chenzihao.me/tags/API%E8%AE%BE%E8%AE%A1/"/>
+    <category term="幂等" scheme="https://chenzihao.me/tags/%E5%B9%82%E7%AD%89/"/>
+    <category term="任务状态机" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
+    <id>https://chenzihao.me/articles/AI-Task-API-Idempotency-Cancellation.html</id>
+    <link href="https://chenzihao.me/articles/AI-Task-API-Idempotency-Cancellation.html"/>
+    <published>2026-11-11T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 16 天：为长时 Agent 任务设计提交、查询、事件和取消接口，讲清幂等键、HTTP 状态码、错误契约及外部副作用边界。</summary>
+    <title>任务 API 怎么定：幂等键、错误契约与取消语义</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
+    <category term="多租户" scheme="https://chenzihao.me/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/"/>
+    <category term="FastAPI" scheme="https://chenzihao.me/tags/FastAPI/"/>
+    <id>https://chenzihao.me/articles/AI-Fullstack-FastAPI-Service-Contract.html</id>
+    <link href="https://chenzihao.me/articles/AI-Fullstack-FastAPI-Service-Contract.html"/>
+    <published>2026-11-10T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 15 天：用一个可运行的 FastAPI 夹具，把认证租户、知识检索、模型能力路由、预算准入和 Trace 串成后端请求链。</summary>
+    <title>AI 服务第一层怎么写：用 FastAPI 跑通租户、检索、路由与 Trace</title>
+    <updated>2026-11-21T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -37,8 +242,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="模型路由" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/"/>
     <category term="模型注册表" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E6%B3%A8%E5%86%8C%E8%A1%A8/"/>
+    <category term="模型路由" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/"/>
     <category term="灰度发布" scheme="https://chenzihao.me/tags/%E7%81%B0%E5%BA%A6%E5%8F%91%E5%B8%83/"/>
     <id>https://chenzihao.me/articles/AI-Model-Registry-Capability-Routing-Release.html</id>
     <link href="https://chenzihao.me/articles/AI-Model-Registry-Capability-Routing-Release.html"/>
@@ -152,210 +357,5 @@
     <summary>复盘 AI 全栈开发前六篇，用一个本地夹具任务验收状态、模型调用、上下文预算和回归门禁，附八道自测题与四道公开面试题。</summary>
     <title>AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环</title>
     <updated>2026-11-02T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="Token" scheme="https://chenzihao.me/tags/Token/"/>
-    <category term="上下文工程" scheme="https://chenzihao.me/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"/>
-    <category term="评测" scheme="https://chenzihao.me/tags/%E8%AF%84%E6%B5%8B/"/>
-    <category term="成本控制" scheme="https://chenzihao.me/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/"/>
-    <id>https://chenzihao.me/articles/AI-Context-Compression-Token-Experiment.html</id>
-    <link href="https://chenzihao.me/articles/AI-Context-Compression-Token-Experiment.html"/>
-    <published>2026-11-01T01:00:00.000Z</published>
-    <summary>用成对实验比较原始上下文、滑动窗口和结构化摘要，核对真实 Token、缓存、事实保留、任务成功率与每成功任务成本。</summary>
-    <title>上下文压缩到底省了什么：Token 计量、事实保留与任务成本实验</title>
-    <updated>2026-11-01T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="评测" scheme="https://chenzihao.me/tags/%E8%AF%84%E6%B5%8B/"/>
-    <category term="Prompt" scheme="https://chenzihao.me/tags/Prompt/"/>
-    <id>https://chenzihao.me/articles/AI-Prompt-Regression-Golden-Set.html</id>
-    <link href="https://chenzihao.me/articles/AI-Prompt-Regression-Golden-Set.html"/>
-    <published>2026-10-31T01:00:00.000Z</published>
-    <summary>用一套可复现的 Golden Set 检查 Prompt、模型和上下文策略的改动，给企业级 Agent 建立发布门槛。</summary>
-    <title>Prompt 改一行如何安全上线：Golden Set、回归门槛与灰度</title>
-    <updated>2026-10-31T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="模型工程" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/"/>
-    <category term="Token" scheme="https://chenzihao.me/tags/Token/"/>
-    <category term="上下文工程" scheme="https://chenzihao.me/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"/>
-    <category term="成本控制" scheme="https://chenzihao.me/tags/%E6%88%90%E6%9C%AC%E6%8E%A7%E5%88%B6/"/>
-    <category term="Prompt" scheme="https://chenzihao.me/tags/Prompt/"/>
-    <id>https://chenzihao.me/articles/AI-Token-Context-Budget-Prompt-Version.html</id>
-    <link href="https://chenzihao.me/articles/AI-Token-Context-Budget-Prompt-Version.html"/>
-    <published>2026-10-30T01:00:00.000Z</published>
-    <summary>把 Token 当成 Agent 的容量、延迟和成本预算，设计 Prompt 版本、上下文拼装、压缩、缓存和按租户计量。</summary>
-    <title>Token 与上下文预算怎么做：从 Prompt 版本、压缩到成本可控</title>
-    <updated>2026-10-30T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="模型工程" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/"/>
-    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="结构化输出" scheme="https://chenzihao.me/tags/%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA/"/>
-    <category term="流式响应" scheme="https://chenzihao.me/tags/%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/"/>
-    <id>https://chenzihao.me/articles/AI-ModelClient-Structured-Output-Streaming.html</id>
-    <link href="https://chenzihao.me/articles/AI-ModelClient-Structured-Output-Streaming.html"/>
-    <published>2026-10-29T01:00:00.000Z</published>
-    <summary>面向 Java/后端开发者，设计一个不绑定厂商 SDK 的 ModelClient，统一消息、结构化输出、流式事件、超时重试和模型路由。</summary>
-    <title>统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界</title>
-    <updated>2026-10-29T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="状态机" scheme="https://chenzihao.me/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
-    <category term="可靠性" scheme="https://chenzihao.me/tags/%E5%8F%AF%E9%9D%A0%E6%80%A7/"/>
-    <id>https://chenzihao.me/articles/AI-Agent-Runtime-State-Machine.html</id>
-    <link href="https://chenzihao.me/articles/AI-Agent-Runtime-State-Machine.html"/>
-    <published>2026-10-28T01:10:00.000Z</published>
-    <summary>把 Agent 的长任务拆成可持久化的状态、步骤和事件，让服务重启、工具超时和重复执行都能被安全处理。</summary>
-    <title>Agent Runtime 怎么设计：状态机、可恢复执行与幂等</title>
-    <updated>2026-10-28T01:10:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <id>https://chenzihao.me/articles/AI-Agent-Fullstack-180-Day-Roadmap.html</id>
-    <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-180-Day-Roadmap.html"/>
-    <published>2026-10-28T01:00:00.000Z</published>
-    <summary>用 180 天把模型、Agent、RAG、平台工程、前后端和面试能力串成一个可运行的企业级项目。</summary>
-    <title>企业级 Agent 全栈开发路线图：从模型调用到可运营平台的 180 天</title>
-    <updated>2026-10-28T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
-    <category term="测试" scheme="https://chenzihao.me/tags/%E6%B5%8B%E8%AF%95/"/>
-    <category term="可观测性" scheme="https://chenzihao.me/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"/>
-    <category term="部署" scheme="https://chenzihao.me/tags/%E9%83%A8%E7%BD%B2/"/>
-    <id>https://chenzihao.me/articles/Agent-Evaluation-and-Operations.html</id>
-    <link href="https://chenzihao.me/articles/Agent-Evaluation-and-Operations.html"/>
-    <published>2026-10-24T02:30:00.000Z</published>
-    <summary>把 Agent 的评测、灰度、追踪、成本和故障响应接成一条可执行的上线流程。</summary>
-    <title>Agent 上线前评测什么：从离线样本到线上运维</title>
-    <updated>2026-10-24T02:30:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="信息安全" scheme="https://chenzihao.me/tags/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/"/>
-    <category term="权限" scheme="https://chenzihao.me/tags/%E6%9D%83%E9%99%90/"/>
-    <category term="企业架构" scheme="https://chenzihao.me/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/"/>
-    <id>https://chenzihao.me/articles/Agent-Tool-Calling-Security.html</id>
-    <link href="https://chenzihao.me/articles/Agent-Tool-Calling-Security.html"/>
-    <published>2026-10-24T02:20:00.000Z</published>
-    <summary>从工具契约、权限令牌、参数校验、审批和审计出发，建立 Agent 工具调用的安全边界。</summary>
-    <title>Agent 工具调用怎么做才安全：权限、审批与审计</title>
-    <updated>2026-10-24T02:20:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="RAG" scheme="https://chenzihao.me/tags/RAG/"/>
-    <category term="数据一致性" scheme="https://chenzihao.me/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"/>
-    <id>https://chenzihao.me/articles/Enterprise-AI-Platform-Layers.html</id>
-    <link href="https://chenzihao.me/articles/Enterprise-AI-Platform-Layers.html"/>
-    <published>2026-10-24T02:10:00.000Z</published>
-    <summary>用数据、模型、知识、推理、评测和运营六层能力，规划一套可复用的企业 AI 平台。</summary>
-    <title>企业 AI 平台怎么搭：从模型接入到业务闭环的分层设计</title>
-    <updated>2026-10-24T02:10:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="AI平台" scheme="https://chenzihao.me/tags/AI%E5%B9%B3%E5%8F%B0/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="企业架构" scheme="https://chenzihao.me/tags/%E4%BC%81%E4%B8%9A%E6%9E%B6%E6%9E%84/"/>
-    <category term="工作流" scheme="https://chenzihao.me/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/"/>
-    <id>https://chenzihao.me/articles/Enterprise-Agent-Architecture.html</id>
-    <link href="https://chenzihao.me/articles/Enterprise-Agent-Architecture.html"/>
-    <published>2026-10-24T02:00:00.000Z</published>
-    <summary>从任务、模型、工具、记忆和治理五个层面，拆解企业级 Agent 的可落地架构。</summary>
-    <title>企业级 Agent 不是聊天机器人：从任务闭环设计架构</title>
-    <updated>2026-10-24T02:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="高并发" scheme="https://chenzihao.me/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
-    <category term="分布式" scheme="https://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
-    <category term="RabbitMQ" scheme="https://chenzihao.me/tags/RabbitMQ/"/>
-    <id>https://chenzihao.me/articles/Java-SecKill-Reliability-Review.html</id>
-    <link href="https://chenzihao.me/articles/Java-SecKill-Reliability-Review.html"/>
-    <published>2026-09-09T01:40:00.000Z</published>
-    <summary>回看旧秒杀 demo，从请求受理、事务、消息确认和结果查询检查异步订单链路。</summary>
-    <title>异步下单之后，还需要补上哪些可靠性环节</title>
-    <updated>2026-09-09T01:40:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="Java" scheme="https://chenzihao.me/categories/Java/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="工程实践" scheme="https://chenzihao.me/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"/>
-    <category term="Java" scheme="https://chenzihao.me/tags/Java/"/>
-    <category term="分布式" scheme="https://chenzihao.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
-    <id>https://chenzihao.me/articles/Java-Interview-to-Engineering.html</id>
-    <link href="https://chenzihao.me/articles/Java-Interview-to-Engineering.html"/>
-    <published>2026-09-09T01:30:00.000Z</published>
-    <summary>从旧面试笔记和示例代码出发，沿着一笔订单串起并发、事务、缓存和消息。</summary>
-    <title>把 Java 面试笔记串成一条工程主线</title>
-    <updated>2026-09-09T01:30:00.000Z</updated>
   </entry>
 </feed>

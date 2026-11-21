@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 17 天：用 PostgreSQL 设计租户级任务、调用尝试、事件和用量表，说明复合外键、RLS、事务与外部调用边界。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Task-Postgres-Tenant-Data-Model"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Task-Postgres-Tenant-Data-Model.html" class="article-date">
+  <time datetime="2026-11-12T01:00:00.000Z" itemprop="datePublished">2026-11-12</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">9 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>前一天定了任务 API：同键重试必须返回同一个任务，取消要有可查询状态。要兑现这些承诺，任务状态、每次模型调用、事件序号与成本不能只放在进程内存。第 17 天给它们建一套最小 PostgreSQL 数据模型，并把<strong>一个事务能保证什么、不能保证什么</strong>说清楚。</p>
+<span id="more"></span>
+
+<h2 id="一、四类事实，不要揉成一列-JSON"><a href="#一、四类事实，不要揉成一列-JSON" class="headerlink" title="一、四类事实，不要揉成一列 JSON"></a>一、四类事实，不要揉成一列 JSON</h2><table>
+<thead>
+<tr>
+<th>表</th>
+<th>它回答的问题</th>
+<th>关键约束</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ai_task</code></td>
+<td>用户提交了什么任务，现在到哪一步</td>
+<td>租户级幂等唯一、状态版本、固定发布版本</td>
+</tr>
+<tr>
+<td><code>ai_attempt</code></td>
+<td>第几次调用了哪个供应商与模型</td>
+<td>同一任务 attempt 序号唯一、供应商请求 ID</td>
+</tr>
+<tr>
+<td><code>ai_event</code></td>
+<td>状态如何变化，客户端补播到哪里</td>
+<td>同一任务事件序号单调递增</td>
+</tr>
+<tr>
+<td><code>ai_usage</code></td>
+<td>哪次 attempt 消耗多少、是否待对账</td>
+<td>原始用量保留，计费口径单独归一</td>
+</tr>
+</tbody></table>
+<p><code>task_id</code> 是业务任务，<code>attempt_id</code> 是一次下游调用；重试应增加 attempt，不能覆盖前一次的错误和花费。大型原始文档、长 Prompt 与完整工具输出放受控对象存储或专用表，事件中只存脱敏摘要、引用和版本。</p>
+<h2 id="二、可迁移的最小-DDL"><a href="#二、可迁移的最小-DDL" class="headerlink" title="二、可迁移的最小 DDL"></a>二、可迁移的最小 DDL</h2><p>下面是练习用的 PostgreSQL 起点。生产迁移还应补充字段长度、保留期、索引容量规划和正式权限角色。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> ai_task (</span><br><span class="line">  tenant_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  task_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  created_by uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  endpoint text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  idempotency_key text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  request_hash text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  status text <span class="keyword">NOT NULL</span> <span class="keyword">CHECK</span> (status <span class="keyword">IN</span> (</span><br><span class="line">    <span class="string">&#x27;QUEUED&#x27;</span>, <span class="string">&#x27;RUNNING&#x27;</span>, <span class="string">&#x27;RETRY_WAIT&#x27;</span>, <span class="string">&#x27;CANCEL_REQUESTED&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;CANCELLED&#x27;</span>, <span class="string">&#x27;SUCCEEDED&#x27;</span>, <span class="string">&#x27;FAILED&#x27;</span>, <span class="string">&#x27;RECONCILING&#x27;</span></span><br><span class="line">  )),</span><br><span class="line">  status_version <span class="type">bigint</span> <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,</span><br><span class="line">  event_seq <span class="type">bigint</span> <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,</span><br><span class="line">  route_release text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  knowledge_snapshot text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  budget_reserved_minor <span class="type">bigint</span> <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,</span><br><span class="line">  lease_owner text,</span><br><span class="line">  lease_until timestamptz,</span><br><span class="line">  fence <span class="type">bigint</span> <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,</span><br><span class="line">  next_run_at timestamptz <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> now(),</span><br><span class="line">  created_at timestamptz <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> now(),</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span> (tenant_id, task_id),</span><br><span class="line">  <span class="keyword">UNIQUE</span> (tenant_id, created_by, endpoint, idempotency_key)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> ai_attempt (</span><br><span class="line">  tenant_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  attempt_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  task_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  attempt_no <span class="type">integer</span> <span class="keyword">NOT NULL</span> <span class="keyword">CHECK</span> (attempt_no <span class="operator">&gt;</span> <span class="number">0</span>),</span><br><span class="line">  provider text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  requested_model_id text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  provider_request_id text,</span><br><span class="line">  status text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  started_at timestamptz <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> now(),</span><br><span class="line">  finished_at timestamptz,</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span> (tenant_id, attempt_id),</span><br><span class="line">  <span class="keyword">UNIQUE</span> (tenant_id, task_id, attempt_no),</span><br><span class="line">  <span class="keyword">FOREIGN KEY</span> (tenant_id, task_id) <span class="keyword">REFERENCES</span> ai_task (tenant_id, task_id)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> ai_event (</span><br><span class="line">  tenant_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  task_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  seq <span class="type">bigint</span> <span class="keyword">NOT NULL</span> <span class="keyword">CHECK</span> (seq <span class="operator">&gt;</span> <span class="number">0</span>),</span><br><span class="line">  event_type text <span class="keyword">NOT NULL</span>,</span><br><span class="line">  payload jsonb <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;&#123;&#125;&#x27;</span>::jsonb,</span><br><span class="line">  created_at timestamptz <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> now(),</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span> (tenant_id, task_id, seq),</span><br><span class="line">  <span class="keyword">FOREIGN KEY</span> (tenant_id, task_id) <span class="keyword">REFERENCES</span> ai_task (tenant_id, task_id)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> ai_usage (</span><br><span class="line">  tenant_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  attempt_id uuid <span class="keyword">NOT NULL</span>,</span><br><span class="line">  provider_usage jsonb <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;&#123;&#125;&#x27;</span>::jsonb,</span><br><span class="line">  input_tokens <span class="type">bigint</span>,</span><br><span class="line">  output_tokens <span class="type">bigint</span>,</span><br><span class="line">  price_version text,</span><br><span class="line">  cost_minor <span class="type">bigint</span>,</span><br><span class="line">  accounting_state text <span class="keyword">NOT NULL</span> <span class="keyword">CHECK</span> (</span><br><span class="line">    accounting_state <span class="keyword">IN</span> (<span class="string">&#x27;PENDING&#x27;</span>, <span class="string">&#x27;FINAL&#x27;</span>, <span class="string">&#x27;ESTIMATED&#x27;</span>)</span><br><span class="line">  ),</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span> (tenant_id, attempt_id),</span><br><span class="line">  <span class="keyword">FOREIGN KEY</span> (tenant_id, attempt_id)</span><br><span class="line">    <span class="keyword">REFERENCES</span> ai_attempt (tenant_id, attempt_id)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> INDEX ix_ai_task_tenant_recent</span><br><span class="line">  <span class="keyword">ON</span> ai_task (tenant_id, created_at <span class="keyword">DESC</span>);</span><br><span class="line"><span class="keyword">CREATE</span> INDEX ix_ai_task_due</span><br><span class="line">  <span class="keyword">ON</span> ai_task (next_run_at) <span class="keyword">WHERE</span> status <span class="keyword">IN</span> (<span class="string">&#x27;QUEUED&#x27;</span>, <span class="string">&#x27;RETRY_WAIT&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>复合外键让一个 <code>tenant-a</code> 的 attempt 无法指向 <code>tenant-b</code> 的 task。幂等唯一键放在数据库里，才能在两个 API 实例同时提交时原子裁决；应用层“先查再插”仍有竞争窗口。PostgreSQL 官方说明唯一约束由唯一索引实施，<code>INSERT ... ON CONFLICT</code> 可处理冲突。<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/ddl-constraints.html">PostgreSQL Constraints</a>、<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">INSERT</a>（检索日期：2026-11-21）</p>
+<h2 id="三、RLS-是第二道隔离层"><a href="#三、RLS-是第二道隔离层" class="headerlink" title="三、RLS 是第二道隔离层"></a>三、RLS 是第二道隔离层</h2><p>API 查询仍要带可信 <code>tenant_id</code> 条件；在数据库上再加行级安全策略，防止某处漏写过滤条件。下面只展示 <code>ai_task</code>；同样的策略必须覆盖 attempt、event、usage，不能只保护主表。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER TABLE</span> ai_task ENABLE <span class="type">ROW</span> LEVEL SECURITY;</span><br><span class="line"><span class="keyword">ALTER TABLE</span> ai_task FORCE <span class="type">ROW</span> LEVEL SECURITY;</span><br><span class="line"><span class="keyword">CREATE</span> POLICY ai_task_tenant_scope <span class="keyword">ON</span> ai_task</span><br><span class="line">  <span class="keyword">USING</span> (</span><br><span class="line">    tenant_id <span class="operator">=</span> <span class="built_in">NULLIF</span>(current_setting(<span class="string">&#x27;app.tenant_id&#x27;</span>, <span class="literal">true</span>), <span class="string">&#x27;&#x27;</span>)::uuid</span><br><span class="line">  )</span><br><span class="line">  <span class="keyword">WITH</span> <span class="keyword">CHECK</span> (</span><br><span class="line">    tenant_id <span class="operator">=</span> <span class="built_in">NULLIF</span>(current_setting(<span class="string">&#x27;app.tenant_id&#x27;</span>, <span class="literal">true</span>), <span class="string">&#x27;&#x27;</span>)::uuid</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"><span class="keyword">SELECT</span> set_config(<span class="string">&#x27;app.tenant_id&#x27;</span>, <span class="string">&#x27;00000000-0000-0000-0000-00000000000a&#x27;</span>, <span class="literal">true</span>);</span><br><span class="line"><span class="keyword">SELECT</span> task_id, status <span class="keyword">FROM</span> ai_task</span><br><span class="line"> <span class="keyword">WHERE</span> tenant_id <span class="operator">=</span> <span class="string">&#x27;00000000-0000-0000-0000-00000000000a&#x27;</span>;</span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
+
+<p><code>set_config(..., true)</code> 只在当前事务内生效，适合连接池复用；租户值必须来自已经验证的服务端身份，不能直接使用请求体。未设置变量时策略表达式得不到 true，应看不到行。数据库应用角色不能是 superuser、<code>BYPASSRLS</code> 角色或可随意拥有该表的高权限角色；表所有者通常会绕过 RLS，<code>FORCE ROW LEVEL SECURITY</code> 可改变表所有者的默认行为。唯一和外键约束也可能形成侧信道，所以跨租户“找不到”与“已存在”的错误不能直接暴露内部细节。<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">PostgreSQL Row Security</a>、<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/functions-admin.html">System Administration Functions</a>（检索日期：2026-11-21）</p>
+<p>RLS 是纵深防御，不能代替应用鉴权。尤其对超级管理员、迁移任务与后台 worker，要单独定义权限角色和审计。</p>
+<h2 id="四、事务要短，供应商调用留在事务外"><a href="#四、事务要短，供应商调用留在事务外" class="headerlink" title="四、事务要短，供应商调用留在事务外"></a>四、事务要短，供应商调用留在事务外</h2><p>提交事务：验证幂等键和请求指纹，创建 <code>ai_task</code> 与第一条 <code>ai_event</code>，固定知识快照和路由发布，再提交。若成本预留与任务共用一个数据库，可在这笔事务里一起完成；若成本账本位于另一个服务，就不能声称本地事务覆盖它，需预留协议与对账。</p>
+<p>执行事务：worker 条件领取任务，增加 <code>fence</code>、设置租约，创建 <code>ai_attempt</code>，然后提交。<strong>调用模型或工具时不要持有数据库事务。</strong>网络调用结束后再开启短事务，校验当前 <code>fence</code> 与状态版本，写入 attempt 结果、原始 usage、任务状态和事件；回执不明则记录 <code>PENDING</code> 用量与 <code>RECONCILING</code>，不得编造零成本。</p>
+<p>任务事件序号可在写事件的同一事务中执行：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> ai_task</span><br><span class="line">   <span class="keyword">SET</span> event_seq <span class="operator">=</span> event_seq <span class="operator">+</span> <span class="number">1</span>,</span><br><span class="line">       status_version <span class="operator">=</span> status_version <span class="operator">+</span> <span class="number">1</span></span><br><span class="line"> <span class="keyword">WHERE</span> tenant_id <span class="operator">=</span> :tenant_id <span class="keyword">AND</span> task_id <span class="operator">=</span> :task_id</span><br><span class="line"> RETURNING event_seq, status_version;</span><br></pre></td></tr></table></figure>
+
+<p>使用返回的 <code>event_seq</code> 插入事件，并在同一事务提交。两个并发 writer 会在同一 task 行上串行；若更新附带期望状态和版本条件，失败时重新读取，不能静默覆盖。</p>
+<h2 id="五、今天的练习与验收"><a href="#五、今天的练习与验收" class="headerlink" title="五、今天的练习与验收"></a>五、今天的练习与验收</h2><p>在本地 PostgreSQL 跑 DDL，至少测：同租户并发同键只保留一条任务；不同租户可复用相同键；跨租户 attempt 外键失败；RLS 未设置租户时无行可见；两个并发更新同一任务时只有一个状态版本成功；模型调用失败仍留下 attempt 和待对账用量。报告要写出实际 SQL 结果和事务边界图，不用声称已做真实负载压测。</p>
+<h2 id="六、今日面试题（检索日期：2026-11-21）"><a href="#六、今日面试题（检索日期：2026-11-21）" class="headerlink" title="六、今日面试题（检索日期：2026-11-21）"></a>六、今日面试题（检索日期：2026-11-21）</h2><p>题面可在牛客公开页面核对；企业名称来自发帖者或标题，未获企业官方验证。第三题是依据官方文档编写的经典追问，并非企业原题。</p>
+<h3 id="1-数据库存储会不会出现先后写入、相互覆盖？"><a href="#1-数据库存储会不会出现先后写入、相互覆盖？" class="headerlink" title="1. 数据库存储会不会出现先后写入、相互覆盖？"></a>1. 数据库存储会不会出现先后写入、相互覆盖？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent 状态存储、并发事务 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：会。两个执行器读到同一旧版本后都写回，后写者可能覆盖先写者。按任务维护 <code>status_version</code>，使用条件更新或行锁；事件追加写，不能只保存最终 JSON。状态冲突要重新加载并按合法状态机判定。</li>
+<li><strong>追问</strong>：worker 租约过期但旧 worker 仍返回成功，版本条件够吗？还要用递增 fencing token 阻止旧持有者提交。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/932315325276618752?sourceSSR=dynamic&weFlow=true">牛客“快手大模型 Agent 研发一面”用户自述</a>，正文列出存储覆盖与 Fencing Token；公司归属未获官方核验。</li>
+</ul>
+<h3 id="2-同一会话同时收到两次请求，怎样防止状态覆盖？"><a href="#2-同一会话同时收到两次请求，怎样防止状态覆盖？" class="headerlink" title="2. 同一会话同时收到两次请求，怎样防止状态覆盖？"></a>2. 同一会话同时收到两次请求，怎样防止状态覆盖？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：数据库模型、会话并发 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：会话状态用版本条件更新；对必须串行的会话，将消息按会话键进入同一分区或短事务行锁。新请求并非一定要拒绝，但不能让两个请求各自基于旧状态提交。跨租户和跨会话键必须独立。</li>
+<li><strong>追问</strong>：乐观锁失败后能直接重放一次带外部副作用的工具吗？不能，先检查操作账本和下游回执。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/912836825348116480?sourceSSR=home">牛客“智象未来 Agent 开发一面”公开整理帖</a>，公开正文有该题；作者真实性和公司归属无法独立核验。</li>
+</ul>
+<h3 id="3-开启-PostgreSQL-RLS-后，表所有者或唯一约束会不会绕过隔离？"><a href="#3-开启-PostgreSQL-RLS-后，表所有者或唯一约束会不会绕过隔离？" class="headerlink" title="3. 开启 PostgreSQL RLS 后，表所有者或唯一约束会不会绕过隔离？"></a>3. 开启 PostgreSQL RLS 后，表所有者或唯一约束会不会绕过隔离？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：多租户数据安全 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：默认表所有者通常不受 RLS 限制，superuser 与 <code>BYPASSRLS</code> 角色也会绕过；可对表所有者启用 <code>FORCE ROW LEVEL SECURITY</code>，并让应用连接使用低权限非所有者角色。唯一键和外键完整性检查会绕过行策略，所以错误消息需要做应用层统一处理。</li>
+<li><strong>追问</strong>：连接池上一请求设置的租户变量会泄漏到下一请求吗？使用事务局部设置并始终在事务内访问，做跨租户回归测试。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">PostgreSQL Row Security 官方文档</a>；<strong>本系列自编经典题，不是已核验的大厂原题</strong>。近期公开面经中未找到能直接核验该细节的企业题面，因此用官方规范构题。</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">PostgreSQL Row Security</a>：行级策略、角色例外和约束侧信道。</li>
+<li><a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT</a>：唯一冲突和返回结果。</li>
+<li><a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/functions-admin.html">PostgreSQL System Administration Functions</a>：事务局部 <code>set_config</code>。资料检索日期均为 2026-11-21。</li>
+</ul>
+<p>第 18 天让 worker 从持久化任务中领取工作，处理消息重复、进程崩溃和“任务落库成功却没有发出消息”的窗口。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Task-Postgres-Tenant-Data-Model.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent-Runtime/" rel="tag">Agent Runtime</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PostgreSQL/" rel="tag">PostgreSQL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Durable-Worker-Outbox-Lease-Retry.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            异步 Worker 怎么可靠执行：租约、Outbox 与有界重试
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Task-API-Idempotency-Cancellation.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">任务 API 怎么定：幂等键、错误契约与取消语义</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

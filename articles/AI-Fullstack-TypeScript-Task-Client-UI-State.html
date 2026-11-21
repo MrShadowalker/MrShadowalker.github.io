@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 20 天：用 TypeScript 和 React 为异步任务建状态机，处理 SSE 去重、断线恢复、提交超时、身份权限和流式渲染，附三道有来源的面试题。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 全栈前端怎样接任务：TypeScript 状态机、SSE 去重与权限边界 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Fullstack-TypeScript-Task-Client-UI-State"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AI 全栈前端怎样接任务：TypeScript 状态机、SSE 去重与权限边界
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html" class="article-date">
+  <time datetime="2026-11-15T01:00:00.000Z" itemprop="datePublished">2026-11-15</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">8 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定第 20 天学习内容；资料与题目于 2026-11-21 检索核验。</p>
+<p>第 19 天已经让后端输出有序事件。前端不能只写一个“正在生成”的布尔值：提交请求可能超时但任务已创建，SSE 可能断开后重复投递，用户也可能在权限被撤销时还停留在旧页面。</p>
+<p>今天把这些情况写成一个<strong>可检查的 TypeScript 状态机</strong>。熟悉 Java 后端的读者，可以把它看成前端版的任务状态 DTO 与合法迁移表。</p>
+<span id="more"></span>
+
+<h2 id="一、页面只保存必要状态"><a href="#一、页面只保存必要状态" class="headerlink" title="一、页面只保存必要状态"></a>一、页面只保存必要状态</h2><p>界面分为 <code>idle</code>、<code>submitting</code>、<code>running</code>、<code>resyncing</code>、<code>succeeded</code>、<code>failed</code>、<code>forbidden</code>。其中 <code>running</code> 保存 <code>taskId</code>、最后确认的事件序号与尚未完成的展示文本；成功后显示后端确认的最终答案与引用。</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="title class_">TaskView</span> =</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;idle&quot;</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;submitting&quot;</span>; <span class="attr">requestKey</span>: <span class="built_in">string</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;running&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">lastSeq</span>: <span class="built_in">number</span>; <span class="attr">draft</span>: <span class="built_in">string</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;resyncing&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">lastSeq</span>: <span class="built_in">number</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;succeeded&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">answer</span>: <span class="built_in">string</span>; <span class="attr">citations</span>: <span class="built_in">string</span>[] &#125;</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;failed&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">code</span>: <span class="built_in">string</span>; <span class="attr">partialDraft</span>: <span class="built_in">string</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">kind</span>: <span class="string">&quot;forbidden&quot;</span>; <span class="attr">taskId</span>?: <span class="built_in">string</span> &#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>kind</code> 是判别字段；TypeScript 在分支里能收窄可访问字段。它能防止“已成功但还显示错误提示”之类的非法组合，但<strong>运行时来自网络的 JSON 仍要校验</strong>，静态类型不能替代解析和授权。<a target="_blank" rel="noopener" href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions">TypeScript Handbook：Discriminated unions</a>、<a target="_blank" rel="noopener" href="https://react.dev/learn/choosing-the-state-structure">React：Choosing the State Structure</a>（检索日期：2026-11-21）</p>
+<p>不要在组件里另存一份可从 <code>TaskView</code> 算出的 <code>isLoading</code>、<code>canCancel</code> 或“当前答案”。否则两个状态更新的先后差异会制造不可能的界面。把状态放在拥有该任务卡片的组件或一个明确的共享 store 中，页面切换时用任务 ID 恢复。</p>
+<h2 id="二、提交超时不能当成“没创建”"><a href="#二、提交超时不能当成“没创建”" class="headerlink" title="二、提交超时不能当成“没创建”"></a>二、提交超时不能当成“没创建”</h2><p>提交请求使用客户端生成的稳定 <code>Idempotency-Key</code>。按钮防抖只减少重复点击，无法处理请求已经到达服务端、响应却丢失的情况。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">POST /v1/tasks</span><br><span class="line">Idempotency-Key: 0f7b...</span><br><span class="line">→ 202 &#123; &quot;task_id&quot;: &quot;task-7&quot;, &quot;status&quot;: &quot;QUEUED&quot; &#125;</span><br><span class="line"></span><br><span class="line">POST /v1/tasks</span><br><span class="line">Idempotency-Key: 0f7b...  （同一请求体重发）</span><br><span class="line">→ 202 &#123; &quot;task_id&quot;: &quot;task-7&quot;, &quot;status&quot;: &quot;RUNNING&quot; &#125;</span><br></pre></td></tr></table></figure>
+
+<p>若 <code>fetch</code> 超时或用户主动中断，用同一键和同一请求体重发 <code>POST /v1/tasks</code>；服务端返回原任务而不重复创建。服务端应对“同键不同载荷”返回冲突。浏览器的 <code>AbortController</code> 只取消本地请求等待，不能证明服务器回滚了创建任务的数据库事务。<a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal">MDN AbortSignal</a>（检索日期：2026-11-21）</p>
+<h2 id="三、SSE-增量只在序号连续时合并"><a href="#三、SSE-增量只在序号连续时合并" class="headerlink" title="三、SSE 增量只在序号连续时合并"></a>三、SSE 增量只在序号连续时合并</h2><p>页面首次进入或刷新时，先读取 <code>GET /v1/tasks/&#123;id&#125;</code> 快照：<code>last_seq</code>、任务状态、当前可展示文本与引用。之后订阅 <code>/events?after=last_seq</code>。重连可能重放，所以按 <code>taskId</code> 和 <code>seq</code> 去重；若发现序号跳跃，停止拼接，重新读快照。</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="title class_">UiEvent</span> =</span><br><span class="line">  | &#123; <span class="attr">type</span>: <span class="string">&quot;model_delta&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">seq</span>: <span class="built_in">number</span>; <span class="attr">text</span>: <span class="built_in">string</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">type</span>: <span class="string">&quot;task_succeeded&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">seq</span>: <span class="built_in">number</span> &#125;</span><br><span class="line">  | &#123; <span class="attr">type</span>: <span class="string">&quot;task_failed&quot;</span>; <span class="attr">taskId</span>: <span class="built_in">string</span>; <span class="attr">seq</span>: <span class="built_in">number</span>; <span class="attr">code</span>: <span class="built_in">string</span> &#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">applyEvent</span>(<span class="params"><span class="attr">view</span>: <span class="title class_">Extract</span>&lt;<span class="title class_">TaskView</span>, &#123; kind: <span class="string">&quot;running&quot;</span> &#125;&gt;, <span class="attr">ev</span>: <span class="title class_">UiEvent</span></span>): <span class="title class_">TaskView</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> (ev.<span class="property">taskId</span> !== view.<span class="property">taskId</span> || ev.<span class="property">seq</span> &lt;= view.<span class="property">lastSeq</span>) <span class="keyword">return</span> view;</span><br><span class="line">  <span class="keyword">if</span> (ev.<span class="property">seq</span> !== view.<span class="property">lastSeq</span> + <span class="number">1</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123; <span class="attr">kind</span>: <span class="string">&quot;resyncing&quot;</span>, <span class="attr">taskId</span>: view.<span class="property">taskId</span>, <span class="attr">lastSeq</span>: view.<span class="property">lastSeq</span> &#125;;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (ev.<span class="property">type</span> === <span class="string">&quot;model_delta&quot;</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123; ...view, <span class="attr">lastSeq</span>: ev.<span class="property">seq</span>, <span class="attr">draft</span>: view.<span class="property">draft</span> + ev.<span class="property">text</span> &#125;;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (ev.<span class="property">type</span> === <span class="string">&quot;task_failed&quot;</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123; <span class="attr">kind</span>: <span class="string">&quot;failed&quot;</span>, <span class="attr">taskId</span>: view.<span class="property">taskId</span>, <span class="attr">code</span>: ev.<span class="property">code</span>, <span class="attr">partialDraft</span>: view.<span class="property">draft</span> &#125;;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 收到成功事件后拉取权威任务快照，不能仅凭已拼接的分片标记成功。</span></span><br><span class="line">  <span class="keyword">return</span> &#123; <span class="attr">kind</span>: <span class="string">&quot;resyncing&quot;</span>, <span class="attr">taskId</span>: view.<span class="property">taskId</span>, <span class="attr">lastSeq</span>: ev.<span class="property">seq</span> &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>浏览器原生 <code>EventSource</code> 的构造参数只有 URL 和 <code>withCredentials</code> 选项；若使用同源 HttpOnly 会话 Cookie，可按既有认证方式打开流。它不提供自定义 Authorization 请求头参数；Bearer Token 场景需采用受控 <code>fetch</code> 流解析与手动重连，或由后端签发短期、限任务的流凭证，并评估 URL、日志泄露风险。服务端每次连接都要重新鉴权。<a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsource-interface">WHATWG EventSource 接口</a>（检索日期：2026-11-21）</p>
+<p>组件卸载时调用 <code>EventSource.close()</code> 释放连接；<code>error</code> 事件后先查询任务快照，区分暂时断网、任务终态和 <code>403</code>。权限失效时清除当前任务的草稿与引用，不能继续展示缓存的敏感结果。浏览器离开页面不触发任务取消；显式取消按钮才调用后端取消 API。</p>
+<h2 id="四、流式渲染要保住可读性"><a href="#四、流式渲染要保住可读性" class="headerlink" title="四、流式渲染要保住可读性"></a>四、流式渲染要保住可读性</h2><p>模型按 Token 送出的 Markdown 可能半个代码围栏还没闭合。展示草稿时可以按短时间窗口合并增量，先以纯文本或可处理未闭合块的渲染器显示，成功后再渲染经过净化的最终 Markdown。不要用原始模型文本直接填 <code>innerHTML</code>。渲染节流减少每个 Token 都触发全页更新；任务状态和引用仍应在权威事件到达时即时更新。</p>
+<p>前端至少做六个可复现 Case：重复 <code>seq</code> 不重复文字；跳号后拉快照；提交超时后同键找回任务；SSE 断线但任务继续；取消后按钮状态正确；权限撤销后旧内容不可见。给每个 Case 保存输入事件、最终 UI 状态和网络调用次数。</p>
+<h2 id="五、今日面试题（检索日期：2026-11-21）"><a href="#五、今日面试题（检索日期：2026-11-21）" class="headerlink" title="五、今日面试题（检索日期：2026-11-21）"></a>五、今日面试题（检索日期：2026-11-21）</h2><p>以下题面来自牛客用户自述，企业归属及面试经历未获官方核验。参考答案与追问为本文工程归纳。</p>
+<h3 id="1-AI-全栈项目的前后端交互和权限控制如何实现？绕过前端怎么办？"><a href="#1-AI-全栈项目的前后端交互和权限控制如何实现？绕过前端怎么办？" class="headerlink" title="1. AI 全栈项目的前后端交互和权限控制如何实现？绕过前端怎么办？"></a>1. AI 全栈项目的前后端交互和权限控制如何实现？绕过前端怎么办？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：前后端契约、权限 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：前端负责输入与状态展示；后端从认证会话确定用户和租户，对任务、会话、事件三类读取及写入逐一授权。前端隐藏按钮只是体验措施，不能作为访问控制。会话 Cookie 设 HttpOnly、Secure、SameSite，并按部署形态处理 CSRF；敏感身份不放在 URL。</li>
+<li><strong>追问</strong>：用户打开任务页期间被移出租户，已有 SSE 连接如何处理？服务端重新校验或主动断开，前端收到拒绝后清除敏感缓存。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/4d9c64a2a33c4711b22e7cd25970f414">牛客“字节 AI 全栈开发实习一面”用户自述</a>，正文“项目深挖”和 Web 部分；页面显示 07-27。</li>
+</ul>
+<h3 id="2-React-多组件共享任务状态时，怎样避免状态不一致？"><a href="#2-React-多组件共享任务状态时，怎样避免状态不一致？" class="headerlink" title="2. React 多组件共享任务状态时，怎样避免状态不一致？"></a>2. React 多组件共享任务状态时，怎样避免状态不一致？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：React 状态管理 &#x2F; 中等。</li>
+<li><strong>参考答案</strong>：让任务卡片或共享 store 持有单一的 <code>TaskView</code>，将任务 ID、状态与游标作为事实；加载标志、可取消按钮等从状态派生。SSE 事件统一经 reducer 应用，按序号去重，组件销毁时关闭订阅。不同页面重新获取任务快照，不依赖旧组件内存。</li>
+<li><strong>追问</strong>：两个组件同时收到同一 <code>model_delta</code> 时，如何保证文本只追加一次？将去重放在共享状态层。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/b7a11a657f574ee6867f8752de0d52c7?sourceSSR=dynamic">牛客“小厂全栈面经”用户自述</a>，正文第 2–4 题涉及 React 组件与共享状态；作者写明 2026-08-26 面试。<strong>非大厂原题</strong>，用于补足前端基础。</li>
+</ul>
+<h3 id="3-用户在接收-SSE-时刷新页面，后端任务会怎样？前端如何恢复？"><a href="#3-用户在接收-SSE-时刷新页面，后端任务会怎样？前端如何恢复？" class="headerlink" title="3. 用户在接收 SSE 时刷新页面，后端任务会怎样？前端如何恢复？"></a>3. 用户在接收 SSE 时刷新页面，后端任务会怎样？前端如何恢复？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI 全栈流式交互 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：刷新只中断连接，后端按任务状态继续。新页面先读任务快照，再从 <code>last_seq</code> 续订；重连重复事件去重，缺口回快照。最终成功或失败以任务状态为准，不以连接 <code>onerror</code> 判断。</li>
+<li><strong>追问</strong>：刷新恰好发生在“任务已创建、POST 响应未收到”之间，前端如何找回？持久保存这次提交的请求键并以同键同体重发，让服务端返回原任务；不能生成新键盲目再提交。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://api-cdn.nowcoder.com/feed/main/detail/19a587c7a8ce418fb3b1ee733b05d867?sourceSSR=post">牛客“水滴 AI 全栈一面”用户自述</a>，正文列出刷新、断连、续传追问；页面显示 10-19。该帖列题较多，单场题量无法独立核实。</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html">TypeScript Handbook：Narrowing</a>：判别联合与分支收窄。</li>
+<li><a target="_blank" rel="noopener" href="https://react.dev/learn/choosing-the-state-structure">React：Choosing the State Structure</a>：避免冗余与矛盾状态。</li>
+<li><a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html">WHATWG Server-sent events</a>：浏览器 EventSource 的连接与重连语义。</li>
+<li><a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal">MDN AbortSignal</a>：浏览器请求中止语义。以上资料检索日期：2026-11-21。</li>
+</ul>
+<p>第 21 天做第三周复盘，把任务创建、数据库持久化、Worker、事件流和页面状态放进一场可回放的故障演练。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/React/" rel="tag">React</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SSE/" rel="tag">SSE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TypeScript/" rel="tag">TypeScript</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            AI 全栈开发第三周验收：从 API 到 Worker、SSE 的故障演练
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Agent 流式输出怎样可恢复：SSE 事件、断点续传与取消边界</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

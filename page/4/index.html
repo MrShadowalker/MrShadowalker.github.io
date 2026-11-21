@@ -117,7 +117,7 @@ var _hmt = _hmt || [];
     
     
     <article
-  id="post-Java-Framework-EDAS-Service-Governance"
+  id="post-Java-SecKill-Reliability-Review"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -128,8 +128,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Framework-EDAS-Service-Governance.html"
-    >EDAS 服务治理</a> 
+  <a class="article-title" href="/articles/Java-SecKill-Reliability-Review.html"
+    >异步下单之后，还需要补上哪些可靠性环节</a> 
 </h2>
  
 
@@ -137,8 +137,8 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Framework-EDAS-Service-Governance.html" class="article-date">
-  <time datetime="2021-07-22T00:52:42.000Z" itemprop="datePublished">2021-07-22</time>
+      <a href="/articles/Java-SecKill-Reliability-Review.html" class="article-date">
+  <time datetime="2026-09-09T01:40:00.000Z" itemprop="datePublished">2026-09-09</time>
 </a>
  
   <div class="article-category">
@@ -149,8 +149,10 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>服务治理是 EDAS 的重要功能之一。在 EDAS 中，用户可以对 Spring Cloud、Dubbo、HSF 和多语言服务应用进行治理，包括服务查询、调用链查询、离群实例摘除和服务鉴权等。</p> 
-      <a class="article-more-link" href="/articles/Java-Framework-EDAS-Service-Governance.html"
+  <p>旧博客的异步下单文章，把请求放进消息队列，再由消费者写订单。它很适合展示一个变化：用户请求不必一直等待完整的数据库操作。</p>
+<p>这次再看代码，更值得继续讨论的是失败以后会发生什么。消息进了队列就一定有订单吗？库存已经更新，但订单插入失败怎么办？用户重复发一次请求，系统认得出来吗？</p>
+<p>下面基于旧学习 demo 做一次代码阅读。它不是生产故障复盘，也没有新的压测结论。</p> 
+      <a class="article-more-link" href="/articles/Java-SecKill-Reliability-Review.html"
         >阅读更多...</a
       >
        
@@ -163,7 +165,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/" rel="tag">RabbitMQ</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
@@ -175,7 +177,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Framework-EDAS-ECS"
+  id="post-Java-Interview-to-Engineering"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -186,8 +188,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Framework-EDAS-ECS.html"
-    >EDAS ECS 应用托管</a> 
+  <a class="article-title" href="/articles/Java-Interview-to-Engineering.html"
+    >把 Java 面试笔记串成一条工程主线</a> 
 </h2>
  
 
@@ -195,8 +197,8 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Framework-EDAS-ECS.html" class="article-date">
-  <time datetime="2021-07-20T09:14:34.000Z" itemprop="datePublished">2021-07-20</time>
+      <a href="/articles/Java-Interview-to-Engineering.html" class="article-date">
+  <time datetime="2026-09-09T01:30:00.000Z" itemprop="datePublished">2026-09-09</time>
 </a>
  
   <div class="article-category">
@@ -207,8 +209,10 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>您可以将 Java 应用托管到 EDAS 的 ECS 集群或混合云 ECS 集群。EDAS 为托管的应用提供了生命周期管理、CI&#x2F;CD、监控、运维等一系列功能。</p> 
-      <a class="article-more-link" href="/articles/Java-Framework-EDAS-ECS.html"
+  <p>翻回以前的 Java 笔记，会发现主题已经不少了：HashMap、ConcurrentHashMap、JVM、MySQL、Redis、Spring、MQ，还有项目设计。</p>
+<p>这些知识点单独看都很重要。但如果只是把答案一条条背下来，遇到“讲讲你的项目”时，依然容易变成一串组件名称。</p>
+<p>可以换一个复习角度：沿着一笔订单走一遍，看这些知识分别解决哪一段问题。</p> 
+      <a class="article-more-link" href="/articles/Java-Interview-to-Engineering.html"
         >阅读更多...</a
       >
        
@@ -221,7 +225,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
 
     </footer>
   </div>
@@ -233,7 +237,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Framework-EDAS-K8s"
+  id="post-Engineering-Release-Readback"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -244,8 +248,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Framework-EDAS-K8s.html"
-    >EDAS K8s 应用托管</a> 
+  <a class="article-title" href="/articles/Engineering-Release-Readback.html"
+    >服务启动了，然后呢？一次发布应该怎样验收</a> 
 </h2>
  
 
@@ -253,21 +257,22 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Framework-EDAS-K8s.html" class="article-date">
-  <time datetime="2021-07-20T00:52:32.000Z" itemprop="datePublished">2021-07-20</time>
+      <a href="/articles/Engineering-Release-Readback.html" class="article-date">
+  <time datetime="2026-09-09T01:20:00.000Z" itemprop="datePublished">2026-09-09</time>
 </a>
  
   <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
+    <a class="article-category-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/">工程实践</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>EDAS 支持以容器的形式托管应用到阿里云 Kubernetes 集群或混合云集群（其他云域或 IDC 内自建 Kubernetes 集群），用户无需理解容器服务底层细节，便可以低门槛拥抱容器技术，最大化地利用资源并完成应用在容器里的全生命周期管理，以及监控、运维等服务。</p>
-<p>本文介绍 K8s 环境支持的应用类型和应用托管功能。</p> 
-      <a class="article-more-link" href="/articles/Java-Framework-EDAS-K8s.html"
+  <p>镜像打好了，容器启动了，健康检查也是绿色。打开用户入口，看到的却还是旧版本。</p>
+<p>这不一定是代码没更新。可能新实例还没接流量，可能入口指向另一组服务，也可能应用加载的配置仍然来自旧文件。</p>
+<p>服务内部的成功信号很重要，但它们需要与用户真正经过的路径连接起来。</p> 
+      <a class="article-more-link" href="/articles/Engineering-Release-Readback.html"
         >阅读更多...</a
       >
        
@@ -280,7 +285,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag">可观测性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%83%A8%E7%BD%B2/" rel="tag">部署</a></li></ul>
 
     </footer>
   </div>
@@ -292,7 +297,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Framework-EDAS-Operation"
+  id="post-AI-QA-Evaluation"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -303,8 +308,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Framework-EDAS-Operation.html"
-    >企业级分布式应用服务 EDAS 应用</a> 
+  <a class="article-title" href="/articles/AI-QA-Evaluation.html"
+    >给 AI 问答做测试：先把错误分清楚</a> 
 </h2>
  
 
@@ -312,22 +317,22 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Framework-EDAS-Operation.html" class="article-date">
-  <time datetime="2021-07-20T00:18:33.000Z" itemprop="datePublished">2021-07-20</time>
+      <a href="/articles/AI-QA-Evaluation.html" class="article-date">
+  <time datetime="2026-09-09T01:10:00.000Z" itemprop="datePublished">2026-09-09</time>
 </a>
  
   <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>本篇为了帮助用户体验 EDAS，快速入门介绍如何将 Spring Cloud 和 Apache Dubbo（简称 Dubbo）微服务应用 Demo 快速部署到 EDAS 的不同环境中，每个部署场景均可在 30 分钟内完成。</p>
-<p>EDAS 提供 1~5 个免费的按量付费应用实例。如果您开通了 EDAS 按量付费的标准版，并且部署的应用实例不超过 5 个的情况下，使用 EDAS 本身不会产生任何费用，但需要为创建的云服务器 ECS、负载均衡 SLB 而使用的阿里云资源支付费用，直到释放这些资源为止。</p>
-<p>EDAS 提供的应用 Demo 中注册中心使用的是 Nacos，您也可以根据需求自建或使用 MSE 托管其它类型的注册中心，如 Eureka 或 ZooKeeper。只要保证注册中心与应用部署环境的网络互通，无需修改任何代码，即可将应用部署到 EDAS，使用 EDAS 提供的应用托管、微服务及云原生应用 PaaS 平台能力，详情请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/42934.htm#concept-2038209">什么是企业级分布式应用服务 EDAS</a>。</p> 
-      <a class="article-more-link" href="/articles/Java-Framework-EDAS-Operation.html"
+  <p>给知识库换了检索策略，测试分数从 80 变成 90，可以上线了吗？</p>
+<p>先别急。这个分数到底在衡量什么？搜到了目标文档，答案写得像参考答案，还是用户真的得到了可以使用的结论？</p>
+<p>同样一个问题，可能文档找对了、答案却用错了版本；也可能答案正确，引用却点不开。把它们压成一个总分，最需要修复的地方反而不容易看见。</p> 
+      <a class="article-more-link" href="/articles/AI-QA-Evaluation.html"
         >阅读更多...</a
       >
        
@@ -340,7 +345,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" rel="tag">知识库</a></li></ul>
 
     </footer>
   </div>
@@ -352,7 +357,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Basics-Exception"
+  id="post-AI-Knowledge-Evidence"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -363,8 +368,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Basics-Exception.html"
-    >Java 基础（二）异常体系</a> 
+  <a class="article-title" href="/articles/AI-Knowledge-Evidence.html"
+    >知识库能搜到，为什么还是答不准？</a> 
 </h2>
  
 
@@ -372,20 +377,23 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Basics-Exception.html" class="article-date">
-  <time datetime="2021-07-19T22:20:50.000Z" itemprop="datePublished">2021-07-20</time>
+      <a href="/articles/AI-Knowledge-Evidence.html" class="article-date">
+  <time datetime="2026-09-09T01:00:00.000Z" itemprop="datePublished">2026-09-09</time>
 </a>
  
   <div class="article-category">
-    <a class="article-category-link" href="/categories/Java/">Java</a>
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>Java 异常体系和常见异常，一篇搞定！</p> 
-      <a class="article-more-link" href="/articles/Java-Basics-Exception.html"
+  <p>假设有人问：“我们正在用的这个版本，能不能处理扫描件？”</p>
+<p>知识库搜到了三份材料：一份产品介绍、一份新版本说明，还有一份测试记录。模型读完以后回答：“支持，上传文件即可。”</p>
+<p>听起来很顺。但再看一眼，产品介绍没有写版本，新版本说明说的是下个月准备发布的功能，测试记录只覆盖了一种文档。</p>
+<p>问题出在哪里？材料确实找到了，可它们还不足以回答眼前这个问题。</p> 
+      <a class="article-more-link" href="/articles/AI-Knowledge-Evidence.html"
         >阅读更多...</a
       >
        
@@ -398,7 +406,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BC%82%E5%B8%B8/" rel="tag">异常</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RAG/" rel="tag">RAG</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" rel="tag">知识库</a></li></ul>
 
     </footer>
   </div>
@@ -410,7 +418,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Framework-EDAS-Introduction"
+  id="post-Java-SecKill-DB-Cache-Inconsistent"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -421,8 +429,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Framework-EDAS-Introduction.html"
-    >企业级分布式应用服务 EDAS 简介</a> 
+  <a class="article-title" href="/articles/Java-SecKill-DB-Cache-Inconsistent.html"
+    >秒杀系列（三）数据库与缓存双写问题的思考</a> 
 </h2>
  
 
@@ -430,8 +438,8 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Framework-EDAS-Introduction.html" class="article-date">
-  <time datetime="2021-07-19T06:33:37.000Z" itemprop="datePublished">2021-07-19</time>
+      <a href="/articles/Java-SecKill-DB-Cache-Inconsistent.html" class="article-date">
+  <time datetime="2021-07-26T08:49:14.000Z" itemprop="datePublished">2021-07-26</time>
 </a>
  
   <div class="article-category">
@@ -442,8 +450,8 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>企业级分布式应用服务 EDAS（Enterprise Distributed Application Service）是一个应用托管和微服务管理的 PaaS 平台，提供应用开发、部署、监控、运维等全栈式解决方案，支持 Spring Cloud、Dubbo 等微服务运行环境，助力应用轻松上云。</p> 
-      <a class="article-more-link" href="/articles/Java-Framework-EDAS-Introduction.html"
+  <h1 id="缓存热点数据"><a href="#缓存热点数据" class="headerlink" title="缓存热点数据"></a>缓存热点数据</h1><p>在秒杀实际的业务中，一定有很多需要做缓存的场景，比如售卖的商品，包括名称、详情等。访问量很大的数据，可以算是“热点”数据了，尤其是一些读取量远大于写入量的数据，更应该被缓存，而不应该让请求打到数据库上。</p> 
+      <a class="article-more-link" href="/articles/Java-SecKill-DB-Cache-Inconsistent.html"
         >阅读更多...</a
       >
        
@@ -456,7 +464,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A1%86%E6%9E%B6/" rel="tag">框架</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%BF%E9%87%8C/" rel="tag">阿里</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">数据一致性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li></ul>
 
     </footer>
   </div>
@@ -468,7 +476,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Basics-Keywords"
+  id="post-Java-SecKill-Asynchronous"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -479,8 +487,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Basics-Keywords.html"
-    >Java 基础（一）Java 关键字</a> 
+  <a class="article-title" href="/articles/Java-SecKill-Asynchronous.html"
+    >秒杀系列（二）如何优雅地异步下订单</a> 
 </h2>
  
 
@@ -488,8 +496,8 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Basics-Keywords.html" class="article-date">
-  <time datetime="2021-07-17T04:25:14.000Z" itemprop="datePublished">2021-07-17</time>
+      <a href="/articles/Java-SecKill-Asynchronous.html" class="article-date">
+  <time datetime="2021-07-26T07:24:40.000Z" itemprop="datePublished">2021-07-26</time>
 </a>
  
   <div class="article-category">
@@ -500,9 +508,15 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>Java 关键字一篇搞定！</p>
-<p><img src="/articles/Java-Basics-Keywords/v2-8408d6adff55ca7f1772f666afae9425_r.jpg" alt="preview"></p> 
-      <a class="article-more-link" href="/articles/Java-Basics-Keywords.html"
+  <h1 id="简单的订单异步处理实现"><a href="#简单的订单异步处理实现" class="headerlink" title="简单的订单异步处理实现"></a>简单的订单异步处理实现</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>前面几篇文章，我们从 <strong>「限流角度，缓存角度」</strong> 来优化了用户下单的速度，减少了服务器和数据库的压力。这些处理对于一个秒杀系统都是非常重要的，并且效果立竿见影，那还有什么操作也能有立竿见影的效果呢？答案是对于下单的异步处理。</p>
+<p>在秒杀系统用户进行抢购的过程中，由于在同一时间会有大量请求涌入服务器，如果每个请求都立即访问数据库进行扣减库存+写入订单的操作，对数据库的压力是巨大的。</p>
+<p>如何减轻数据库的压力呢，<strong>「我们将每一条秒杀的请求存入消息队列（例如RabbitMQ）中，放入消息队列后，给用户返回类似“抢购请求发送成功”的结果。而在消息队列中，我们将收到的下订单请求一个个的写入数据库中」</strong>，比起多线程同步修改数据库的操作，大大缓解了数据库的连接压力，最主要的好处就表现在数据库连接的减少：</p>
+<ul>
+<li>同步方式：大量请求快速占满数据库框架开启的数据库连接池，同时修改数据库，导致数据库读写性能骤减。</li>
+<li>异步方式：一条条消息以顺序的方式写入数据库，连接数几乎不变（当然，也取决于消息队列消费者的数量）。</li>
+</ul>
+<p><strong>「这种实现可以理解为是一中流量削峰：让数据库按照他的处理能力，从消息队列中拿取消息进行处理。」</strong></p> 
+      <a class="article-more-link" href="/articles/Java-SecKill-Asynchronous.html"
         >阅读更多...</a
       >
        
@@ -515,7 +529,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
@@ -527,7 +541,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-Interview-Menu"
+  id="post-Java-SecKill-Prevent-Oversold"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -538,8 +552,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-Interview-Menu.html"
-    >巅峰之旅（二）Java 灵魂拷问汇总</a> 
+  <a class="article-title" href="/articles/Java-SecKill-Prevent-Oversold.html"
+    >秒杀系列（一）防止超卖</a> 
 </h2>
  
 
@@ -547,8 +561,8 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-Interview-Menu.html" class="article-date">
-  <time datetime="2021-07-17T04:07:07.000Z" itemprop="datePublished">2021-07-17</time>
+      <a href="/articles/Java-SecKill-Prevent-Oversold.html" class="article-date">
+  <time datetime="2021-07-26T03:03:30.000Z" itemprop="datePublished">2021-07-26</time>
 </a>
  
   <div class="article-category">
@@ -559,8 +573,24 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>Java 各技术栈 の 模拟面试实录汇总目录。</p> 
-      <a class="article-more-link" href="/articles/Java-Interview-Menu.html"
+  <h1 id="秒杀系统"><a href="#秒杀系统" class="headerlink" title="秒杀系统"></a>秒杀系统</h1><p>秒杀系统相信网上已经介绍了很多了，我也不想粘贴很多定义过来了。</p>
+<p>废话少说，秒杀系统主要应用在商品抢购的场景，比如：</p>
+<ul>
+<li>电商抢购限量商品</li>
+<li>卖周董演唱会的门票</li>
+<li>火车票抢座</li>
+<li>……</li>
+</ul>
+<p>秒杀系统抽象来说就是以下几个步骤：</p>
+<ul>
+<li>用户选定商品下单</li>
+<li>校验库存</li>
+<li>扣库存</li>
+<li>创建用户订单</li>
+<li>用户支付等后续步骤</li>
+</ul>
+<p>听起来就是个用户买商品的流程而已嘛！确实，所以我们为啥要说它是个专门的系统呢？</p> 
+      <a class="article-more-link" href="/articles/Java-SecKill-Prevent-Oversold.html"
         >阅读更多...</a
       >
        
@@ -573,7 +603,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
@@ -585,7 +615,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Essay-Personal-Development"
+  id="post-Java-SecKill-Distributed-Design"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -596,8 +626,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Essay-Personal-Development.html"
-    >个人成长总结</a> 
+  <a class="article-title" href="/articles/Java-SecKill-Distributed-Design.html"
+    >秒杀系列（零）高并发设计</a> 
 </h2>
  
 
@@ -605,20 +635,20 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Essay-Personal-Development.html" class="article-date">
-  <time datetime="2021-07-15T09:18:25.000Z" itemprop="datePublished">2021-07-15</time>
+      <a href="/articles/Java-SecKill-Distributed-Design.html" class="article-date">
+  <time datetime="2021-07-26T03:02:55.000Z" itemprop="datePublished">2021-07-26</time>
 </a>
  
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E9%97%B2%E8%A8%80%E7%A2%8E%E8%AF%AD/">闲言碎语</a>
+    <a class="article-category-link" href="/categories/Java/">Java</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>准备面试以来，除了学习以外的个人成长总结。</p> 
-      <a class="article-more-link" href="/articles/Essay-Personal-Development.html"
+  <p>秒杀系列开篇文章，整理分布式微服务设计中，面对高并发场景的一系列潜在问题和处理思路。</p> 
+      <a class="article-more-link" href="/articles/Java-SecKill-Distributed-Design.html"
         >阅读更多...</a
       >
        
@@ -631,7 +661,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/" rel="tag">个人成长</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%80%9D%E7%BB%B4/" rel="tag">思维</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag">分布式</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">数据一致性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
@@ -643,7 +673,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-Java-How-to-Learn-Java"
+  id="post-Java-Idempotent-Design"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -654,8 +684,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/articles/Java-How-to-Learn-Java.html"
-    >巅峰之旅（一）如何学习 Java</a> 
+  <a class="article-title" href="/articles/Java-Idempotent-Design.html"
+    >Java 幂等设计</a> 
 </h2>
  
 
@@ -663,8 +693,8 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/Java-How-to-Learn-Java.html" class="article-date">
-  <time datetime="2021-07-15T07:58:56.000Z" itemprop="datePublished">2021-07-15</time>
+      <a href="/articles/Java-Idempotent-Design.html" class="article-date">
+  <time datetime="2021-07-26T01:39:55.000Z" itemprop="datePublished">2021-07-26</time>
 </a>
  
   <div class="article-category">
@@ -675,21 +705,9 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>学习是为了什么？</p>
-<blockquote>
-<p>面向面试学习</p>
-<p>面向大厂学习</p>
-<p>面向薪资学习</p>
-<p>面向提升学习</p>
-</blockquote>
-<p>我不否认上面的任何一点。尽管从境界，或者说价值观层面，显得越来越高大上，打工人终归还是要恰饭的嘛。</p>
-<p>要想恰好饭，就要进大厂；要想更好提升，就要进大厂。</p>
-<p>所以不论是提升个人价值、还是创造个人价值的角度，进大厂无疑是所有程序员的梦想。</p>
-<p>很多人在工作几年之后，固然日常开发和解决问题的能力都很强，但是从前学习的东西要么忘了、要么没有经过深入的研究。</p>
-<p>在大厂面试的时候哪怕心里知道，嘴上也支支吾吾。</p>
-<p>更别说很多非八股文的、需要深入理解某些知识，才能在其间游刃有余谈吐自若。</p>
-<p>然后再到场景设计编程实现、或者直接丢过来两道没刷过的算法题，当场凉凉。</p> 
-      <a class="article-more-link" href="/articles/Java-How-to-Learn-Java.html"
+  <p>小伙伴们有没有遇到过<strong>生产环境经常出现过重复的数据？</strong>在排查问题的时候，数据又是正常的。这个是何解呢？<strong>怎么会出现这种情况，而且还很难排查问题</strong>。</p>
+<p>今天给大家分享一下这里的原因，以及解决方案。</p> 
+      <a class="article-more-link" href="/articles/Java-Idempotent-Design.html"
         >阅读更多...</a
       >
        
@@ -702,7 +720,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/" rel="tag">Java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/" rel="tag">高并发</a></li></ul>
 
     </footer>
   </div>
@@ -719,7 +737,7 @@ var _hmt = _hmt || [];
   
   <nav class="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/3/">上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/5/">下一页</a>
+    <a class="extend prev" rel="prev" href="/page/3/">上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/5/">下一页</a>
   </nav>
   
 </section>

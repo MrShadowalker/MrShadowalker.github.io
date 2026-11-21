@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 22 天：把会话消息、任务状态、持久化事件和统一 ModelClient 接成最小纵向链路，解决重复提交、版本固定、上下文构建与租户隔离。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最小对话服务怎样贯通：会话、消息、任务与 ModelClient | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Conversation-Service-Vertical-Slice"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  最小对话服务怎样贯通：会话、消息、任务与 ModelClient
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Conversation-Service-Vertical-Slice.html" class="article-date">
+  <time datetime="2026-11-17T01:00:00.000Z" itemprop="datePublished">2026-11-17</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">9 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定第 22 天学习内容；资料与题目于 2026-11-21 检索核验。</p>
+<p>第三周已经有了 HTTP 入口、任务 API、数据库模型、Worker、SSE 和前端状态。现在把它们连成一个用户能实际操作的最小对话服务：创建会话，发送一条消息，看到任务执行和最终回答，刷新后还能找回同一轮。</p>
+<p>对话服务的关键不在聊天框，而在<strong>分清会话历史、一次执行任务、传给模型的上下文</strong>。三者生命周期不同，不能放进一个可变数组里。</p>
+<span id="more"></span>
+
+<h2 id="一、四类对象各管一件事"><a href="#一、四类对象各管一件事" class="headerlink" title="一、四类对象各管一件事"></a>一、四类对象各管一件事</h2><table>
+<thead>
+<tr>
+<th>对象</th>
+<th>保存的事实</th>
+<th>生命周期与边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>conversation</code></td>
+<td>租户、所有者、标题、最近活动时间、版本</td>
+<td>跨多轮，按权限读取</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td>用户原文或已确认的助手回答、创建顺序、来源任务</td>
+<td>长期会话记录；失败草稿不冒充已完成回答</td>
+</tr>
+<tr>
+<td><code>task</code></td>
+<td>本轮目标、状态、幂等键、预算、配置快照、截止时间</td>
+<td>一次执行；可失败、取消、重试或恢复</td>
+</tr>
+<tr>
+<td><code>ai_event</code></td>
+<td>递增事件序号、进度、公开增量和终态</td>
+<td>给 UI 重放与审计；不等于完整会话历史</td>
+</tr>
+</tbody></table>
+<p>本轮发给模型的 <code>model_context</code> 则是<strong>派生输入</strong>：从授权的历史消息中按上下文预算选取，再加入系统指令、必要知识、工具结果和版本信息。它不是把整个会话表无条件复制给模型。上下文构建策略变更后，同一历史会形成不同输入，因此任务里要保存 <code>context_policy_version</code> 及实际引用的消息 ID；需要精确回放时还应保存脱敏且受控的模型输入摘要。</p>
+<p>关系键必须含租户范围。至少建立 <code>(tenant_id, conversation_id)</code>、<code>(tenant_id, task_id)</code> 的读取索引，用户消息用 <code>(tenant_id, conversation_id, client_message_id)</code> 唯一约束，助手最终消息用 <code>task_id</code> 唯一约束。同一用户也可能有多会话，不能把 <code>user_id</code> 当会话 ID。</p>
+<h2 id="二、从“发消息”到“可恢复的任务”"><a href="#二、从“发消息”到“可恢复的任务”" class="headerlink" title="二、从“发消息”到“可恢复的任务”"></a>二、从“发消息”到“可恢复的任务”</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">POST /v1/conversations</span><br><span class="line">→ 201 &#123; &quot;conversation_id&quot;: &quot;conv-1&quot; &#125;</span><br><span class="line"></span><br><span class="line">POST /v1/conversations/conv-1/messages</span><br><span class="line">Idempotency-Key: turn-8c0f</span><br><span class="line">&#123; &quot;client_message_id&quot;: &quot;msg-client-17&quot;, &quot;text&quot;: &quot;本月住宿上限是多少？&quot; &#125;</span><br><span class="line">→ 202 &#123; &quot;message_id&quot;: &quot;msg-31&quot;, &quot;task_id&quot;: &quot;task-7&quot;,</span><br><span class="line">        &quot;status&quot;: &quot;QUEUED&quot;, &quot;events&quot;: &quot;/v1/tasks/task-7/events&quot; &#125;</span><br><span class="line"></span><br><span class="line">GET /v1/conversations/conv-1/messages</span><br><span class="line">→ 200 &#123; &quot;items&quot;: [ ... ], &quot;next_cursor&quot;: null &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个“发送消息”入口是第 16 天 <code>POST /v1/tasks</code> 契约的<strong>会话业务封装</strong>：它创建用户消息，同时返回同一种 <code>task_id</code>；查询、取消和 SSE 继续使用任务 API。服务端从认证主体确定 <code>tenant_id</code>，检查会话成员权限，再处理幂等；重放旧请求时也要重新检查当前主体能否读取原任务。创建用户消息、任务、固定配置版本和 outbox 触发记录应在<strong>同一事务</strong>提交；202 只表示已受理，不能返回“回答成功”。PostgreSQL 唯一约束和 <code>ON CONFLICT</code> 可帮助处理并发首次提交；跨数据库与消息队列的提交要通过 outbox 或等价机制补偿，不能依赖“先写库，再尽力发 MQ”。<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT &#x2F; ON CONFLICT</a>、<a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.3">RFC 9110 对 202 的定义</a>（检索日期：2026-11-21）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 用例伪代码，展示事务和边界；不是完整可运行的路由。</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">submit_turn</span>(<span class="params">principal, conversation_id, client_message_id, text, idem_key</span>):</span><br><span class="line">    <span class="keyword">with</span> db.transaction() <span class="keyword">as</span> tx:</span><br><span class="line">        conversation = tx.require_conversation_for_write(</span><br><span class="line">            principal.tenant_id, principal.user_id, conversation_id</span><br><span class="line">        )</span><br><span class="line">        prior = tx.find_turn(principal.tenant_id, conversation.<span class="built_in">id</span>, idem_key)</span><br><span class="line">        <span class="keyword">if</span> prior:</span><br><span class="line">            <span class="keyword">if</span> prior.request_hash != hash_request(client_message_id, text):</span><br><span class="line">                <span class="keyword">raise</span> Conflict(<span class="string">&quot;IDEMPOTENCY_MISMATCH&quot;</span>)</span><br><span class="line">            tx.require_task_readable(principal, prior.task_id)</span><br><span class="line">            <span class="keyword">return</span> prior.accepted_response</span><br><span class="line">        user_message = tx.insert_user_message(</span><br><span class="line">            principal.tenant_id, conversation.<span class="built_in">id</span>, client_message_id, text</span><br><span class="line">        )</span><br><span class="line">        task = tx.insert_task(</span><br><span class="line">            tenant_id=principal.tenant_id,</span><br><span class="line">            conversation_id=conversation.<span class="built_in">id</span>,</span><br><span class="line">            input_message_id=user_message.<span class="built_in">id</span>,</span><br><span class="line">            prompt_version=config.prompt_version,</span><br><span class="line">            route_release=config.route_release,</span><br><span class="line">            context_policy_version=config.context_policy_version,</span><br><span class="line">            knowledge_snapshot=config.knowledge_snapshot,</span><br><span class="line">        )</span><br><span class="line">        tx.insert_outbox(<span class="string">&quot;TASK_READY&quot;</span>, task.<span class="built_in">id</span>)</span><br><span class="line">        <span class="keyword">return</span> accepted(task, user_message)</span><br></pre></td></tr></table></figure>
+
+<p>这里还要处理同键并发竞争：由数据库唯一约束选出唯一记录；失败的请求读取已提交任务，不能在普通 <code>SELECT</code> 后无约束地再插入。<code>client_message_id</code> 与 HTTP 幂等键服务不同：前者标识用户消息，后者标识一次提交意图。若请求体变化，同键应返回冲突。</p>
+<h2 id="三、Worker-怎样完成这一轮"><a href="#三、Worker-怎样完成这一轮" class="headerlink" title="三、Worker 怎样完成这一轮"></a>三、Worker 怎样完成这一轮</h2><p>Worker 领取任务后，用任务里固定的配置版本构建输入：查询授权历史消息、按 Token 预算裁剪、检索当前任务固定的知识快照、经模型注册表与预算准入选择模型，再通过统一 <code>ModelClient</code> 调用。<code>ModelClient</code> 的消息、结构化输出、流式与重试边界见 <a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">第 3 天文章</a>。</p>
+<p>模型增量写入 <code>ai_event</code>，供 SSE 展示。只有最终输出通过格式和证据校验后，才在同一事务里写入一条助手最终消息、将任务置为 <code>SUCCEEDED</code> 并追加终态事件。任务失败时保存稳定错误码与必要诊断，不把流式草稿写成正式助手回答。每次实际供应商调用仍按 attempt 结算；客户端掉线不会导致重新计费。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">QUEUED</span><br><span class="line">  → RUNNING</span><br><span class="line">  → [ModelClient attempt 1, attempt 2 ...]</span><br><span class="line">  → OUTPUT_VALIDATED</span><br><span class="line">  → assistant message + SUCCEEDED + terminal event（同一事务）</span><br></pre></td></tr></table></figure>
+
+<p>并发的两条用户消息可能要求明确顺序。最小实现可以<strong>限制同一会话同时只有一条 RUNNING 任务</strong>，第二条返回 409 或排队；若允许并发，就必须记录读取的会话版本、消息顺序和合并规则。不要让后一条任务悄悄读取到前一条尚未确认的流式草稿。</p>
+<h2 id="四、前端和接口的最小交付"><a href="#四、前端和接口的最小交付" class="headerlink" title="四、前端和接口的最小交付"></a>四、前端和接口的最小交付</h2><p>页面只需要会话列表、消息列表、输入框、当前任务状态、可识别的未完成草稿和引用。提交后保存 <code>task_id</code>；刷新先查询消息与任务快照，再续订事件。用户点击“取消”调用任务取消 API，不靠关闭 SSE。权限错误要清除旧会话内容；答案中的引用只显示本租户当前可授权的证据 ID。</p>
+<p>本地用 <code>FakeModelClient</code> 跑六个 Case，交付 <code>conversation.jsonl</code>、<code>task_events.jsonl</code> 与逐 Case 报告：正常双轮；同键重试仅一条用户消息&#x2F;任务；同会话第二轮并发冲突或明确排队；失败半包不生成正式助手消息；权限撤销后旧会话不可读；模型版本热更新后在途任务仍用创建时版本。验收时数清消息、任务、attempt 和终态事件，不能只看页面截图。</p>
+<h2 id="五、今日面试题（检索日期：2026-11-21）"><a href="#五、今日面试题（检索日期：2026-11-21）" class="headerlink" title="五、今日面试题（检索日期：2026-11-21）"></a>五、今日面试题（检索日期：2026-11-21）</h2><p>以下题面来自可直接打开正文的牛客用户自述；企业归属和面试经历未获企业官方核验。答案与追问由本文工程化整理。</p>
+<h3 id="1-会话历史、任务执行状态和本轮模型上下文分别保存什么？"><a href="#1-会话历史、任务执行状态和本轮模型上下文分别保存什么？" class="headerlink" title="1. 会话历史、任务执行状态和本轮模型上下文分别保存什么？"></a>1. 会话历史、任务执行状态和本轮模型上下文分别保存什么？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent 记忆、对话服务 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：会话历史是用户和已确认助手消息的长期记录；任务状态保存本轮执行位置、版本、预算、错误及副作用回执；模型上下文是按权限、预算和策略从历史及证据派生的本轮输入。持久化历史与任务事实，保存上下文构建版本和引用消息 ID，避免原样无限累计。</li>
+<li><strong>追问</strong>：模型已输出 500 字但任务失败，这 500 字进入下轮历史吗？默认作为可识别草稿而非已确认助手消息，是否进入下轮须有明确策略与标识。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/36f79403b25b4ae8afa08de37625bba5?sourceSSR=subject">牛客“科大讯一面 11.12”用户自述</a>，正文第 10 题；页面检索时显示“昨天”，企业归属未获官方核验。</li>
+</ul>
+<h3 id="2-AI-应用平台用了哪些模型，会话管理和数据结构怎样设计？"><a href="#2-AI-应用平台用了哪些模型，会话管理和数据结构怎样设计？" class="headerlink" title="2. AI 应用平台用了哪些模型，会话管理和数据结构怎样设计？"></a>2. AI 应用平台用了哪些模型，会话管理和数据结构怎样设计？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI 平台、会话建模 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：按场景列出实际模型 ID、端点、能力与配置版本，不把“用了大模型”当答案。会话表记录租户、成员、顺序和版本；消息表记录角色、内容与来源任务；任务与事件独立保存执行状态。短期缓存只做加速，持久化存储保存可恢复事实。</li>
+<li><strong>追问</strong>：用户一年后继续一个缓存已过期的会话，从哪里恢复？先从授权的持久化消息读取，再按当前策略重建模型上下文。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/7eeffb48e3704250864b994adb9fc473?sourceSSR=enterprise">牛客“百度后端一面”用户自述</a>，正文第 11–12 题；作者注明 2026-09-17 面试。</li>
+</ul>
+<h3 id="3-创建-AI-摘要任务的请求超时，但服务端已经入库，重试如何避免重复任务和扣费？"><a href="#3-创建-AI-摘要任务的请求超时，但服务端已经入库，重试如何避免重复任务和扣费？" class="headerlink" title="3. 创建 AI 摘要任务的请求超时，但服务端已经入库，重试如何避免重复任务和扣费？"></a>3. 创建 AI 摘要任务的请求超时，但服务端已经入库，重试如何避免重复任务和扣费？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：对话提交、幂等与成本 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：客户端重试同一业务意图保持同一幂等键，服务端以租户、创建者、接口和键建立唯一约束，并校验请求指纹与当前主体对原任务的读取权限；返回已有任务状态，不新建任务。供应商 attempt 另有唯一账本记录，外部副作用另用稳定动作键；不可用“先删除再创建”解决未知结果。</li>
+<li><strong>追问</strong>：第一次任务已发出模型请求，但响应没收到，第二次提交能否直接再调模型？先找回任务和 attempt 结果，未知用量进入对账，不能盲目双调。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/939320406547103744?sourceSSR=post">牛客“小红书 AI Agent 开发岗面经”用户整理</a>，面经 01 第 5–7 题；整理页写明所述面试日期为 2026-09-17，真实性未获企业核验。</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT &#x2F; ON CONFLICT</a>：唯一约束下的并发冲突处理。</li>
+<li><a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.3">RFC 9110 §15.3.3</a>：202 代表接收处理但结果尚未完成。</li>
+<li><a href="/articles/AI-ModelClient-Structured-Output-Streaming.html">第 3 天 ModelClient 契约</a>、<a href="/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html">第 19 天 SSE 事件流</a>：本服务复用的执行与展示边界。官方资料检索日期：2026-11-21。</li>
+</ul>
+<p>第 23 天把 <code>ModelClient</code> 接上具体供应商适配器；第 24 天再为这条链路补版本化回归样本。当前先让两轮对话在断线、重复提交和权限变化下保持正确。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Conversation-Service-Vertical-Slice.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ModelClient/" rel="tag">ModelClient</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AF%B9%E8%AF%9D%E6%9C%8D%E5%8A%A1/" rel="tag">对话服务</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            最小对话服务接入多模型：适配器、事件流与用量归一化
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">AI 全栈开发第三周验收：从 API 到 Worker、SSE 的故障演练</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

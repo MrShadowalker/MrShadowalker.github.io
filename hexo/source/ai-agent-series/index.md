@@ -47,6 +47,20 @@ comments: true
 - **Day 12｜[模型网关怎么控流：供应商限流、租户配额与安全降级](/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html)**
 - **Day 13｜[模型注册表怎么治理：能力契约、健康检查与路由配置发布](/articles/AI-Model-Registry-Capability-Routing-Release.html)**
 - **Day 14｜[AI 全栈开发第二周验收：从检索到模型网关的一次故障演练](/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html)**
+- **Day 15｜[AI 服务第一层怎么写：用 FastAPI 跑通租户、检索、路由与 Trace](/articles/AI-Fullstack-FastAPI-Service-Contract.html)**
+- **Day 16｜[任务 API 怎么定：幂等键、错误契约与取消语义](/articles/AI-Task-API-Idempotency-Cancellation.html)**
+- **Day 17｜[Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本](/articles/AI-Task-Postgres-Tenant-Data-Model.html)**
+- **Day 18｜[异步 Worker 怎么可靠执行：租约、Outbox 与有界重试](/articles/AI-Durable-Worker-Outbox-Lease-Retry.html)**
+- **Day 19｜[Agent 流式输出怎样可恢复：SSE 事件、断点续传与取消边界](/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html)**
+- **Day 20｜[AI 全栈前端怎样接任务：TypeScript 状态机、SSE 去重与权限边界](/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html)**
+- **Day 21｜[AI 全栈开发第三周验收：从 API 到 Worker、SSE 的故障演练](/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html)**
+- **Day 22｜[最小对话服务怎样贯通：会话、消息、任务与 ModelClient](/articles/AI-Conversation-Service-Vertical-Slice.html)**
+- **Day 23｜[最小对话服务接入多模型：适配器、事件流与用量归一化](/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html)**
+- **Day 24｜[让对话服务可回归：Golden Set、Trace 与发布门槛](/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html)**
+- **Day 25｜[做一个能恢复的 AI 对话页面：React、SSE、引用与取消](/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html)**
+- **Day 26｜[模型网关阶段项目预检：用故障演练证明可交付](/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html)**
+
+补刊记录：Day 15–25 对应 2026 年 11 月 10–20 日的学习安排，于 11 月 21 日集中补刊；各文资料与面试题均标注实际检索日期。Day 26 对应 11 月 21 日。
 
 ### 已有相关文章
 
@@ -78,8 +92,22 @@ comments: true
 - Day 12：[供应商限流、租户配额、有界重试与安全降级](/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html)
 - Day 13：[模型注册表、能力契约、健康检查与路由配置发布](/articles/AI-Model-Registry-Capability-Routing-Release.html)
 - Day 14：[第二周复盘、多租户知识助手故障演练与八道小测](/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html)
-- Day 15-21：Python/TypeScript 服务、异步任务、数据库模型和 API 设计
-- Day 22-30：最小对话服务、回归样本、阶段项目一：模型网关
+- Day 15：[FastAPI 服务骨架、租户上下文、检索、路由与 Trace](/articles/AI-Fullstack-FastAPI-Service-Contract.html)
+- Day 16：[任务 API、幂等键、错误契约与取消语义](/articles/AI-Task-API-Idempotency-Cancellation.html)
+- Day 17：[PostgreSQL 任务、事件、用量表与租户隔离](/articles/AI-Task-Postgres-Tenant-Data-Model.html)
+- Day 18：[异步 Worker、租约、Outbox 与有界重试](/articles/AI-Durable-Worker-Outbox-Lease-Retry.html)
+- Day 19：[SSE 事件、断点续传与取消边界](/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html)
+- Day 20：[TypeScript 任务客户端、UI 状态机与 SSE 去重](/articles/AI-Fullstack-TypeScript-Task-Client-UI-State.html)
+- Day 21：[第三周复盘、服务故障演练与八道小测](/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html)
+- Day 22：[最小对话服务：会话、消息、任务与 ModelClient](/articles/AI-Conversation-Service-Vertical-Slice.html)
+- Day 23：[多模型适配器、流事件与用量归一化](/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html)
+- Day 24：[Golden Set、Trace 与发布回归门槛](/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html)
+- Day 25：[React 对话页面、SSE、引用与取消](/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html)
+- Day 26：[阶段项目一预检与模型网关故障演练](/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html)
+- Day 27：网关安全、性能和部署收口
+- Day 28：第四周复盘与小测
+- Day 29：阶段项目一验收准备
+- Day 30：阶段项目一：模型网关交付与复盘
 
 #### 第 2 月：Agent 核心与运行时
 

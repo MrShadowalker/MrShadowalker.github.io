@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 15 天：用一个可运行的 FastAPI 夹具，把认证租户、知识检索、模型能力路由、预算准入和 Trace 串成后端请求链。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 服务第一层怎么写：用 FastAPI 跑通租户、检索、路由与 Trace | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Fullstack-FastAPI-Service-Contract"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  AI 服务第一层怎么写：用 FastAPI 跑通租户、检索、路由与 Trace
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Fullstack-FastAPI-Service-Contract.html" class="article-date">
+  <time datetime="2026-11-10T01:00:00.000Z" itemprop="datePublished">2026-11-10</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">9 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>前两周分别定义了 Runtime、ModelClient、检索、路由、预算和模型注册表。第 15 天把这些契约放进一个真的 HTTP 入口。目标不是再画一张“平台分层图”，而是让两个租户用同一句问题请求服务时，能看见各自的证据与 trace，并且无权访问另一方数据。</p>
+<p>本文的代码使用本地假模型和假检索器，不需要 API Key；它验证的是<strong>服务控制流</strong>。真正的身份系统、并发预算和持久化任务会在接下来的文章补上。</p>
+<span id="more"></span>
+
+<h2 id="一、先确定一条请求的责任边界"><a href="#一、先确定一条请求的责任边界" class="headerlink" title="一、先确定一条请求的责任边界"></a>一、先确定一条请求的责任边界</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP 请求</span><br><span class="line">  → 认证依赖：从受信凭据得到 principal / tenant_id</span><br><span class="line">  → 业务用例：验证任务与权限</span><br><span class="line">  → Retriever：只读当前租户可见证据</span><br><span class="line">  → Registry / Router：检查能力，选择模型条目</span><br><span class="line">  → Budget：决定能否发起一次调用</span><br><span class="line">  → ModelClient：生成或在本地夹具中返回固定结果</span><br><span class="line">  → Verifier：引用必须来自授权证据</span><br><span class="line">  → Trace：记录各层决策和版本，不记录明文密钥</span><br></pre></td></tr></table></figure>
+
+<p>熟悉 Spring Boot 的读者可以把 FastAPI 的依赖函数理解为请求级注入入口，把 Pydantic 请求模型理解为 DTO，把业务用例保留在路由函数外。FastAPI 官方文档说明请求体可由 Pydantic 模型验证，依赖函数可复用请求上下文；这两点是本文选择它做短练习的依据。<a target="_blank" rel="noopener" href="https://fastapi.tiangolo.com/tutorial/body/">FastAPI Request Body</a>、<a target="_blank" rel="noopener" href="https://fastapi.tiangolo.com/tutorial/dependencies/">Dependencies</a>（检索日期：2026-11-21）</p>
+<p><strong>租户 ID 不从请求体读取。</strong> 请求体里的 <code>tenant_id</code> 是用户可改的输入；生产服务应从认证票据和授权服务得到租户范围，并在检索、缓存、预算、日志查询中传递同一上下文。</p>
+<h2 id="二、一个可以本地运行的最小服务"><a href="#二、一个可以本地运行的最小服务" class="headerlink" title="二、一个可以本地运行的最小服务"></a>二、一个可以本地运行的最小服务</h2><p>将下面内容保存为 <code>app.py</code>，在 Python 3.11+ 环境安装 <code>fastapi</code> 与 <code>uvicorn</code>，运行 <code>uvicorn app:app --reload</code>。这段代码故意只演示内存夹具，不能直接部署到生产。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, <span class="type">Optional</span></span><br><span class="line"><span class="keyword">from</span> uuid <span class="keyword">import</span> uuid4</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> Depends, FastAPI, Header, HTTPException</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line">app = FastAPI(title=<span class="string">&quot;AI fullstack Day 15 fixture&quot;</span>)</span><br><span class="line"></span><br><span class="line">TOKENS = &#123;<span class="string">&quot;demo-a&quot;</span>: <span class="string">&quot;tenant-a&quot;</span>, <span class="string">&quot;demo-b&quot;</span>: <span class="string">&quot;tenant-b&quot;</span>&#125;</span><br><span class="line">DOCS = [</span><br><span class="line">    &#123;<span class="string">&quot;tenant_id&quot;</span>: <span class="string">&quot;tenant-a&quot;</span>, <span class="string">&quot;id&quot;</span>: <span class="string">&quot;a-policy-v3&quot;</span>,</span><br><span class="line">     <span class="string">&quot;text&quot;</span>: <span class="string">&quot;A 租户住宿上限为 600 元。&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;tenant_id&quot;</span>: <span class="string">&quot;tenant-b&quot;</span>, <span class="string">&quot;id&quot;</span>: <span class="string">&quot;b-policy-v2&quot;</span>,</span><br><span class="line">     <span class="string">&quot;text&quot;</span>: <span class="string">&quot;B 租户住宿上限为 450 元。&quot;</span>&#125;,</span><br><span class="line">]</span><br><span class="line">REGISTRY = &#123;</span><br><span class="line">    <span class="string">&quot;fixture-model-v1&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;structured_output&quot;</span>: <span class="literal">True</span>,</span><br><span class="line">        <span class="string">&quot;tenants&quot;</span>: &#123;<span class="string">&quot;tenant-a&quot;</span>, <span class="string">&quot;tenant-b&quot;</span>&#125;,</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">BUDGET_MINOR = &#123;<span class="string">&quot;tenant-a&quot;</span>: <span class="number">30</span>, <span class="string">&quot;tenant-b&quot;</span>: <span class="number">30</span>&#125;</span><br><span class="line">TRACE = []  <span class="comment"># 夹具 trace；生产环境应落脱敏 span</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Principal</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    tenant_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Ask</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    question: <span class="built_in">str</span> = Field(min_length=<span class="number">1</span>, max_length=<span class="number">500</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Answer</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    answer: <span class="built_in">str</span></span><br><span class="line">    citation_ids: <span class="built_in">list</span>[<span class="built_in">str</span>]</span><br><span class="line">    model_id: <span class="built_in">str</span></span><br><span class="line">    trace_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">principal</span>(<span class="params"></span></span><br><span class="line"><span class="params">    authorization: Annotated[<span class="type">Optional</span>[<span class="built_in">str</span>], Header(<span class="params"></span>)] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; Principal:</span><br><span class="line">    token = authorization.removeprefix(<span class="string">&quot;Bearer &quot;</span>) <span class="keyword">if</span> authorization <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    tenant_id = TOKENS.get(token)</span><br><span class="line">    <span class="keyword">if</span> tenant_id <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">raise</span> HTTPException(status_code=<span class="number">401</span>, detail=<span class="string">&quot;UNAUTHENTICATED&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> Principal(tenant_id=tenant_id)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">retrieve</span>(<span class="params">tenant_id: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">dict</span>]:</span><br><span class="line">    <span class="keyword">return</span> [d <span class="keyword">for</span> d <span class="keyword">in</span> DOCS <span class="keyword">if</span> d[<span class="string">&quot;tenant_id&quot;</span>] == tenant_id]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">route</span>(<span class="params">tenant_id: <span class="built_in">str</span>, required: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">for</span> model_id, caps <span class="keyword">in</span> REGISTRY.items():</span><br><span class="line">        <span class="keyword">if</span> caps.get(required) <span class="keyword">and</span> tenant_id <span class="keyword">in</span> caps[<span class="string">&quot;tenants&quot;</span>]:</span><br><span class="line">            <span class="keyword">return</span> model_id</span><br><span class="line">    <span class="keyword">raise</span> HTTPException(status_code=<span class="number">503</span>, detail=<span class="string">&quot;NO_CAPABLE_MODEL&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">reserve</span>(<span class="params">tenant_id: <span class="built_in">str</span>, estimated_minor: <span class="built_in">int</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="keyword">if</span> BUDGET_MINOR[tenant_id] &lt; estimated_minor:</span><br><span class="line">        <span class="keyword">raise</span> HTTPException(status_code=<span class="number">429</span>, detail=<span class="string">&quot;BUDGET_EXCEEDED&quot;</span>)</span><br><span class="line">    BUDGET_MINOR[tenant_id] -= estimated_minor</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/v1/answers&quot;</span>, response_model=Answer</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">answer</span>(<span class="params">body: Ask, user: Annotated[Principal, Depends(<span class="params">principal</span>)]</span>):</span><br><span class="line">    trace_id = uuid4().<span class="built_in">hex</span></span><br><span class="line">    evidence = retrieve(user.tenant_id)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> evidence:</span><br><span class="line">        <span class="keyword">raise</span> HTTPException(status_code=<span class="number">404</span>, detail=<span class="string">&quot;NO_AUTHORIZED_EVIDENCE&quot;</span>)</span><br><span class="line">    model_id = route(user.tenant_id, <span class="string">&quot;structured_output&quot;</span>)</span><br><span class="line">    estimated_minor = <span class="number">5</span>  <span class="comment"># 夹具价格，不是真实供应商计费</span></span><br><span class="line">    reserve(user.tenant_id, estimated_minor)</span><br><span class="line">    <span class="comment"># FakeModelClient：只回显本租户的授权证据。</span></span><br><span class="line">    chosen = evidence[<span class="number">0</span>]</span><br><span class="line">    TRACE.append(&#123;</span><br><span class="line">        <span class="string">&quot;trace_id&quot;</span>: trace_id, <span class="string">&quot;tenant_id&quot;</span>: user.tenant_id,</span><br><span class="line">        <span class="string">&quot;model_id&quot;</span>: model_id, <span class="string">&quot;evidence_id&quot;</span>: chosen[<span class="string">&quot;id&quot;</span>],</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">return</span> Answer(</span><br><span class="line">        answer=chosen[<span class="string">&quot;text&quot;</span>], citation_ids=[chosen[<span class="string">&quot;id&quot;</span>]],</span><br><span class="line">        model_id=model_id, trace_id=trace_id,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">python3 -m venv .venv</span><br><span class="line">. .venv/bin/activate</span><br><span class="line">python -m pip install fastapi uvicorn</span><br><span class="line">uvicorn app:app --reload</span><br><span class="line">curl -s -H <span class="string">&#x27;Authorization: Bearer demo-a&#x27;</span> \</span><br><span class="line">  -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> \</span><br><span class="line">  -d <span class="string">&#x27;&#123;&quot;question&quot;:&quot;本月住宿上限是多少？&quot;&#125;&#x27;</span> \</span><br><span class="line">  http://127.0.0.1:8000/v1/answers</span><br></pre></td></tr></table></figure>
+
+<p>把 <code>demo-a</code> 换成 <code>demo-b</code>，应得到 <code>b-policy-v2</code>，而不是 <code>a-policy-v3</code>。去掉授权头应返回 401。<code>question</code> 暂时只触发输入校验；假模型没有语义理解能力，不能把这次演练称为真实 RAG 质量评测。</p>
+<h2 id="三、让夹具逐步变成服务"><a href="#三、让夹具逐步变成服务" class="headerlink" title="三、让夹具逐步变成服务"></a>三、让夹具逐步变成服务</h2><table>
+<thead>
+<tr>
+<th>当前夹具</th>
+<th>下一步生产边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内存 token 映射</td>
+<td>验签、失效与租户成员授权；不能让客户端声明租户</td>
+</tr>
+<tr>
+<td>内存文档列表</td>
+<td>文档 ACL、知识快照、检索前过滤与引用复核</td>
+</tr>
+<tr>
+<td>只看一个能力标志</td>
+<td>模型注册表、端点参数、账号可用性和发布版本</td>
+</tr>
+<tr>
+<td>内存预算减法</td>
+<td>数据库原子预留、每次 attempt 结算与对账</td>
+</tr>
+<tr>
+<td>一个响应里的 trace_id</td>
+<td>可查询的脱敏 span、版本和错误分类</td>
+</tr>
+</tbody></table>
+<p>尤其不能把 Python 模块级字典当作跨进程的共享账本：多 worker 会有多份状态，进程重启会丢失预算，两个并发请求也可能同时通过余额检查。第 17 天会用数据库事务替换这一层。若服务要执行数十秒任务，入口应只提交任务并返回任务 ID；HTTP 202 的含义是“已接收但尚未完成”，并不保证后来一定成功。<a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.3">RFC 9110 §15.3.3</a>（检索日期：2026-11-21）</p>
+<h2 id="四、今天的实践与验收"><a href="#四、今天的实践与验收" class="headerlink" title="四、今天的实践与验收"></a>四、今天的实践与验收</h2><ol>
+<li>跑通 A、B 两租户同 Query，记录响应中的引用 ID 和 trace ID。</li>
+<li>注入第三个没有凭据的请求，确认无检索或模型调用。</li>
+<li>把 A 的预算降到 0，确认拒绝发生在调用前；再写出为什么这个内存实现仍无法保证并发安全。</li>
+<li>画出 Java 版 Controller、Service、Repository 与 Python 版 API、用例、适配器的对应关系；指出哪个层负责授权、哪个层负责引用复核。</li>
+</ol>
+<p>提交证据应包含请求与响应、至少一条跨租户拒绝夹具、以及一页“生产缺口”清单。不要只截 Swagger 页面。</p>
+<h2 id="五、今日面试题（检索日期：2026-11-21）"><a href="#五、今日面试题（检索日期：2026-11-21）" class="headerlink" title="五、今日面试题（检索日期：2026-11-21）"></a>五、今日面试题（检索日期：2026-11-21）</h2><p>题面来自可直接查看正文的牛客公开内容。公司归属仅为发帖者自述，未获企业官方核验；下述答案和追问是本文的工程整理。</p>
+<h3 id="1-一个-Query-从进入-Agent-服务到输出结果，完整链路怎样讲？"><a href="#1-一个-Query-从进入-Agent-服务到输出结果，完整链路怎样讲？" class="headerlink" title="1. 一个 Query 从进入 Agent 服务到输出结果，完整链路怎样讲？"></a>1. 一个 Query 从进入 Agent 服务到输出结果，完整链路怎样讲？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI 应用后端、系统设计 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：从认证身份和租户开始，依次说明意图与任务创建、授权检索、能力路由、预算和限流、模型或工具调用、输出校验、事件和 trace。每层给出输入、输出与失败状态，不能只罗列框架名。</li>
+<li><strong>追问</strong>：模型输出了别的租户的证据 ID，在哪两层拦截？检索前授权和响应引用复核都要做。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/942822898094428160?sourceSSR=dynamic&weFlow=true">牛客“快手 AI 全栈开发一面”用户自述</a>，原帖直接列出该题；企业归属未获官方核验。</li>
+</ul>
+<h3 id="2-FastAPI-接口和数据库层如何分工？为何不能把同步数据库调用直接塞进-async-路由？"><a href="#2-FastAPI-接口和数据库层如何分工？为何不能把同步数据库调用直接塞进-async-路由？" class="headerlink" title="2. FastAPI 接口和数据库层如何分工？为何不能把同步数据库调用直接塞进 async 路由？"></a>2. FastAPI 接口和数据库层如何分工？为何不能把同步数据库调用直接塞进 async 路由？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Python 服务、数据库连接 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：API 解析和鉴权，业务层决定状态，用请求级数据库会话完成事务；同步驱动会阻塞事件循环，选同步路由配线程池，或全链路异步驱动与独立 AsyncSession。模型网络调用不应占着数据库事务。</li>
+<li><strong>追问</strong>：多个并发子任务能共享一个 AsyncSession 吗？不能，共享有状态会话会让事务和连接使用混乱。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/950796586802479104?sourceSSR=post">牛客“美团 AI Agent 一面”社区模拟整理帖</a>，标题明确为“三年面试五年模拟”，<strong>不是可核验的美团原题</strong>。</li>
+</ul>
+<h3 id="3-多-Agent-之间的上下文如何隔离？"><a href="#3-多-Agent-之间的上下文如何隔离？" class="headerlink" title="3. 多 Agent 之间的上下文如何隔离？"></a>3. 多 Agent 之间的上下文如何隔离？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：多租户 Agent、上下文安全 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：为每次任务传显式 <code>tenant_id / principal_id / task_id</code>，子 Agent 仅拿完成当前步骤需要的授权证据与工具，持久化记录按租户和任务分区；缓存键带权限和版本，不能共享可变全局上下文。模型不能自行提升权限。</li>
+<li><strong>追问</strong>：同一用户同时在两个租户工作，如何保证切换后旧任务仍按原租户审计？任务创建时固定授权上下文版本，并在敏感操作前重新验证。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/947982288917110784?sourceSSR=enterprise">牛客“快手 AI 全栈一面”用户自述</a>，正文列出“多 Agent 之间上下文怎么隔离”；企业归属未获官方核验。</li>
+</ul>
+<h2 id="资料与下一步"><a href="#资料与下一步" class="headerlink" title="资料与下一步"></a>资料与下一步</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://fastapi.tiangolo.com/tutorial/body/">FastAPI 请求体</a>与<a target="_blank" rel="noopener" href="https://fastapi.tiangolo.com/tutorial/dependencies/">依赖注入</a>：输入模型、请求级依赖。</li>
+<li><a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.3">RFC 9110 HTTP 202</a>：异步任务接收语义。资料检索日期均为 2026-11-21。</li>
+</ul>
+<p>第 16 天把这个同步夹具的入口收敛成可长期维护的任务 API：状态码、幂等键、错误契约和取消语义。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Fullstack-FastAPI-Service-Contract.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/FastAPI/" rel="tag">FastAPI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Task-API-Idempotency-Cancellation.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            任务 API 怎么定：幂等键、错误契约与取消语义
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Agent-Fullstack-Week2-Gateway-Review-Quiz.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">AI 全栈开发第二周验收：从检索到模型网关的一次故障演练</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

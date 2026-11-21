@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 25 天，围绕最小对话服务设计 React 页面：稳定的 SSE 事件、断线续读、引用校验、取消、重试和可访问状态。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>做一个能恢复的 AI 对话页面：React、SSE、引用与取消 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Chat-UI-React-SSE-Citations-Cancel"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  做一个能恢复的 AI 对话页面：React、SSE、引用与取消
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html" class="article-date">
+  <time datetime="2026-11-20T01:00:00.000Z" itemprop="datePublished">2026-11-20</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">9 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>后端能返回流，不代表用户得到可靠的对话体验。浏览器可能刷新，网络可能断开，模型也可能在写出半句后失败。今天用 React 和 TypeScript 给最小对话服务做一个前端契约：用户能看到生成进度、授权引用、取消结果和明确的失败状态。</p>
+<span id="more"></span>
+
+<h2 id="一、先分开“创建任务”和“订阅事件”"><a href="#一、先分开“创建任务”和“订阅事件”" class="headerlink" title="一、先分开“创建任务”和“订阅事件”"></a>一、先分开“创建任务”和“订阅事件”</h2><p>沿用第 22 天纵向链路：一轮对话消息创建一个 <code>task_id</code>，前端以任务 ID 订阅事件。用户点击停止时调用任务取消 API，随后继续接收终结事件，不能只在浏览器关闭连接。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">POST /v1/conversations/conv-1/messages</span><br><span class="line">Idempotency-Key: turn-8c0f</span><br><span class="line">→ 202 &#123;message_id, task_id: &quot;task-7&quot;, status: &quot;QUEUED&quot;&#125;</span><br><span class="line">GET  /v1/tasks/task-7/events?after=40 → text/event-stream</span><br><span class="line">POST /v1/tasks/task-7/cancel          → 202 &#123;status: &quot;CANCEL_REQUESTED&quot;&#125;</span><br><span class="line">GET  /v1/tasks/task-7                 → 200 &#123;status, last_seq, result?&#125;</span><br></pre></td></tr></table></figure>
+
+<p>浏览器原生 <code>EventSource</code> 适合单向服务端事件，自动重连时会带上 <code>Last-Event-ID</code>；但它的构造参数只有 URL 和凭据模式，没有任意自定义请求头入口。因此这个示例采用同站点会话 Cookie，鉴权由服务端负责；取消接口另做 CSRF 防护。不能把 API Key 或租户 ID 放在 URL 查询串里。<a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html">WHATWG Server-sent events</a>（检索日期：2026-11-21）</p>
+<h2 id="二、事件协议要能去重与重放"><a href="#二、事件协议要能去重与重放" class="headerlink" title="二、事件协议要能去重与重放"></a>二、事件协议要能去重与重放</h2><p>后端每条<strong>已持久化</strong>事件给一个在 <code>task_id</code> 内严格递增的 <code>seq</code>。SSE 的 <code>id</code> 与 JSON 中的 <code>seq</code> 一致，事件名沿用第 19 天的任务事件：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">id: 41</span><br><span class="line">event: model_delta</span><br><span class="line">data: &#123;&quot;task_id&quot;:&quot;task-7&quot;,&quot;seq&quot;:41,&quot;text&quot;:&quot;住宿&quot;&#125;</span><br><span class="line"></span><br><span class="line">id: 42</span><br><span class="line">event: citation_added</span><br><span class="line">data: &#123;&quot;task_id&quot;:&quot;task-7&quot;,&quot;seq&quot;:42,&quot;evidence_id&quot;:&quot;policy-17&quot;,&quot;label&quot;:&quot;差旅政策第 4 条&quot;&#125;</span><br><span class="line"></span><br><span class="line">id: 43</span><br><span class="line">event: task_succeeded</span><br><span class="line">data: &#123;&quot;task_id&quot;:&quot;task-7&quot;,&quot;seq&quot;:43&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>服务端收到 <code>Last-Event-ID: 41</code> 时，只重放 42 之后的事件，再接实时流。若 41 已过保留期，按第 19 天的约定发 <code>resync_required</code>，让前端拉取任务快照；不能伪装成无缝续传。SSE 的 <code>id</code>、重连和 <code>Last-Event-ID</code> 来自 HTML 标准；“持久化再重放”是本服务为满足可靠续读提出的工程设计。<a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html">WHATWG Server-sent events</a>（检索日期：2026-11-21）</p>
+<h2 id="三、React-只消费内部事件，不解析供应商流"><a href="#三、React-只消费内部事件，不解析供应商流" class="headerlink" title="三、React 只消费内部事件，不解析供应商流"></a>三、React 只消费内部事件，不解析供应商流</h2><p>下面的代码是连接骨架。先从 <code>GET /v1/tasks/&#123;id&#125;</code> 取得 <code>last_seq</code>，再订阅；<code>applyTaskEvent</code> 是纯函数，只接收当前任务、严格递增的事件，终结状态一旦写入就不再接受后续文本。网络 JSON 的 TypeScript 类型断言不能完成运行时校验，因此入口先检查字段。</p>
+<figure class="highlight tsx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> kinds = [</span><br><span class="line">  <span class="string">&quot;model_delta&quot;</span>, <span class="string">&quot;citation_added&quot;</span>, <span class="string">&quot;task_succeeded&quot;</span>,</span><br><span class="line">  <span class="string">&quot;task_failed&quot;</span>, <span class="string">&quot;task_cancelled&quot;</span></span><br><span class="line">] <span class="keyword">as</span> <span class="keyword">const</span>;</span><br><span class="line"><span class="keyword">type</span> <span class="title class_">Kind</span> = (<span class="keyword">typeof</span> kinds)[<span class="built_in">number</span>];</span><br><span class="line"><span class="keyword">type</span> <span class="title class_">TaskEvent</span> = &#123;</span><br><span class="line">  <span class="attr">task_id</span>: <span class="built_in">string</span>;</span><br><span class="line">  <span class="attr">seq</span>: <span class="built_in">number</span>;</span><br><span class="line">  <span class="attr">kind</span>: <span class="title class_">Kind</span>;</span><br><span class="line">  <span class="attr">text</span>?: <span class="built_in">string</span>;</span><br><span class="line">  <span class="attr">evidence_id</span>?: <span class="built_in">string</span>;</span><br><span class="line">  <span class="attr">label</span>?: <span class="built_in">string</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">parseTaskEvent</span>(<span class="params"><span class="attr">kind</span>: <span class="title class_">Kind</span>, <span class="attr">data</span>: <span class="built_in">string</span></span>): <span class="title class_">TaskEvent</span> | <span class="literal">null</span> &#123;</span><br><span class="line">  <span class="keyword">let</span> <span class="attr">value</span>: <span class="built_in">unknown</span>;</span><br><span class="line">  <span class="keyword">try</span> &#123; value = <span class="title class_">JSON</span>.<span class="title function_">parse</span>(data); &#125; <span class="keyword">catch</span> &#123; <span class="keyword">return</span> <span class="literal">null</span>; &#125;</span><br><span class="line">  <span class="keyword">if</span> (!value || <span class="keyword">typeof</span> value !== <span class="string">&quot;object&quot;</span>) <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  <span class="keyword">const</span> row = value <span class="keyword">as</span> <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> row.<span class="property">task_id</span> !== <span class="string">&quot;string&quot;</span> ||</span><br><span class="line">      !<span class="title class_">Number</span>.<span class="title function_">isSafeInteger</span>(row.<span class="property">seq</span>) || (row.<span class="property">seq</span> <span class="keyword">as</span> <span class="built_in">number</span>) &lt; <span class="number">1</span>) <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  <span class="keyword">if</span> (kind === <span class="string">&quot;model_delta&quot;</span> &amp;&amp; <span class="keyword">typeof</span> row.<span class="property">text</span> !== <span class="string">&quot;string&quot;</span>) <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  <span class="keyword">if</span> (kind === <span class="string">&quot;citation_added&quot;</span> &amp;&amp;</span><br><span class="line">      (<span class="keyword">typeof</span> row.<span class="property">evidence_id</span> !== <span class="string">&quot;string&quot;</span> || <span class="keyword">typeof</span> row.<span class="property">label</span> !== <span class="string">&quot;string&quot;</span>)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    <span class="attr">task_id</span>: row.<span class="property">task_id</span>, <span class="attr">seq</span>: row.<span class="property">seq</span> <span class="keyword">as</span> <span class="built_in">number</span>, kind,</span><br><span class="line">    <span class="attr">text</span>: <span class="keyword">typeof</span> row.<span class="property">text</span> === <span class="string">&quot;string&quot;</span> ? row.<span class="property">text</span> : <span class="literal">undefined</span>,</span><br><span class="line">    <span class="attr">evidence_id</span>: <span class="keyword">typeof</span> row.<span class="property">evidence_id</span> === <span class="string">&quot;string&quot;</span> ? row.<span class="property">evidence_id</span> : <span class="literal">undefined</span>,</span><br><span class="line">    <span class="attr">label</span>: <span class="keyword">typeof</span> row.<span class="property">label</span> === <span class="string">&quot;string&quot;</span> ? row.<span class="property">label</span> : <span class="literal">undefined</span></span><br><span class="line">  &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title function_">useEffect</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> (!taskId) <span class="keyword">return</span>;</span><br><span class="line">  <span class="keyword">const</span> url = <span class="string">&quot;/v1/tasks/&quot;</span> + <span class="built_in">encodeURIComponent</span>(taskId) +</span><br><span class="line">    <span class="string">&quot;/events?after=&quot;</span> + initialSeq;</span><br><span class="line">  <span class="keyword">const</span> stream = <span class="keyword">new</span> <span class="title class_">EventSource</span>(url, &#123; <span class="attr">withCredentials</span>: <span class="literal">true</span> &#125;);</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">const</span> kind <span class="keyword">of</span> kinds) &#123;</span><br><span class="line">    stream.<span class="title function_">addEventListener</span>(kind, <span class="function">(<span class="params">message</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> event = <span class="title function_">parseTaskEvent</span>(kind, (message <span class="keyword">as</span> <span class="title class_">MessageEvent</span>).<span class="property">data</span>);</span><br><span class="line">      <span class="keyword">if</span> (!event || event.<span class="property">task_id</span> !== taskId) &#123;</span><br><span class="line">        stream.<span class="title function_">close</span>();</span><br><span class="line">        <span class="title function_">setView</span>(<span class="function">(<span class="params">old</span>) =&gt;</span> (&#123; ...old, <span class="attr">connection</span>: <span class="string">&quot;PROTOCOL_ERROR&quot;</span> &#125;));</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="title function_">setView</span>(<span class="function">(<span class="params">old</span>) =&gt;</span> <span class="title function_">applyTaskEvent</span>(old, event)); <span class="comment">// 去重、缺口与终态校验</span></span><br><span class="line">      <span class="keyword">if</span> (kind.<span class="title function_">startsWith</span>(<span class="string">&quot;task_&quot;</span>)) stream.<span class="title function_">close</span>();</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">  stream.<span class="title function_">addEventListener</span>(<span class="string">&quot;resync_required&quot;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">void</span> <span class="title function_">reloadTaskSnapshot</span>(taskId);</span><br><span class="line">  &#125;);</span><br><span class="line">  stream.<span class="property">onerror</span> = <span class="function">() =&gt;</span> &#123;</span><br><span class="line">    <span class="title function_">setView</span>(<span class="function">(<span class="params">old</span>) =&gt;</span> (&#123; ...old, <span class="attr">connection</span>: <span class="string">&quot;RECONNECTING&quot;</span> &#125;));</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">return</span> <span class="function">() =&gt;</span> stream.<span class="title function_">close</span>();</span><br><span class="line">&#125;, [taskId, initialSeq]);</span><br></pre></td></tr></table></figure>
+
+<p>React 官方说明，Effect 的清理会在依赖变化和组件卸载时执行，开发环境 Strict Mode 还会额外跑一次 setup 与 cleanup。因此创建连接与关闭连接必须对称，不要因组件重渲染产生两条订阅。<a target="_blank" rel="noopener" href="https://react.dev/reference/react/useEffect">React useEffect</a>（检索日期：2026-11-21）</p>
+<p><code>applyTaskEvent</code> 的核心条件是 <code>event.seq &gt; view.lastSeq</code>，否则忽略重复事件。事件序号出现缺口时不要直接拼接；标记 <code>SYNCING</code> 并获取服务端快照或重新订阅。<code>task_succeeded</code> 到来后再读权威结果与正式引用。重试生成则创建新 <code>task_id</code>，保留旧回答的“失败&#x2F;不完整”状态，不在同一气泡内悄悄覆盖。</p>
+<h2 id="四、引用、取消与无障碍状态"><a href="#四、引用、取消与无障碍状态" class="headerlink" title="四、引用、取消与无障碍状态"></a>四、引用、取消与无障碍状态</h2><p>引用只能由服务端返回已授权的 <code>evidence_id</code>，前端用内部文档接口生成链接；不要把模型生成的任意 URL 原样放进 <code>href</code>。流中展示的引用可以先标为“待验证”，只有任务完成且服务端通过证据校验后才显示为正式引用。<code>task_failed</code> 时保留已生成文字，但标注“未完成”，避免用户误当完整答案。</p>
+<p>用户点击“停止生成”时，前端先禁用重复点击并展示“正在停止”，发送取消命令；只有收到 <code>task_cancelled</code> 或查询到对应终态才显示“已停止”。关闭 <code>EventSource</code> 只断开浏览器订阅，不能证明上游模型已经停止或停止计费。</p>
+<p>用 <code>role="status"</code> 向辅助技术播报“排队中、正在生成、重连中、已完成、已停止”等<strong>低频状态</strong>。不要把每个 Token 都放进 live region，否则读屏会不断被打断。W3C 对 status 消息的说明支持这种状态提示方式。<a target="_blank" rel="noopener" href="https://www.w3.org/WAI/WCAG21/Techniques/aria/ARIA22">W3C ARIA status 技术</a>（检索日期：2026-11-21）</p>
+<h3 id="今天动手的验收"><a href="#今天动手的验收" class="headerlink" title="今天动手的验收"></a>今天动手的验收</h3><p>用本地 Fake SSE 服务制造四个场景：先发 1、2 再断线并重放 2、3；第 3 条引用无权限；用户在第 4 条点击停止；服务端在已输出文本后发失败。验收时检查：无重复文本、无越权链接、取消前不宣称已停止、失败有可见标记、键盘可操作且状态可被读屏感知。页面截图只能证明界面出现，事件日志与断线重放记录才证明协议正确。</p>
+<h2 id="五、今日面试题"><a href="#五、今日面试题" class="headerlink" title="五、今日面试题"></a>五、今日面试题</h2><p>以下题面来自公开牛客面经与社区题库，检索日期均为 <strong>2026-11-21</strong>。企业归属只按发帖者自述，未获企业官方核验；社区题库不应冒充大厂原题。参考答案是本文的工程归纳。</p>
+<h3 id="1-为何选择基于-Fetch-的-SSE，而不是原生-EventSource-或-WebSocket？"><a href="#1-为何选择基于-Fetch-的-SSE，而不是原生-EventSource-或-WebSocket？" class="headerlink" title="1. 为何选择基于 Fetch 的 SSE，而不是原生 EventSource 或 WebSocket？"></a>1. 为何选择基于 Fetch 的 SSE，而不是原生 EventSource 或 WebSocket？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：前端流式协议选型，中级。</li>
+<li><strong>参考答案</strong>：仅需服务端推送且能用同站点 Cookie 鉴权时，原生 EventSource 的重连与事件 ID 更省实现；需要自定义请求头、POST 请求体或更细的中止控制时可用 Fetch 流，但必须自己正确解析 SSE 帧并处理重连；频繁双向通信才考虑 WebSocket。本篇的创建任务与订阅分离，所以采用 EventSource。</li>
+<li><strong>追问</strong>：若企业只接受 Bearer Header，能否把 Token 放入 EventSource URL？不应在 URL 暴露长期令牌；考虑受控 Fetch 流或服务端签发短期、限任务的流凭证，并评估日志泄露。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/6211d5f22c8d4904ae220fb82aa29b76">牛客“百度前端一面二面”用户自述</a>，正文直接提问基于 Fetch 的 SSE 与原生 SSE、WebSocket 取舍；企业归属未经官方确认。</li>
+</ul>
+<h3 id="2-模型流把-Markdown-代码块截在半路，页面怎样渲染？"><a href="#2-模型流把-Markdown-代码块截在半路，页面怎样渲染？" class="headerlink" title="2. 模型流把 Markdown 代码块截在半路，页面怎样渲染？"></a>2. 模型流把 Markdown 代码块截在半路，页面怎样渲染？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：AI 对话渲染，中级。</li>
+<li><strong>参考答案</strong>：流式草稿允许不完整语法，可先显示纯文本或使用容忍未闭合块的增量渲染器，按小时间窗口合并更新；终态后再解析和净化完整 Markdown。代码块、引用链接不能直接拼进 <code>innerHTML</code>。</li>
+<li><strong>追问</strong>：每个 Token 都重新解析整篇 Markdown，长会话卡顿怎么办？分块缓存已稳定部分、节流渲染并对历史消息做虚拟列表或分页。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/6765348450b3418b98cf3c8d47509ee2?toCommentId=22484113">牛客“得物 AI 应用开发二面”用户自述</a>，正文直接提问未闭合 Markdown 与长聊天滚动；企业归属未经官方确认。</li>
+</ul>
+<h3 id="3-用户点击“停止生成”，怎样避免后端继续耗费模型资源？"><a href="#3-用户点击“停止生成”，怎样避免后端继续耗费模型资源？" class="headerlink" title="3. 用户点击“停止生成”，怎样避免后端继续耗费模型资源？"></a>3. 用户点击“停止生成”，怎样避免后端继续耗费模型资源？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：取消语义，较难。</li>
+<li><strong>参考答案</strong>：取消是任务命令，服务端标记 <code>CANCEL_REQUESTED</code> 并尝试取消上游请求、清理连接和配额；以终态事件确认结果，已产生的 usage 仍入账。浏览器关闭 SSE 不是取消命令。</li>
+<li><strong>追问</strong>：供应商不支持取消或在取消前已完成，前端怎么表示？展示实际终态与已产生成本，不伪称“零消耗已停止”。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/141ac7489bcc4bfe9f0b979da2eac42a?urlSource=home-api">牛客《80 道 Agent 开发面试题》流式输出题单</a>，公开转发页可直接核对题面；社区整理，非可核验企业原题。</li>
+</ul>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html">WHATWG HTML Server-sent events</a></li>
+<li><a target="_blank" rel="noopener" href="https://react.dev/reference/react/useEffect">React useEffect</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.w3.org/WAI/WCAG21/Techniques/aria/ARIA22">W3C ARIA22 status messages</a></li>
+</ul>
+<p>下一篇用前后端、模型网关与任务链路做阶段项目预检，逐个注入失败并保留证据。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/React/" rel="tag">React</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SSE/" rel="tag">SSE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TypeScript/" rel="tag">TypeScript</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag">前端</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            模型网关阶段项目预检：用故障演练证明可交付
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">让对话服务可回归：Golden Set、Trace 与发布门槛</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
