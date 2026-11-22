@@ -59,6 +59,7 @@ comments: true
 - **Day 24｜[让对话服务可回归：Golden Set、Trace 与发布门槛](/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html)**
 - **Day 25｜[做一个能恢复的 AI 对话页面：React、SSE、引用与取消](/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html)**
 - **Day 26｜[模型网关阶段项目预检：用故障演练证明可交付](/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html)**
+- **Day 27｜[模型网关上线前怎么验收：容器就绪、流式压测与密钥隔离](/articles/AI-Model-Gateway-Deployment-Load-Test-Security-Gates.html)**
 
 补刊记录：Day 15–25 对应 2026 年 11 月 10–20 日的学习安排，于 11 月 21 日集中补刊；各文资料与面试题均标注实际检索日期。Day 26 对应 11 月 21 日。
 
@@ -104,7 +105,7 @@ comments: true
 - Day 24：[Golden Set、Trace 与发布回归门槛](/articles/AI-Chat-Service-Golden-Set-Trace-Regression.html)
 - Day 25：[React 对话页面、SSE、引用与取消](/articles/AI-Chat-UI-React-SSE-Citations-Cancel.html)
 - Day 26：[阶段项目一预检与模型网关故障演练](/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html)
-- Day 27：网关安全、性能和部署收口
+- Day 27：[模型网关容器就绪、流式压测、密钥隔离与发布门槛](/articles/AI-Model-Gateway-Deployment-Load-Test-Security-Gates.html)
 - Day 28：第四周复盘与小测
 - Day 29：阶段项目一验收准备
 - Day 30：阶段项目一：模型网关交付与复盘

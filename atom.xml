@@ -10,7 +10,26 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-21T12:50:00.000Z</updated>
+  <updated>2026-11-22T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <category term="部署" scheme="https://chenzihao.me/tags/%E9%83%A8%E7%BD%B2/"/>
+    <category term="性能" scheme="https://chenzihao.me/tags/%E6%80%A7%E8%83%BD/"/>
+    <category term="安全" scheme="https://chenzihao.me/tags/%E5%AE%89%E5%85%A8/"/>
+    <id>https://chenzihao.me/articles/AI-Model-Gateway-Deployment-Load-Test-Security-Gates.html</id>
+    <link href="https://chenzihao.me/articles/AI-Model-Gateway-Deployment-Load-Test-Security-Gates.html"/>
+    <published>2026-11-22T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 27 天：把模型网关的故障演练变成部署验收，讲清 Kubernetes 探针和优雅停机、SSE 慢消费者、容量压测、密钥与租户隔离，附三道有来源的面试题。</summary>
+    <title>模型网关上线前怎么验收：容器就绪、流式压测与密钥隔离</title>
+    <updated>2026-11-22T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -340,22 +359,5 @@
     <summary>AI 全栈开发第 8 天，从 Embedding 契约、结构化切片、向量与 BM25 混合召回、RRF、重排到 Recall@K 和端到端评测，搭一条能排错、能迁移、能面试的检索链路。</summary>
     <title>Embedding 不只是相似度：向量检索的输入、召回与评测基础</title>
     <updated>2026-11-03T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
-    <category term="模型工程" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/"/>
-    <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html</id>
-    <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html"/>
-    <published>2026-11-02T01:00:00.000Z</published>
-    <summary>复盘 AI 全栈开发前六篇，用一个本地夹具任务验收状态、模型调用、上下文预算和回归门禁，附八道自测题与四道公开面试题。</summary>
-    <title>AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环</title>
-    <updated>2026-11-02T01:00:00.000Z</updated>
   </entry>
 </feed>

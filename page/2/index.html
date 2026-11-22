@@ -117,6 +117,65 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-AI-Task-Postgres-Tenant-Data-Model"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-Task-Postgres-Tenant-Data-Model.html"
+    >Agent 任务表怎么建：PostgreSQL 租户隔离、事件与用量账本</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Task-Postgres-Tenant-Data-Model.html" class="article-date">
+  <time datetime="2026-11-12T01:00:00.000Z" itemprop="datePublished">2026-11-12</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>前一天定了任务 API：同键重试必须返回同一个任务，取消要有可查询状态。要兑现这些承诺，任务状态、每次模型调用、事件序号与成本不能只放在进程内存。第 17 天给它们建一套最小 PostgreSQL 数据模型，并把<strong>一个事务能保证什么、不能保证什么</strong>说清楚。</p> 
+      <a class="article-more-link" href="/articles/AI-Task-Postgres-Tenant-Data-Model.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent-Runtime/" rel="tag">Agent Runtime</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PostgreSQL/" rel="tag">PostgreSQL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-AI-Task-API-Idempotency-Cancellation"
   class="article article-type-post"
   itemscope
@@ -638,65 +697,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Embedding/" rel="tag">Embedding</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RAG/" rel="tag">RAG</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2/" rel="tag">向量检索</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-AI-Agent-Fullstack-Week1-Review-Quiz"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html"
-    >AI 全栈开发首周验收：把 Runtime、ModelClient、预算和评测接成闭环</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html" class="article-date">
-  <time datetime="2026-11-02T01:00:00.000Z" itemprop="datePublished">2026-11-02</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>前六篇分别讲了架构、Agent Runtime、ModelClient、Token 预算、Prompt 回归和上下文压缩。今天是第 7 篇，按系列约定做第一次周复盘与小测。</p>
-<p>本篇提供一套<strong>可执行的验收标准</strong>：用本地固定响应和模拟工具串起最小闭环，给出故障夹具、八道自测题及答案。系列文章里有接口、伪代码和实验模板；是否真正完成代码、测试或真实模型降本，要以自己的提交物和运行记录证明，不能把阅读文章算作项目验收。</p> 
-      <a class="article-more-link" href="/articles/AI-Agent-Fullstack-Week1-Review-Quiz.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/" rel="tag">周复盘</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/" rel="tag">模型工程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
 
     </footer>
   </div>
