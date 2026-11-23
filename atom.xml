@@ -10,7 +10,25 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-22T01:00:00.000Z</updated>
+  <updated>2026-11-23T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
+    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
+    <category term="对话服务" scheme="https://chenzihao.me/tags/%E5%AF%B9%E8%AF%9D%E6%9C%8D%E5%8A%A1/"/>
+    <category term="故障演练" scheme="https://chenzihao.me/tags/%E6%95%85%E9%9A%9C%E6%BC%94%E7%BB%83/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week4-Chat-Gateway-Review-Quiz.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week4-Chat-Gateway-Review-Quiz.html"/>
+    <published>2026-11-23T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 28 天：复盘会话、模型适配、评测、React 流式页面与网关发布，给出一场可复现的故障演练、八道小测及有来源的面试题。</summary>
+    <title>AI 全栈开发第四周验收：最小对话服务与模型网关发布演练</title>
+    <updated>2026-11-23T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -38,8 +56,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="阶段项目" scheme="https://chenzihao.me/tags/%E9%98%B6%E6%AE%B5%E9%A1%B9%E7%9B%AE/"/>
     <category term="故障演练" scheme="https://chenzihao.me/tags/%E6%95%85%E9%9A%9C%E6%BC%94%E7%BB%83/"/>
+    <category term="阶段项目" scheme="https://chenzihao.me/tags/%E9%98%B6%E6%AE%B5%E9%A1%B9%E7%9B%AE/"/>
     <id>https://chenzihao.me/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html</id>
     <link href="https://chenzihao.me/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html"/>
     <published>2026-11-21T12:50:00.000Z</published>
@@ -342,22 +360,5 @@
     <summary>AI 全栈开发第 9 天，用模型注册表、硬约束、质量门槛、缓存策略和调用账本设计可回放的模型路由，附四道公开面试题。</summary>
     <title>模型路由怎么落地：能力门槛、缓存命中与每成功任务成本</title>
     <updated>2026-11-05T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="RAG" scheme="https://chenzihao.me/tags/RAG/"/>
-    <category term="Embedding" scheme="https://chenzihao.me/tags/Embedding/"/>
-    <category term="向量检索" scheme="https://chenzihao.me/tags/%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2/"/>
-    <id>https://chenzihao.me/articles/AI-Embedding-Vector-Retrieval-Basics.html</id>
-    <link href="https://chenzihao.me/articles/AI-Embedding-Vector-Retrieval-Basics.html"/>
-    <published>2026-11-03T01:00:00.000Z</published>
-    <summary>AI 全栈开发第 8 天，从 Embedding 契约、结构化切片、向量与 BM25 混合召回、RRF、重排到 Recall@K 和端到端评测，搭一条能排错、能迁移、能面试的检索链路。</summary>
-    <title>Embedding 不只是相似度：向量检索的输入、召回与评测基础</title>
-    <updated>2026-11-03T01:00:00.000Z</updated>
   </entry>
 </feed>
