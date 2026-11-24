@@ -61,6 +61,7 @@ comments: true
 - **Day 26｜[模型网关阶段项目预检：用故障演练证明可交付](/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html)**
 - **Day 27｜[模型网关上线前怎么验收：容器就绪、流式压测与密钥隔离](/articles/AI-Model-Gateway-Deployment-Load-Test-Security-Gates.html)**
 - **Day 28｜[AI 全栈开发第四周验收：最小对话服务与模型网关发布演练](/articles/AI-Agent-Fullstack-Week4-Chat-Gateway-Review-Quiz.html)**
+- **Day 29｜[模型网关阶段项目怎么准备验收：证据包、发布判定与十分钟演示](/articles/AI-Model-Gateway-Stage1-Acceptance-Evidence-Release-Decision.html)**
 
 补刊记录：Day 15–25 对应 2026 年 11 月 10–20 日的学习安排，于 11 月 21 日集中补刊；各文资料与面试题均标注实际检索日期。Day 26 对应 11 月 21 日。
 
@@ -108,7 +109,7 @@ comments: true
 - Day 26：[阶段项目一预检与模型网关故障演练](/articles/AI-Model-Gateway-Stage1-Preflight-Fault-Drill.html)
 - Day 27：[模型网关容器就绪、流式压测、密钥隔离与发布门槛](/articles/AI-Model-Gateway-Deployment-Load-Test-Security-Gates.html)
 - Day 28：[第四周复盘、对话服务与模型网关发布演练、八道小测](/articles/AI-Agent-Fullstack-Week4-Chat-Gateway-Review-Quiz.html)
-- Day 29：阶段项目一验收准备
+- Day 29：[阶段项目一验收证据包、发布判定与项目演示](/articles/AI-Model-Gateway-Stage1-Acceptance-Evidence-Release-Decision.html)
 - Day 30：阶段项目一：模型网关交付与复盘
 
 #### 第 2 月：Agent 核心与运行时
