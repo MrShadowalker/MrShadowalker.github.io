@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 30 天：交付统一 ModelClient 与最小对话服务的模型网关项目说明，给出 API、持久化、流式恢复、预算和评测的最小实现契约，并按可见证据如实判定阶段结果。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>阶段项目一验收：多租户模型网关的最小交付与真实进度 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Model-Gateway-Stage1-Delivery-Acceptance"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  阶段项目一验收：多租户模型网关的最小交付与真实进度
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Model-Gateway-Stage1-Delivery-Acceptance.html" class="article-date">
+  <time datetime="2026-11-25T01:00:00.000Z" itemprop="datePublished">2026-11-25</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">13 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>第一个三十天的阶段产物应是<strong>统一 <code>ModelClient</code> 与最小对话服务</strong>，模型网关负责在其中完成模型选择、预算准入、事件归一化和用量对账。今天把分散在前 29 天的契约收成一个可以提交、运行和验收的项目，而不是再画一张平台全景图。</p>
+<p>先说明本系列当前的证据边界：在共享博客仓库里，我能核查到文章与生成页面，<strong>未见独立网关程序、测试报告或运行证据</strong>。这不排除读者在其他仓库实现了项目；只是不能据此宣称本阶段代码已通过验收。下文明确最小交付物、运行命令的约定与当前判定。</p>
+<span id="more"></span>
+
+<h2 id="一、交付范围：先做一条能失败、能恢复的垂直链路"><a href="#一、交付范围：先做一条能失败、能恢复的垂直链路" class="headerlink" title="一、交付范围：先做一条能失败、能恢复的垂直链路"></a>一、交付范围：先做一条能失败、能恢复的垂直链路</h2><p>业务场景选两租户差旅政策问答。租户 A 和 B 问同一句“本月出差住宿报销上限是多少”，各自只见授权政策。首月<strong>必交 P0</strong> 用 FakeProvider 就能复现，不以真实付费模型、Kubernetes 或复杂 Agent 规划为前置条件：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>必交能力</th>
+<th>应留下的可复核结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>身份与租户</td>
+<td><code>tenant_id</code> 从已验证身份进入服务端上下文；会话、任务、事件、引用按租户授权</td>
+<td>A&#x2F;B 同问不同证据；B 读 A 的任务被拒</td>
+</tr>
+<tr>
+<td>任务入口</td>
+<td>一轮对话创建一个任务；同键同体返回同任务，同键异体冲突</td>
+<td>并发重试后任务数、预算预留数均为 1</td>
+</tr>
+<tr>
+<td><code>ModelClient</code></td>
+<td>请求、能力要求、流事件、终态、usage 统一；至少一套 FakeProvider 和一套真实供应商适配契约</td>
+<td>完成&#x2F;失败&#x2F;不完整事件能归一化，未知 usage 不记零</td>
+</tr>
+<tr>
+<td>路由与预算</td>
+<td>候选模型过能力、数据区域和成本门槛；调用前原子预留，结束后对账</td>
+<td>不合格备用模型被拒，超预算请求无供应商 attempt</td>
+</tr>
+<tr>
+<td>持久化</td>
+<td>任务、attempt、事件、usage 分开保存；发布版本随任务固定</td>
+<td>重启后可查询任务，旧 Worker 不能覆盖新终态</td>
+</tr>
+<tr>
+<td>流式页面</td>
+<td>SSE 用事件 ID 补播；连接断开不新建任务；页面显示真实终态与有权引用</td>
+<td>第五事件后断线再连，不重复输出或调用模型</td>
+</tr>
+<tr>
+<td>发布门槛</td>
+<td>Golden Set 分桶、脱敏 Trace、失败 Case、用量和容量报告</td>
+<td>给出具体版本、分母、失败样本与 <code>GO / NO_GO</code> 理由</td>
+</tr>
+</tbody></table>
+<p>真实供应商接入、容器滚动发布和高并发压测是扩展项。若做了就用报告证明；若没做，就在项目说明中标 <code>NOT_RUN</code>，面试时不要说成“已上生产”。</p>
+<h3 id="推荐的最小接口"><a href="#推荐的最小接口" class="headerlink" title="推荐的最小接口"></a>推荐的最小接口</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">POST /v1/conversations/&#123;conversation_id&#125;/turns  → 202 &#123;task_id, status&#125;</span><br><span class="line">GET  /v1/tasks/&#123;task_id&#125;                     → 状态、结果摘要、引用、usage 状态</span><br><span class="line">GET  /v1/tasks/&#123;task_id&#125;/events              → text/event-stream，支持 Last-Event-ID</span><br><span class="line">POST /v1/tasks/&#123;task_id&#125;/cancel              → 持久化取消意图与当前状态</span><br></pre></td></tr></table></figure>
+
+<p>请求体只放用户问题、可选的业务参数和幂等键，<strong>不接受客户端指定租户或供应商密钥</strong>。<code>202 Accepted</code> 只表示已接收处理，不表示答案成功。<a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.3">RFC 9110 §15.3.3</a>（检索日期：2026-11-25）</p>
+<h2 id="二、核心实现契约：让唯一任务与最终状态有数据库事实"><a href="#二、核心实现契约：让唯一任务与最终状态有数据库事实" class="headerlink" title="二、核心实现契约：让唯一任务与最终状态有数据库事实"></a>二、核心实现契约：让唯一任务与最终状态有数据库事实</h2><p>一个可提交的工程至少需要 <code>conversation</code>、<code>message</code>、<code>task</code>、<code>attempt</code>、<code>event</code>、<code>usage</code>、<code>outbox</code> 七类事实。可以合表，但不能合并语义：消息是会话历史，任务是一次执行，attempt 是一次供应商调用，事件用于重放，usage 用于结算，Outbox 用于可靠唤醒 Worker。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">CREATE TURN（伪代码，事务内）</span><br><span class="line">  1. 从认证主体解析 tenant_id、actor_id，校验 conversation 的当前权限。</span><br><span class="line">  2. 以 tenant_id + actor_id + conversation_id + idempotency_key 建唯一约束。</span><br><span class="line">  3. 若键已存在且规范化请求哈希相同，重新鉴权后返回原 task_id；</span><br><span class="line">     若哈希不同，返回 409，不创建第二个任务。</span><br><span class="line">  4. 选择满足能力/区域要求的模型，固定 route/registry/prompt/price 版本。</span><br><span class="line">  5. 原子预留预算，写 task 与 outbox 意图，一次提交。</span><br><span class="line"></span><br><span class="line">RUN TASK（Worker）</span><br><span class="line">  6. 用租约与递增 fence 领取；每次供应商调用保存 attempt_id。</span><br><span class="line">  7. 适配器把供应商事件写入 task_id 下递增的 event_id，并向 SSE 投递。</span><br><span class="line">  8. 只在收到明确完成事件且业务/引用校验通过后置 SUCCEEDED；</span><br><span class="line">     失败、不完整、取消分别落终态，usage 缺失标 PENDING 并对账。</span><br></pre></td></tr></table></figure>
+
+<p>PostgreSQL 的 <code>INSERT ... ON CONFLICT</code> 可在唯一约束上提供并发插入&#x2F;更新的原子路径；实际实现还要比较请求哈希、锁定预算行，并避免把同键异体“更新成新请求”。<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT</a>（检索日期：2026-11-25）。行级安全策略可作为附加防护，但超级用户、带 <code>BYPASSRLS</code> 的角色及表所有者默认存在绕过边界，应用授权不能省。<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">PostgreSQL Row Security</a>（检索日期：2026-11-25）</p>
+<p>流式适配器必须区分终态：OpenAI Responses 有 <code>response.completed</code>、<code>response.failed</code>、<code>response.incomplete</code>；失败或不完整时 usage 可能为空。Anthropic 的 <code>message_delta.usage</code> 是累计量，流内可能有错误，工具参数片段不能提前执行。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI 流事件</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic 流消息</a>（检索日期：2026-11-25）。这就是统一 <code>ModelClient</code> 要解决的真实差异，而不是把两个 SDK 包装成同名方法。</p>
+<p>如果用 Java&#x2F;Spring MVC，可以用 <code>SseEmitter</code> 输出 SSE，但它只负责 HTTP 事件发送。Servlet 异步写可能阻塞，断开连接通常要等下一次写入或心跳才能发现；任务继续执行和按事件 ID 补播仍由持久化任务系统负责。<a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-async.html">Spring MVC Asynchronous Requests</a>、<a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html">WHATWG Server-sent events</a>（检索日期：2026-11-25）</p>
+<h2 id="三、可以交给面试官复现的项目包"><a href="#三、可以交给面试官复现的项目包" class="headerlink" title="三、可以交给面试官复现的项目包"></a>三、可以交给面试官复现的项目包</h2><p>项目仓库建议提供下列文件；它们是<strong>交付要求，不是声称当前博客仓库已有这些文件</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">gateway-stage1/</span><br><span class="line">├── README.md                  # 目标、范围、架构、命令和当前限制</span><br><span class="line">├── src/                       # API、ModelClient、适配器、Worker、预算和鉴权</span><br><span class="line">├── migrations/                # 任务、事件、attempt、用量等表与约束</span><br><span class="line">├── fixtures/                  # 两租户政策、FakeProvider 事件、Golden Set</span><br><span class="line">├── tests/                     # 单元、集成与故障注入</span><br><span class="line">├── frontend/                  # 最小对话页与 SSE 恢复</span><br><span class="line">└── acceptance/                # Day 29 约定的发布快照和运行报告</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>README.md</code> 里给出<strong>项目实际存在的</strong>启动、测试和验收命令，以及成功退出码。若选择 Maven 和容器化 PostgreSQL，可用 <code>mvn verify</code> 作为 CI 入口，但要让项目自身提供可运行的数据库夹具；仅贴一条命令而没有可重复环境不算交付。下面的报告字段是推荐结构，数值留待真实运行填写：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;release_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;stage1-candidate&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;commit_sha&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;environment&quot;</span><span class="punctuation">:</span> <span class="string">&quot;local&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;case_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;A8-SSE-REPLAY&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;NOT_RUN&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;task_id&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;trace_id&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;expected&quot;</span><span class="punctuation">:</span> <span class="string">&quot;event_id &gt; 5 被补播，provider_attempt_count = 1&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;actual&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;evidence_path&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>至少给七条必跑断言：双租户跨读拒绝、同键并发不双建、预算最后余额并发只放行合法调用、供应商先输出后失败不置成功、SSE 断线只重放事件、权限撤销后旧引用失效、usage 未知进入待对账。失败与未运行都要保留，不能把七条之外的通过率稀释安全问题。Trace 要能从 <code>task_id → attempt_id → provider_request_id</code> 找到路由版本、终态和用量来源；Trace ID 是诊断索引，不替代任务数据库的事实。<a target="_blank" rel="noopener" href="https://opentelemetry.io/docs/concepts/signals/traces/">OpenTelemetry Traces</a>（检索日期：2026-11-25）</p>
+<p>Golden Set 至少覆盖授权正确答案、无权文档诱导、格式正确但判断错误、供应商失败&#x2F;不完整四类；报告样本分母与逐桶结果。压测针对完整任务而非仅提交接口，记录真实到达率、<code>dropped_iterations</code>、任务首字&#x2F;完成 p95、活跃连接和主动拒绝率；阈值应在运行前冻结，k6 的 <code>thresholds</code> 失败会让进程返回非零状态，丢迭代说明目标负载可能没有真正打进系统。<a target="_blank" rel="noopener" href="https://grafana.com/docs/k6/latest/using-k6/thresholds/">k6 Thresholds</a>、<a target="_blank" rel="noopener" href="https://grafana.com/docs/k6/latest/using-k6/scenarios/concepts/dropped-iterations/">Dropped iterations</a>（检索日期：2026-11-25）</p>
+<h2 id="四、今天的验收结论与复盘"><a href="#四、今天的验收结论与复盘" class="headerlink" title="四、今天的验收结论与复盘"></a>四、今天的验收结论与复盘</h2><p>下表只依据<strong>当前共享博客仓库</strong>中可见的实物填写，不能推断用户在其他仓库的进度：</p>
+<table>
+<thead>
+<tr>
+<th>交付项</th>
+<th>当前可核查状态</th>
+<th>阶段判定</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Day 1–29 的技术文章、项目规格与验收模板</td>
+<td>源文和博客页面可检查</td>
+<td>文档已形成；不是网关程序</td>
+</tr>
+<tr>
+<td>可启动的 <code>ModelClient</code>、任务 API、数据库迁移、前端</td>
+<td>本仓库未见对应工程</td>
+<td><code>NOT_VERIFIED</code></td>
+</tr>
+<tr>
+<td>固定版本的逐 Case 报告、Golden Set、容量与安全结果</td>
+<td>本仓库未见运行证据</td>
+<td><code>NOT_VERIFIED</code></td>
+</tr>
+<tr>
+<td>多副本发布或真实供应商联调</td>
+<td>本仓库未见运行证据</td>
+<td><code>NOT_VERIFIED</code>，且非首月 P0 必交</td>
+</tr>
+</tbody></table>
+<p>因此，**对“本仓库已经交付并验收通过模型网关”这一主张，本次结论为 <code>NO_GO（证据不足）</code>**；这不等于代码一定不存在或设计失败。若项目另有仓库，将源码 commit、运行命令和 Day 29 证据包关联进来，再按同一门槛重判。文档发布成功只能证明文章上线，不能证明 AI 服务上线。</p>
+<p>本月最明显的收获是把模型调用逐步拆成可恢复的任务、可替换的适配器、可追责的用量和可回归的发布；最明显的缺口是缺少一个能让第三方从零运行并重放失败的项目仓库。第 31 天进入 Tool Calling 与工具契约，建议并行补齐这个 P0 工程；工具调用会在现有权限、幂等、审批和审计边界上继续扩展，而不是绕开它们。</p>
+<h2 id="五、今日面试题（检索日期：2026-11-25）"><a href="#五、今日面试题（检索日期：2026-11-25）" class="headerlink" title="五、今日面试题（检索日期：2026-11-25）"></a>五、今日面试题（检索日期：2026-11-25）</h2><p>以下题目优先取自可直接阅读的近期公开来源。若公司或场次来自求职者自述，未获企业官方核验；参考答案和追问是本文的工程归纳，并非企业标准答案。</p>
+<h3 id="1-某个-Agent-执行出错，怎样处理？"><a href="#1-某个-Agent-执行出错，怎样处理？" class="headerlink" title="1. 某个 Agent 执行出错，怎样处理？"></a>1. 某个 Agent 执行出错，怎样处理？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent 运行时、失败恢复 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：先按可重试、不可重试、结果未知分类；持久化任务状态、attempt、步骤检查点和错误类型。只有满足幂等、预算与截止时间要求的步骤才有界重试；外部写操作结果未知时先查询或对账。终态和前端提示都以持久化事实为准，不能靠捕获异常后统一再跑一遍。</li>
+<li><strong>追问</strong>：工具请求已经发出，但回执丢失，能直接重试吗？仅当下游支持同一幂等键且结果可核验时才可安全重试；否则进入待对账或人工处理。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/954797826817458176?sourceSSR=dynamic&weFlow=true">牛客“多益 AI 应用开发工程师一面”求职者自述</a>，页面显示 11-24；企业与场次未获官方核验。</li>
+</ul>
+<h3 id="2-意图识别、槽位提取、工具调用串成多阶段链路，To-C-延迟怎么处理？"><a href="#2-意图识别、槽位提取、工具调用串成多阶段链路，To-C-延迟怎么处理？" class="headerlink" title="2. 意图识别、槽位提取、工具调用串成多阶段链路，To C 延迟怎么处理？"></a>2. 意图识别、槽位提取、工具调用串成多阶段链路，To C 延迟怎么处理？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：Agent 链路性能、模型路由 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：先测各阶段排队、首字和完成耗时，找真正的串行关键路径；把能用确定性规则完成的路由前置，对互不依赖步骤并行，给每阶段设置总截止时间内的预算，缓存安全且版本稳定的中间结果。质量、权限与工具审计仍是硬门槛，不能只靠删步骤换低延迟。</li>
+<li><strong>追问</strong>：缩短链路后工具误调用增加怎么办？以错误调用率和高风险工具 Case 作发布门槛，必要时恢复校验步骤或人工审批，而不是用平均延迟收益覆盖副作用风险。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/94b9da3ece204c8396942853fd5b9a33?sourceSSR=%E5%85%B6%E4%BB%96">牛客“蚂蚁集团 Agent 应用方向一面”求职者自述</a>，页面显示 11-21；企业与场次未获官方核验。</li>
+</ul>
+<h3 id="3-已经在全公司上线了吗？Android、iOS-都覆盖了吗？是否强制卡合入？"><a href="#3-已经在全公司上线了吗？Android、iOS-都覆盖了吗？是否强制卡合入？" class="headerlink" title="3. 已经在全公司上线了吗？Android、iOS 都覆盖了吗？是否强制卡合入？"></a>3. 已经在全公司上线了吗？Android、iOS 都覆盖了吗？是否强制卡合入？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：上线范围、项目陈述 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：逐维度回答实际覆盖：哪些租户、团队、端、版本和流量比例；哪些只是本地、灰度或建议性检查。拿出部署记录、客户端版本分布、CI 门禁配置、评测分母和真实使用数据。尚未覆盖的端或团队明确标 <code>NOT_RUN</code>；不能把一个演示环境说成全公司上线。</li>
+<li><strong>追问</strong>：只有本地 FakeProvider 演练，可以说“已上线模型网关”吗？不能；只能说本地端到端演示通过了哪些 Case，真实流量、供应商和运维门槛仍待验证。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/ac7f568525c349e29b308af571744332?sourceSSR=dynamic&weFlow=true">牛客“小红书一面”求职者自述</a>，页面显示 11-16；公司和场次未获官方确认。</li>
+</ul>
+<h3 id="4-旧客户端还在用旧接口，新服务改为任务语义，怎样做兼容验证和灰度？"><a href="#4-旧客户端还在用旧接口，新服务改为任务语义，怎样做兼容验证和灰度？" class="headerlink" title="4. 旧客户端还在用旧接口，新服务改为任务语义，怎样做兼容验证和灰度？"></a>4. 旧客户端还在用旧接口，新服务改为任务语义，怎样做兼容验证和灰度？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：API 兼容、阶段项目灰度 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：先列客户端 × API × 服务版本矩阵；旧接口通过明确的适配层映射任务状态。契约测试覆盖完成、失败、断线补播、取消、游标过期、未授权读取和同键重试。按客户端版本或租户稳定分桶灰度，观察协议错误、卡住任务与用量，保留回滚路径；有副作用的请求不能通过双跑验证。</li>
+<li><strong>追问</strong>：入口回滚后旧服务不认识新版本创建的在途任务，怎么办？保留兼容 Worker 或按任务绑定的执行版本路由到原 Worker 至终态，不能只切回入口流量。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/953075892136259584?sourceSSR=post">牛客“字节跳动 AI Agent 开发工程师三面”求职者自述</a>，页面显示 11-19；企业与场次未获官方核验。</li>
+</ul>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT</a>与<a target="_blank" rel="noopener" href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">Row Security</a>：并发唯一约束与权限纵深防护。</li>
+<li><a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-async.html">Spring MVC Asynchronous Requests</a>与<a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/server-sent-events.html">WHATWG Server-sent events</a>：SSE 传输与重连协议。</li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/streaming-events">OpenAI Responses streaming events</a>与<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/streaming">Anthropic Streaming messages</a>：模型事件和用量差异。</li>
+<li><a target="_blank" rel="noopener" href="https://opentelemetry.io/docs/concepts/signals/traces/">OpenTelemetry Traces</a>与<a target="_blank" rel="noopener" href="https://grafana.com/docs/k6/latest/using-k6/thresholds/">k6 Thresholds</a>：诊断链路和容量门槛。以上资料检索日期均为 2026-11-25。</li>
+</ul>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Model-Gateway-Stage1-Delivery-Acceptance.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ModelClient/" rel="tag">ModelClient</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AF%B9%E8%AF%9D%E6%9C%8D%E5%8A%A1/" rel="tag">对话服务</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%98%B6%E6%AE%B5%E9%A1%B9%E7%9B%AE/" rel="tag">阶段项目</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%AA%8C%E6%94%B6/" rel="tag">验收</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Model-Gateway-Stage1-Acceptance-Evidence-Release-Decision.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">模型网关阶段项目怎么准备验收：证据包、发布判定与十分钟演示</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
