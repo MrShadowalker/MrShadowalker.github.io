@@ -63,6 +63,7 @@ comments: true
 - **Day 28｜[AI 全栈开发第四周验收：最小对话服务与模型网关发布演练](/articles/AI-Agent-Fullstack-Week4-Chat-Gateway-Review-Quiz.html)**
 - **Day 29｜[模型网关阶段项目怎么准备验收：证据包、发布判定与十分钟演示](/articles/AI-Model-Gateway-Stage1-Acceptance-Evidence-Release-Decision.html)**
 - **Day 30｜[阶段项目一验收：多租户模型网关的最小交付与真实进度](/articles/AI-Model-Gateway-Stage1-Delivery-Acceptance.html)**
+- **Day 31｜[Tool Calling 第一课：模型提议如何变成受控工具调用](/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html)**
 
 补刊记录：Day 15–25 对应 2026 年 11 月 10–20 日的学习安排，于 11 月 21 日集中补刊；各文资料与面试题均标注实际检索日期。Day 26 对应 11 月 21 日。
 
@@ -115,7 +116,10 @@ comments: true
 
 #### 第 2 月：Agent 核心与运行时
 
-- Day 31-37：Tool Calling 与工具契约
+- Day 31：[Tool Calling 完整往返、工具提议与受控执行](/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html)
+- Day 32-34：工具 Schema、执行器、权限与审批
+- Day 35：第五周复盘与小测
+- Day 36-37：工具失败恢复与结果回填
 - Day 38-44：ReAct、Planner、Workflow 与 Agent 的边界
 - Day 45-51：任务状态机、暂停、取消、重试和可恢复执行
 - Day 52-56：短期记忆、长期记忆和上下文压缩
