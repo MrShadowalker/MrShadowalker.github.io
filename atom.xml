@@ -10,7 +10,26 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-26T01:00:00.000Z</updated>
+  <updated>2026-11-27T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="Tool Calling" scheme="https://chenzihao.me/tags/Tool-Calling/"/>
+    <category term="工具注册表" scheme="https://chenzihao.me/tags/%E5%B7%A5%E5%85%B7%E6%B3%A8%E5%86%8C%E8%A1%A8/"/>
+    <category term="Schema" scheme="https://chenzihao.me/tags/Schema/"/>
+    <category term="版本治理" scheme="https://chenzihao.me/tags/%E7%89%88%E6%9C%AC%E6%B2%BB%E7%90%86/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html"/>
+    <published>2026-11-27T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 32 天：让 Agent 工具定义可发布、可发现和可回滚，用政策查询 v1/v2 讲清严格 Schema、任务快照、候选工具筛选与选择回归，附有来源的面试题。</summary>
+    <title>工具 Schema 怎么升级：注册、发现、版本快照与兼容性</title>
+    <updated>2026-11-27T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -198,8 +217,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
-    <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
     <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
     <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html</id>
     <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html"/>
     <published>2026-11-16T01:00:00.000Z</published>
@@ -232,8 +251,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
     <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
+    <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
     <id>https://chenzihao.me/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html</id>
     <link href="https://chenzihao.me/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html"/>
     <published>2026-11-14T01:00:00.000Z</published>
@@ -344,23 +363,5 @@
     <summary>AI 全栈开发第 13 天，设计企业模型注册表、能力证据、生命周期与健康状态，并用不可变配置、灰度评测和一键回滚发布路由策略。</summary>
     <title>模型注册表怎么治理：能力契约、健康检查与路由配置发布</title>
     <updated>2026-11-08T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="多租户" scheme="https://chenzihao.me/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/"/>
-    <category term="限流" scheme="https://chenzihao.me/tags/%E9%99%90%E6%B5%81/"/>
-    <category term="降级" scheme="https://chenzihao.me/tags/%E9%99%8D%E7%BA%A7/"/>
-    <id>https://chenzihao.me/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html</id>
-    <link href="https://chenzihao.me/articles/AI-Model-Gateway-Rate-Limit-Quota-Fallback.html"/>
-    <published>2026-11-07T01:00:00.000Z</published>
-    <summary>AI 全栈开发第 12 天，设计模型网关的多维准入、租户公平排队、供应商错误分类、有界重试和安全模型降级，并用本地故障注入验收。</summary>
-    <title>模型网关怎么控流：供应商限流、租户配额与安全降级</title>
-    <updated>2026-11-07T01:00:00.000Z</updated>
   </entry>
 </feed>

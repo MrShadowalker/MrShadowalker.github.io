@@ -117,6 +117,65 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-AI-Agent-Tool-Schema-Registry-Version-Compatibility"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html"
+    >工具 Schema 怎么升级：注册、发现、版本快照与兼容性</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html" class="article-date">
+  <time datetime="2026-11-27T01:00:00.000Z" itemprop="datePublished">2026-11-27</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><a href="/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html">第 31 天</a>把一次工具调用拆成“模型提议、服务端执行、结果回填”。今天往前推进一步：<strong>工具定义更新时，模型看见哪一版，执行器运行哪一版，正在执行的任务怎样不漂移？</strong> 工具 <code>name</code> 和 JSON Schema 并不是整份契约；描述、权限、实现与输出形状都会影响最终答案。</p>
+<p>本文沿用只读 <code>lookup_policy_v1</code>，加入“按日期查历史政策”的 v2。下面的注册表与报告是练习设计，尚未代表 Day 30 模型网关项目有可运行实现。</p> 
+      <a class="article-more-link" href="/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Schema/" rel="tag">Schema</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Tool-Calling/" rel="tag">Tool Calling</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7%E6%B3%A8%E5%86%8C%E8%A1%A8/" rel="tag">工具注册表</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%89%88%E6%9C%AC%E6%B2%BB%E7%90%86/" rel="tag">版本治理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-AI-Agent-Tool-Calling-Proposal-Execution-Contract"
   class="article article-type-post"
   itemscope
@@ -637,66 +696,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E6%A8%A1%E5%9E%8B/" rel="tag">多模型</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA/" rel="tag">流式输出</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-AI-Conversation-Service-Vertical-Slice"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/AI-Conversation-Service-Vertical-Slice.html"
-    >最小对话服务怎样贯通：会话、消息、任务与 ModelClient</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/AI-Conversation-Service-Vertical-Slice.html" class="article-date">
-  <time datetime="2026-11-17T01:00:00.000Z" itemprop="datePublished">2026-11-17</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>补刊说明：本文补齐原定第 22 天学习内容；资料与题目于 2026-11-21 检索核验。</p>
-<p>第三周已经有了 HTTP 入口、任务 API、数据库模型、Worker、SSE 和前端状态。现在把它们连成一个用户能实际操作的最小对话服务：创建会话，发送一条消息，看到任务执行和最终回答，刷新后还能找回同一轮。</p>
-<p>对话服务的关键不在聊天框，而在<strong>分清会话历史、一次执行任务、传给模型的上下文</strong>。三者生命周期不同，不能放进一个可变数组里。</p> 
-      <a class="article-more-link" href="/articles/AI-Conversation-Service-Vertical-Slice.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ModelClient/" rel="tag">ModelClient</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AF%B9%E8%AF%9D%E6%9C%8D%E5%8A%A1/" rel="tag">对话服务</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
 
     </footer>
   </div>

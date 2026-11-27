@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="keywords" content="程序员，摄影师，生活家，车手" />
+  <meta name="description" content="AI 全栈开发第 32 天：让 Agent 工具定义可发布、可发现和可回滚，用政策查询 v1/v2 讲清严格 Schema、任务快照、候选工具筛选与选择回归，附有来源的面试题。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>工具 Schema 怎么升级：注册、发现、版本快照与兼容性 | Shadow.Net</title>
+  <meta name="generator" content="hexo-theme-ayer" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/dist/main.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+  
+
+  
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?3311bd4794ea0a6b782915def3fc81fa";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+  <link rel="alternate" href="/atom.xml" title="Shadow.Net" type="application/atom+xml" />
+  
+</head>
+
+
+<body>
+  <div id="app">
+    
+      
+      <canvas width="1777" height="841"
+        style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-AI-Agent-Tool-Schema-Registry-Version-Compatibility"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  工具 Schema 怎么升级：注册、发现、版本快照与兼容性
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html" class="article-date">
+  <time datetime="2026-11-27T01:00:00.000Z" itemprop="datePublished">2026-11-27</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">12 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><a href="/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html">第 31 天</a>把一次工具调用拆成“模型提议、服务端执行、结果回填”。今天往前推进一步：<strong>工具定义更新时，模型看见哪一版，执行器运行哪一版，正在执行的任务怎样不漂移？</strong> 工具 <code>name</code> 和 JSON Schema 并不是整份契约；描述、权限、实现与输出形状都会影响最终答案。</p>
+<p>本文沿用只读 <code>lookup_policy_v1</code>，加入“按日期查历史政策”的 v2。下面的注册表与报告是练习设计，尚未代表 Day 30 模型网关项目有可运行实现。</p>
+<span id="more"></span>
+
+<h2 id="一、工具定义分成模型可见层和服务端执行层"><a href="#一、工具定义分成模型可见层和服务端执行层" class="headerlink" title="一、工具定义分成模型可见层和服务端执行层"></a>一、工具定义分成模型可见层和服务端执行层</h2><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>模型是否可见</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>名称、描述、输入 Schema</td>
+<td>是</td>
+<td>帮模型判断何时选择、怎样填参数</td>
+</tr>
+<tr>
+<td>输出 Schema 或结果说明</td>
+<td>可选择暴露摘要</td>
+<td>让调用方知道返回结构；服务端仍要实际校验</td>
+</tr>
+<tr>
+<td>租户准入、资源权限、风险级别</td>
+<td>否</td>
+<td>由服务端用受信身份决定，不由模型自证</td>
+</tr>
+<tr>
+<td>超时、并发上限、实现版本、审计与脱敏策略</td>
+<td>否</td>
+<td>控制真实执行、故障与运维边界</td>
+</tr>
+</tbody></table>
+<p>内部记录可以叫 <code>ToolDescriptor</code>，至少固定 <code>tool_name + business_version + input_schema_hash + description_hash + output_schema_hash + implementation_digest + policy_version</code>。这些字段是<strong>项目级工程建议</strong>，并非 JSON Schema 或供应商 API 强制的版本格式。Java 可以把它们做成不可变记录，发布后只新增版本，不原地改正在被任务引用的定义。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">record</span> <span class="title class_">ToolDescriptor</span><span class="params">(</span></span><br><span class="line"><span class="params">    String name, String businessVersion,</span></span><br><span class="line"><span class="params">    String inputSchemaHash, String outputSchemaHash,</span></span><br><span class="line"><span class="params">    String descriptionHash, String implementationDigest,</span></span><br><span class="line"><span class="params">    String policyVersion, <span class="type">boolean</span> readOnly</span></span><br><span class="line"><span class="params">)</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>JSON Schema 里的 <code>$schema</code> 声明的是<strong>Schema 方言</strong>，例如该文档按哪一版 JSON Schema 规则解释；它不是 <code>lookup_policy</code> 的业务版本号。<a target="_blank" rel="noopener" href="https://json-schema.org/understanding-json-schema/reference/schema">JSON Schema：The <code>$schema</code> keyword</a>（检索日期：2026-11-27）</p>
+<h2 id="二、从-v1-到-v2：多一个字段也不自动兼容"><a href="#二、从-v1-到-v2：多一个字段也不自动兼容" class="headerlink" title="二、从 v1 到 v2：多一个字段也不自动兼容"></a>二、从 v1 到 v2：多一个字段也不自动兼容</h2><p>v1 只有 <code>document_id</code>。v2 加 <code>effective_at</code>，用于回答“这份政策在 2025 年 5 月是否有效”。为避免旧模型回合突然换语义，发布新的模型可见名称 <code>lookup_policy_v2</code>，保留 v1 的定义与执行入口直到引用它的任务结束。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;function&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;lookup_policy_v2&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;description&quot;</span><span class="punctuation">:</span> <span class="string">&quot;按文档 ID 和生效日期读取授权政策；effective_at 为 null 时使用任务创建时的日期；只读，不修改政策&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;parameters&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;object&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;properties&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;document_id&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;effective_at&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;string&quot;</span><span class="punctuation">,</span> <span class="string">&quot;null&quot;</span><span class="punctuation">]</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;required&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;document_id&quot;</span><span class="punctuation">,</span> <span class="string">&quot;effective_at&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;additionalProperties&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;strict&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这是 OpenAI 自定义函数的<strong>示意 Schema</strong>，日期格式和业务有效期由服务端继续校验。OpenAI <code>strict: true</code> 要求每层对象禁止额外属性并将所有属性列入 <code>required</code>；可用联合 <code>null</code> 表示可选语义。它只支持 JSON Schema 的子集，不能假定 <code>allOf</code>、<code>not</code>、<code>if/then/else</code> 等高级关键字都能直接传给模型 API。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/function-calling">OpenAI Function Calling</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses">Structured Outputs</a>（检索日期：2026-11-27）</p>
+<p><code>effective_at: null</code> 在本项目有明确含义：使用<strong>任务创建时</strong>冻结的日期，而不是执行器重试时的“今天”。否则任务隔夜恢复，输入相同却可能读到另一版政策。Anthropic 的工具定义使用 <code>input_schema</code>，可给工具描述和输入示例；要把同一份内部契约投影到供应商支持的格式，并在真实 API 上验证，不要把 OpenAI 的 <code>strict</code> 字段原样交给它。<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools">Anthropic Define Tools</a>（检索日期：2026-11-27）</p>
+<table>
+<thead>
+<tr>
+<th>变更</th>
+<th>是否可以默认为兼容</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>给输入加必填字段</td>
+<td>否</td>
+<td>新工具版本；旧任务继续用旧参数契约</td>
+</tr>
+<tr>
+<td>修改描述或示例</td>
+<td>否，模型选工具的行为可能变</td>
+<td>固定新版本，跑工具选择回归再灰度</td>
+</tr>
+<tr>
+<td>改输出字段名或含义</td>
+<td>否，下游模型&#x2F;解析器可能依赖</td>
+<td>新输出 Schema；回放最终答案和引用校验</td>
+</tr>
+<tr>
+<td>只修改超时或实现</td>
+<td>也不能无证据认定安全</td>
+<td>记录实现与策略版本，做故障与延迟回归</td>
+</tr>
+<tr>
+<td>从只读改为写入</td>
+<td>明显破坏安全边界</td>
+<td>新名称、新权限与审批，不原地升级</td>
+</tr>
+</tbody></table>
+<h2 id="三、发现时给小而准的候选集，执行时仍重新授权"><a href="#三、发现时给小而准的候选集，执行时仍重新授权" class="headerlink" title="三、发现时给小而准的候选集，执行时仍重新授权"></a>三、发现时给小而准的候选集，执行时仍重新授权</h2><p>不是把注册表里的几百个 Schema 全送给模型。应用先用当前任务意图、租户权限、工具启用状态与模型能力筛出候选集；模型可见列表里保留明确的“无需工具”路径。对两个相似工具，描述要写出<strong>使用条件和不使用条件</strong>，例如“按已知 ID 读文档”和“按问题检索多个文档”应是不同能力。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">discover(task, authenticatedPrincipal):</span><br><span class="line">  snapshot = registry.resolve(task.toolBundleVersion)</span><br><span class="line">  candidates = snapshot.tools</span><br><span class="line">      .filter(enabledFor(task.tenant, task.environment))</span><br><span class="line">      .filter(visibleTo(authenticatedPrincipal, task.intent))</span><br><span class="line">      .filter(withinModelAndBudgetCapability(task))</span><br><span class="line">  return projectToProviderSchema(candidates, task.modelProvider)</span><br></pre></td></tr></table></figure>
+
+<p>这里的“可见”是减少误选与暴露面，<strong>不是执行授权</strong>。权限可能在模型思考期间撤销；调用到达时仍需用最新受信身份和资源状态重新判定。OpenAI 可用 <code>tool_choice</code> 或允许工具集合限制本轮候选；Anthropic 的定义强调名称、描述和参数示例对工具选择的影响。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/function-calling">OpenAI Function Calling</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools">Anthropic Define Tools</a>（检索日期：2026-11-27）</p>
+<p>MCP 的 <code>tools/list</code> 是工具发现协议，支持游标分页；可按当前请求的授权身份返回不同工具集合，但不能依赖连接的偶然状态或查询副作用来改变列表。规范建议稳定排序并可通知工具列表变化；通知不应成为唯一刷新机制，宿主仍需为新任务检查版本。MCP 还提供必需的 <code>inputSchema</code> 和可选的 <code>outputSchema</code>，工具服务仍负责校验输入、权限与限流。<a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2026-07-28/server/tools">MCP Tools 规范（2026-07-28）</a>（检索日期：2026-11-27）。这里只借用发现语义，完整 MCP 接入留到第 57–60 天。</p>
+<h2 id="四、任务固定工具快照，发布只影响新任务"><a href="#四、任务固定工具快照，发布只影响新任务" class="headerlink" title="四、任务固定工具快照，发布只影响新任务"></a>四、任务固定工具快照，发布只影响新任务</h2><p>任务启动时持久化 <code>tool_bundle_version</code>、各工具的名称&#x2F;版本&#x2F;Schema 与描述摘要，以及执行端版本。恢复 Worker 时先取任务快照，核对旧实现是否仍可调用；若旧版已下线，不能把旧参数直接发给新版工具。需要显式迁移时，重新校验输入、权限、业务状态和审批，记录迁移原因与新旧版本关联。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">T0：任务 A 固定 bundle-7，模型看到 lookup_policy_v1</span><br><span class="line">T1：发布 bundle-8，新任务 B 可灰度看到 lookup_policy_v2</span><br><span class="line">T2：任务 A 重试/恢复，仍按 bundle-7 解析和执行</span><br><span class="line">T3：灰度失败，新任务回到 bundle-7；B 的在途步骤按其固定版本完成或受控迁移</span><br></pre></td></tr></table></figure>
+
+<p>不要把“回滚入口工具列表”误认为已经处理了在途任务；旧版本执行端的保留期应覆盖任务最长运行与恢复窗口。对可写工具还需核对副作用是否已发生，不能靠重新选择版本消除未知回执。</p>
+<h2 id="五、用回归集验证版本，而不是只看-Schema-校验"><a href="#五、用回归集验证版本，而不是只看-Schema-校验" class="headerlink" title="五、用回归集验证版本，而不是只看 Schema 校验"></a>五、用回归集验证版本，而不是只看 Schema 校验</h2><p>准备同一批历史任务，固定模型、Prompt、知识和工具实现，只改变工具定义版本。至少分六类：按已知 ID 读取、按自然语言检索、无需工具、文档已撤权、无效日期、v1 在途任务恢复。每条记录 <code>expected_tool</code>、预期参数与业务结果，并比较：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>发现什么问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>首步工具选择率与“不用工具”判断</td>
+<td>描述变更是否让模型误选</td>
+</tr>
+<tr>
+<td>完整参数有效率</td>
+<td>v2 字段是否被漏填或乱填</td>
+</tr>
+<tr>
+<td>工具执行成功率及拒绝原因</td>
+<td>Schema 合法后是否仍被业务规则拒绝</td>
+</tr>
+<tr>
+<td>任务最终正确率、引用与越权数</td>
+<td>首步选对是否真的改善用户结果</td>
+</tr>
+<tr>
+<td>每成功任务延迟和成本</td>
+<td>候选集、重试是否扩大开销</td>
+</tr>
+</tbody></table>
+<p>上线前写定阈值和失败 Case；权限泄漏和越权执行为硬失败。若首步工具选择率上升而任务成功率下降，要沿调用轨迹看参数、工具返回和答案引用，不把“模型更爱调用 v2”误判为发布成功。</p>
+<p>今天可交付 <code>tool-registry.yaml</code>、v1&#x2F;v2 Schema 与描述哈希、<code>selection-fixtures.jsonl</code> 和一份对比报告模板。只有实际跑过的行才写 <code>PASS</code>，其余保留 <code>NOT_RUN</code>；本文的 v1&#x2F;v2 示例不是已验证的生产注册表。第 33 天继续做执行器的超时、重复调用与错误分类。</p>
+<h2 id="六、今日面试题（检索日期：2026-11-27）"><a href="#六、今日面试题（检索日期：2026-11-27）" class="headerlink" title="六、今日面试题（检索日期：2026-11-27）"></a>六、今日面试题（检索日期：2026-11-27）</h2><p>题面优先取自可直接打开正文的公开面经。企业、岗位与场次来自发帖者自述，未经官方核验；参考答案与追问是本文的工程归纳。</p>
+<h3 id="1-参数符合-JSON-Schema，但两个字段组合违反业务约束，怎样设计重试？"><a href="#1-参数符合-JSON-Schema，但两个字段组合违反业务约束，怎样设计重试？" class="headerlink" title="1. 参数符合 JSON Schema，但两个字段组合违反业务约束，怎样设计重试？"></a>1. 参数符合 JSON Schema，但两个字段组合违反业务约束，怎样设计重试？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：工具参数校验、业务规则 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：先由结构 Schema 验字段，再由服务端验跨字段规则，例如 <code>start_time &lt;= end_time</code>。把可安全修正的错误以结构化原因回传模型，限制修正次数与总截止时间；每次都重新完整校验。鉴权失败、取消或写操作结果未知不能当作普通参数错误盲重试，非法参数绝不执行工具。</li>
+<li><strong>追问</strong>：模型连续三次仍给出 <code>start_time &gt; end_time</code> 怎么办？停止自动循环，保留失败原因，向用户澄清输入或返回受控错误。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/36f79403b25b4ae8afa08de37625bba5?sourceSSR=subject">牛客《科大讯一面 11.12》用户自述</a>，页面发表于 11-19；公司与场次未获官方核验。</li>
+</ul>
+<h3 id="2-改了一版工具描述，怎样用历史任务验证工具选择和任务完成率？"><a href="#2-改了一版工具描述，怎样用历史任务验证工具选择和任务完成率？" class="headerlink" title="2. 改了一版工具描述，怎样用历史任务验证工具选择和任务完成率？"></a>2. 改了一版工具描述，怎样用历史任务验证工具选择和任务完成率？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：工具定义版本、回归评测 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：固定模型、Prompt、工具实现与样本，只切换描述&#x2F;Schema 版本。成对回放按已知 ID 读取、自然语言检索、无需工具和越权场景，比较首步工具选择率、参数有效率、最终任务正确率、误调用与成本。写操作不能为了评测直接重放真实副作用，应使用隔离夹具或只做离线提议判分。</li>
+<li><strong>追问</strong>：选择率提高但任务成功率下降，如何查？沿 trace 区分参数错误、执行拒绝、结果解释与最终引用错误，先保留旧版本并补失败样本。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/36f79403b25b4ae8afa08de37625bba5?sourceSSR=subject">牛客《科大讯一面 11.12》用户自述</a>，页面发表于 11-19；公司与场次未获官方核验。</li>
+</ul>
+<h3 id="3-Action-怎样声明输入、输出和底层-HTTP、JSF-调用映射？"><a href="#3-Action-怎样声明输入、输出和底层-HTTP、JSF-调用映射？" class="headerlink" title="3. Action 怎样声明输入、输出和底层 HTTP、JSF 调用映射？"></a>3. Action 怎样声明输入、输出和底层 HTTP、JSF 调用映射？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：工具注册表、执行适配 &#x2F; 中高。</li>
+<li><strong>参考答案</strong>：为 Action 登记名称、版本、所有者、输入&#x2F;输出 Schema 和明确的业务语义；由执行适配器把字段映射到 HTTP 或内部 RPC，请求中的租户身份仍由可信上下文注入。统一超时、错误码、脱敏回包与审计，发布前跑契约测试、权限测试和健康检查；接口非兼容变更发布新工具版本。</li>
+<li><strong>追问</strong>：底层 JSF 新增必填字段，历史 Action 调用如何处理？保留旧适配器或显式迁移到新版本，不能静默给可能改变业务含义的默认值。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/5e67a722498843c29f83c59493908aec?sourceSSR=dynamic">牛客“得物 AI 应用 &#x2F; Java 后端方向一面”用户自述</a>，页面发表于 11-17；公司、岗位与场次未获官方核验。</li>
+</ul>
+<h3 id="4-动态加载工具时，如何保证一次-Agent-运行中的定义不漂移？"><a href="#4-动态加载工具时，如何保证一次-Agent-运行中的定义不漂移？" class="headerlink" title="4. 动态加载工具时，如何保证一次 Agent 运行中的定义不漂移？"></a>4. 动态加载工具时，如何保证一次 Agent 运行中的定义不漂移？</h3><ul>
+<li><strong>方向 &#x2F; 难度</strong>：工具发现、版本快照 &#x2F; 难。</li>
+<li><strong>参考答案</strong>：任务开始时固定可见工具集合、每个名称与版本、Schema&#x2F;描述摘要和执行端路由；每一步按同一快照解析并执行，新版本只给新任务。恢复时核对旧执行端是否仍可用；若必须迁移，重新校验参数、身份、权限和副作用状态，记录版本转换。</li>
+<li><strong>追问</strong>：旧执行端故障，新 Schema 又删掉旧参数，能直接用新版恢复吗？不能直接转发；先暂停或做显式迁移并重验，无法确定副作用时进入对账或人工接管。</li>
+<li><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://api-cdn.nowcoder.com/discuss/930173741886111744?sourceSSR=post">牛客“蔚来 AI Agent 开发一面”用户自述及题解</a>，页面发表于 09-17；这道较早的经典题直接覆盖在途版本漂移，近期可核验题源未见同等具体的独立原题；公司与场次未获官方核验。</li>
+</ul>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/function-calling">OpenAI Function Calling</a>与<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses">Structured Outputs</a>：严格 Schema 子集和工具选择控制。</li>
+<li><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools">Anthropic Define Tools</a>：描述、输入 Schema 和示例。</li>
+<li><a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2026-07-28/server/tools">MCP Tools 规范（2026-07-28）</a>：工具发现、Schema 与服务端责任。</li>
+<li><a target="_blank" rel="noopener" href="https://json-schema.org/understanding-json-schema/reference/schema">JSON Schema <code>$schema</code></a>：Schema 方言与业务版本的区别。以上资料检索日期均为 2026-11-27。</li>
+</ul>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chenzihao.me/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Agent/" rel="tag">Agent</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Schema/" rel="tag">Schema</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Tool-Calling/" rel="tag">Tool Calling</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7%E6%B3%A8%E5%86%8C%E8%A1%A8/" rel="tag">工具注册表</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%89%88%E6%9C%AC%E6%B2%BB%E7%90%86/" rel="tag">版本治理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Tool Calling 第一课：模型提议如何变成受控工具调用</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "pGdwyT4C1SLK3tNu5BiWT5wK-gzGzoHsz",
+    app_key: "t07S7p0VCiw6wR6HdlEjli0G",
+    path: window.location.pathname,
+    avatar: "mp",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2026
+        <i class="ri-heart-fill heart_icon"></i> Shadowalker
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        
+        由 <a href="https://hexo.io" target="_blank">Hexo</a> 强力驱动
+        <span class="division">|</span>
+        主题 - <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>累计访问:<span id="busuanzi_value_site_pv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>本页浏览:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s4.cnzz.com/z_stat.php?id=1278565805&amp;web_id=1278565805'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/avatar.png" alt="Shadow.Net"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives/">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories/">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/ai-agent-series/">AI全栈系列</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="https://mr-shaodwalker.lofter.com/">摄影</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/schedule/">计划</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about/">关于</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/aliPay.jpeg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechatPay.png">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+
+<script src="/js/tocbot.min.js"></script>
+<script>
+  tocbot.init({tocSelector: '.tocbot', contentSelector: '.article-entry', headingSelector: 'h1, h2, h3, h4, h5, h6', hasInnerContainers: true, scrollSmooth: true, scrollContainer: 'main', positionFixedSelector: '.tocbot', positionFixedClass: 'is-position-fixed', fixedSidebarOffset: 'auto'});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+<script src="/dist/main.js"></script>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>var ayerConfig = { mathjax: true };</script>
+<script src="/js/busuanzi-2.3.pure.min.js?v=6-leancloud"></script>
+
+
+<script src="/js/clickBoom2.js"></script>
+
+<link rel="stylesheet" href="/css/clipboard.css" />
+<script src="/js/clipboard-2.0.11.min.js"></script>
+<script>
+  function wait(callback, seconds) { window.setTimeout(callback, seconds); }
+  (function () {
+    var initCopyCode = function () {
+      var copyHtml = '<button class="btn-copy" data-clipboard-snippet=""><i class="ri-file-copy-2-line"></i><span>COPY</span></button>';
+      $('.highlight .code pre').before(copyHtml);
+      $('.article pre code').before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {target: function (trigger) { return trigger.nextElementSibling; }});
+      clipboard.on('success', function (event) {
+        var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copied'); icon.removeClass('ri-file-copy-2-line').addClass('ri-checkbox-circle-line'); label.text('COPIED');
+        wait(function () { icon.removeClass('ri-checkbox-circle-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+      clipboard.on('error', function (event) {
+        event.clearSelection(); var button = $(event.trigger), icon = button.find('i'), label = button.find('span');
+        button.addClass('copy-failed'); icon.removeClass('ri-file-copy-2-line').addClass('ri-time-line'); label.text('COPY FAILED');
+        wait(function () { icon.removeClass('ri-time-line').addClass('ri-file-copy-2-line'); label.text('COPY'); }, 2000);
+      });
+    };
+    initCopyCode();
+  }());
+</script>
+
+
+<script src="/js/dz.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js"></script>
+<script>L2Dwidget.init({log:false,pluginJsPath:'lib/',pluginModelPath:'assets/',pluginRootPath:'live2dw/',tagMode:false});</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
