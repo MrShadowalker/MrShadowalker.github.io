@@ -117,6 +117,65 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-AI-ModelClient-Structured-Output-Streaming"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-ModelClient-Structured-Output-Streaming.html"
+    >统一 ModelClient 怎么设计：消息、结构化输出、流式与重试的边界</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-ModelClient-Structured-Output-Streaming.html" class="article-date">
+  <time datetime="2026-10-29T01:00:00.000Z" itemprop="datePublished">2026-10-29</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>昨天我们把 Agent Runtime 的任务、步骤、事件和状态迁移固定下来。Runtime 要继续向前走，就必须有一个稳定的模型调用边界。否则业务代码会到处出现 <code>if (provider == ...)</code>：某家模型用 <code>messages</code>，另一家模型用 <code>input</code>；某家返回 <code>choices</code>，另一家返回事件流；结构化输出、工具调用、计费字段和错误码也各不相同。</p>
+<p>今天实现第一层模型工程：**统一 <code>ModelClient</code>**。它不是把所有厂商能力抹平，而是把业务真正依赖的契约固定下来，把供应商差异收进适配器。后续切换模型、做灰度、设置超时降级和统计成本，都应在这个边界上完成。</p> 
+      <a class="article-more-link" href="/articles/AI-ModelClient-Structured-Output-Streaming.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E5%B7%A5%E7%A8%8B/" rel="tag">模型工程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/" rel="tag">流式响应</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA/" rel="tag">结构化输出</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-AI-Agent-Runtime-State-Machine"
   class="article article-type-post"
   itemscope
@@ -640,66 +699,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag">可观测性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%83%A8%E7%BD%B2/" rel="tag">部署</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-AI-QA-Evaluation"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/AI-QA-Evaluation.html"
-    >给 AI 问答做测试：先把错误分清楚</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/AI-QA-Evaluation.html" class="article-date">
-  <time datetime="2026-09-09T01:10:00.000Z" itemprop="datePublished">2026-09-09</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>给知识库换了检索策略，测试分数从 80 变成 90，可以上线了吗？</p>
-<p>先别急。这个分数到底在衡量什么？搜到了目标文档，答案写得像参考答案，还是用户真的得到了可以使用的结论？</p>
-<p>同样一个问题，可能文档找对了、答案却用错了版本；也可能答案正确，引用却点不开。把它们压成一个总分，最需要修复的地方反而不容易看见。</p> 
-      <a class="article-more-link" href="/articles/AI-QA-Evaluation.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" rel="tag">工程实践</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" rel="tag">知识库</a></li></ul>
 
     </footer>
   </div>

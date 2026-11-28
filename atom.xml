@@ -10,7 +10,25 @@
   <rights>All rights reserved 2026, Shadowalker</rights>
   <subtitle>生活家 程序猿 摄影狮</subtitle>
   <title>Shadow.Net</title>
-  <updated>2026-11-27T01:00:00.000Z</updated>
+  <updated>2026-11-28T01:00:00.000Z</updated>
+  <entry>
+    <author>
+      <name>Shadowalker</name>
+    </author>
+    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
+    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
+    <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
+    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
+    <category term="Tool Calling" scheme="https://chenzihao.me/tags/Tool-Calling/"/>
+    <category term="执行器" scheme="https://chenzihao.me/tags/%E6%89%A7%E8%A1%8C%E5%99%A8/"/>
+    <category term="幂等" scheme="https://chenzihao.me/tags/%E5%B9%82%E7%AD%89/"/>
+    <id>https://chenzihao.me/articles/AI-Agent-Tool-Executor-Timeout-Dedup-Error-Taxonomy.html</id>
+    <link href="https://chenzihao.me/articles/AI-Agent-Tool-Executor-Timeout-Dedup-Error-Taxonomy.html"/>
+    <published>2026-11-28T01:00:00.000Z</published>
+    <summary>AI 全栈开发第 33 天：用工具执行账本、稳定业务操作 ID、发送后结果未知与对账流程，落地 Agent 工具的超时、去重和错误分类；附四道有来源的面试题。</summary>
+    <title>Agent 工具执行器怎样处理超时、重复调用与错误分类</title>
+    <updated>2026-11-28T01:00:00.000Z</updated>
+  </entry>
   <entry>
     <author>
       <name>Shadowalker</name>
@@ -217,8 +235,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
     <category term="周复盘" scheme="https://chenzihao.me/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/"/>
-    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
     <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
     <id>https://chenzihao.me/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html</id>
     <link href="https://chenzihao.me/articles/AI-Agent-Fullstack-Week3-Service-Review-Quiz.html"/>
     <published>2026-11-16T01:00:00.000Z</published>
@@ -251,8 +269,8 @@
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="Agent" scheme="https://chenzihao.me/tags/Agent/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
     <category term="任务系统" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/"/>
+    <category term="SSE" scheme="https://chenzihao.me/tags/SSE/"/>
     <id>https://chenzihao.me/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html</id>
     <link href="https://chenzihao.me/articles/AI-Agent-SSE-Event-Stream-Replay-Cancel.html"/>
     <published>2026-11-14T01:00:00.000Z</published>
@@ -301,8 +319,8 @@
     <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
     <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
     <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="API设计" scheme="https://chenzihao.me/tags/API%E8%AE%BE%E8%AE%A1/"/>
     <category term="幂等" scheme="https://chenzihao.me/tags/%E5%B9%82%E7%AD%89/"/>
+    <category term="API设计" scheme="https://chenzihao.me/tags/API%E8%AE%BE%E8%AE%A1/"/>
     <category term="任务状态机" scheme="https://chenzihao.me/tags/%E4%BB%BB%E5%8A%A1%E7%8A%B6%E6%80%81%E6%9C%BA/"/>
     <id>https://chenzihao.me/articles/AI-Task-API-Idempotency-Cancellation.html</id>
     <link href="https://chenzihao.me/articles/AI-Task-API-Idempotency-Cancellation.html"/>
@@ -345,23 +363,5 @@
     <summary>复盘 AI 全栈开发第 8–13 天，用一个本地多租户知识助手夹具验收检索、缓存、路由、成本、限流和模型注册表，附八道小测与四道有来源的面试题。</summary>
     <title>AI 全栈开发第二周验收：从检索到模型网关的一次故障演练</title>
     <updated>2026-11-09T01:00:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Shadowalker</name>
-    </author>
-    <category term="AI工程" scheme="https://chenzihao.me/categories/AI%E5%B7%A5%E7%A8%8B/"/>
-    <category term="AI全栈" scheme="https://chenzihao.me/tags/AI%E5%85%A8%E6%A0%88/"/>
-    <category term="面试" scheme="https://chenzihao.me/tags/%E9%9D%A2%E8%AF%95/"/>
-    <category term="模型网关" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/"/>
-    <category term="模型注册表" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E6%B3%A8%E5%86%8C%E8%A1%A8/"/>
-    <category term="模型路由" scheme="https://chenzihao.me/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/"/>
-    <category term="灰度发布" scheme="https://chenzihao.me/tags/%E7%81%B0%E5%BA%A6%E5%8F%91%E5%B8%83/"/>
-    <id>https://chenzihao.me/articles/AI-Model-Registry-Capability-Routing-Release.html</id>
-    <link href="https://chenzihao.me/articles/AI-Model-Registry-Capability-Routing-Release.html"/>
-    <published>2026-11-08T01:00:00.000Z</published>
-    <summary>AI 全栈开发第 13 天，设计企业模型注册表、能力证据、生命周期与健康状态，并用不可变配置、灰度评测和一键回滚发布路由策略。</summary>
-    <title>模型注册表怎么治理：能力契约、健康检查与路由配置发布</title>
-    <updated>2026-11-08T01:00:00.000Z</updated>
   </entry>
 </feed>

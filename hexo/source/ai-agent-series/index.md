@@ -65,6 +65,7 @@ comments: true
 - **Day 30｜[阶段项目一验收：多租户模型网关的最小交付与真实进度](/articles/AI-Model-Gateway-Stage1-Delivery-Acceptance.html)**
 - **Day 31｜[Tool Calling 第一课：模型提议如何变成受控工具调用](/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html)**
 - **Day 32｜[工具 Schema 怎么升级：注册、发现、版本快照与兼容性](/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html)**
+- **Day 33｜[Agent 工具执行器怎样处理超时、重复调用与错误分类](/articles/AI-Agent-Tool-Executor-Timeout-Dedup-Error-Taxonomy.html)**
 
 补刊记录：Day 15–25 对应 2026 年 11 月 10–20 日的学习安排，于 11 月 21 日集中补刊；各文资料与面试题均标注实际检索日期。Day 26 对应 11 月 21 日。
 
@@ -119,7 +120,8 @@ comments: true
 
 - Day 31：[Tool Calling 完整往返、工具提议与受控执行](/articles/AI-Agent-Tool-Calling-Proposal-Execution-Contract.html)
 - Day 32：[工具 Schema 注册、发现、版本快照与兼容性](/articles/AI-Agent-Tool-Schema-Registry-Version-Compatibility.html)
-- Day 33-34：执行器、权限与审批
+- Day 33：[工具执行账本、超时后结果未知、重复调用与错误分类](/articles/AI-Agent-Tool-Executor-Timeout-Dedup-Error-Taxonomy.html)
+- Day 34：工具权限与审批
 - Day 35：第五周复盘与小测
 - Day 36-37：工具失败恢复与结果回填
 - Day 38-44：ReAct、Planner、Workflow 与 Agent 的边界

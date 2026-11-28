@@ -117,6 +117,65 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-AI-Chat-Service-Provider-Adapter-Event-Normalization"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html"
+    >最小对话服务接入多模型：适配器、事件流与用量归一化</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html" class="article-date">
+  <time datetime="2026-11-18T01:00:00.000Z" itemprop="datePublished">2026-11-18</time>
+</a>
+ 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>补刊说明：本文补齐原定学习日；资料与题目于 2026-11-21 检索核验。</p>
+<p>前几天已经把最小对话服务拆成 API、会话、任务、事件和存储。今天接入真正容易变动的一层：模型供应商。对 Java 后端开发者来说，可以把它理解为“防腐层”：业务只认识自己的请求与事件，适配器负责把供应商协议翻译过来；原始响应也必须保留，便于审计和补账。</p> 
+      <a class="article-more-link" href="/articles/AI-Chat-Service-Provider-Adapter-Event-Normalization.html"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E6%A8%A1%E5%9E%8B/" rel="tag">多模型</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA/" rel="tag">流式输出</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-AI-Conversation-Service-Vertical-Slice"
   class="article article-type-post"
   itemscope
@@ -641,65 +700,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RAG/" rel="tag">RAG</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%91%A8%E5%A4%8D%E7%9B%98/" rel="tag">周复盘</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%A7%9F%E6%88%B7/" rel="tag">多租户</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-AI-Model-Registry-Capability-Routing-Release"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/AI-Model-Registry-Capability-Routing-Release.html"
-    >模型注册表怎么治理：能力契约、健康检查与路由配置发布</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/AI-Model-Registry-Capability-Routing-Release.html" class="article-date">
-  <time datetime="2026-11-08T01:00:00.000Z" itemprop="datePublished">2026-11-08</time>
-</a>
- 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>第 12 天的网关已经能按预算、速率和并发决定“现在能否发出请求”，也能区分可重试错误与不可恢复错误。但它仍需要一个可信的候选名单：模型是否支持严格结构化输出？当前项目是否真有调用权限？某个别名改指向新快照后，昨天的任务还能复现吗？</p>
-<p>今天把这些问题收进<strong>模型注册表与路由配置发布流程</strong>。注册表回答“有哪些候选、证据是什么”；路由配置回答“哪些租户、哪些任务、按什么规则使用候选”。本文的数据结构、探针和发布流程是工程设计；供应商 API 的字段及版本语义以文末官方资料为准。</p> 
-      <a class="article-more-link" href="/articles/AI-Model-Registry-Capability-Routing-Release.html"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI%E5%85%A8%E6%A0%88/" rel="tag">AI全栈</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E6%B3%A8%E5%86%8C%E8%A1%A8/" rel="tag">模型注册表</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E7%BD%91%E5%85%B3/" rel="tag">模型网关</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E5%9E%8B%E8%B7%AF%E7%94%B1/" rel="tag">模型路由</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%81%B0%E5%BA%A6%E5%8F%91%E5%B8%83/" rel="tag">灰度发布</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a></li></ul>
 
     </footer>
   </div>
